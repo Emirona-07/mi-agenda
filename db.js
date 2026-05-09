@@ -2,7 +2,10 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'agenda.db');
+const DB_DIR = process.env.DATABASE_PATH
+  ? path.dirname(process.env.DATABASE_PATH)
+  : process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+const DB_PATH = process.env.DATABASE_PATH || path.join(DB_DIR, 'agenda.db');
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
