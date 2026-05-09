@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservar turno</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #2d6a4f; --green-light: #40916c; --green-bg: #d8f3dc;
+      --accent: #52b788; --text: #1b1b1b; --muted: #6c757d;
+      --border: #dee2e6; --bg: #f8f9fa; --white: #ffffff;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header { background: var(--green); color: white; padding: 20px 16px; text-align: center; }
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header p { font-size: 0.9rem; opacity: 0.85; margin-top: 4px; }
+
+    .container { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+
+    /* Progress bar */
+    .progress { display: flex; align-items: center; margin-bottom: 28px; }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; transition: all 0.3s; flex-shrink: 0; }
+    .step-dot.active { background: var(--green); color: white; }
+    .step-dot.done { background: var(--accent); color: white; }
+    .step-dot.pending { background: var(--border); color: var(--muted); }
+    .step-line { flex: 1; height: 3px; background: var(--border); margin: 0 6px; transition: background 0.3s; }
+    .step-line.done { background: var(--accent); }
+
+    /* Cards */
+    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--green); margin-bottom: 16px; }
+
+    /* Service cards */
+    .service-grid { display: grid; gap: 12px; }
+    .service-card { border: 2px solid var(--border); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: left; background: white; width: 100%; }
+    .service-card:hover { border-color: var(--accent); background: #f0faf4; }
+    .service-card.selected { border-color: var(--green); background: var(--green-bg); }
+    .service-card h3 { font-size: 1rem; font-weight: 600; }
+    .service-card .meta { display: flex; gap: 12px; margin-top: 6px; font-size: 0.85rem; color: var(--muted); flex-wrap: wrap; }
+    .service-card .price { color: var(--green); font-weight: 700; }
+    .service-card .desc { font-size: 0.82rem; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+
+    /* Professional cards */
+    .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .prof-card { border: 2px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; }
+    .prof-card:hover { border-color: var(--accent); }
+    .prof-card.selected { border-color: var(--green); background: var(--green-bg); }
+    .prof-avatar { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.1rem; }
+    .prof-card h3 { font-size: 0.9rem; font-weight: 600; }
+
+    /* Calendar */
+    .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .calendar-header h3 { font-size: 1rem; font-weight: 700; text-transform: capitalize; }
+    .cal-nav { background: none; border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+    .cal-nav:hover { background: var(--bg); }
+    .step2-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    #cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; grid-column: 1 / -1; }
+    .cal-day-name { text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--muted); padding: 4px 0; }
+    .cal-day { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.85rem; cursor: default; }
+    @media (max-width: 640px) { .step2-layout { grid-template-columns: 1fr; } }
+    .cal-day.available { cursor: pointer; font-weight: 600; color: var(--green); }
+    .cal-day.available:hover { background: var(--green-bg); }
+    .cal-day.selected { background: var(--green); color: white; }
+    .cal-day.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .cal-day.other-month { opacity: 0.3; }
+    .cal-day.past { opacity: 0.35; }
+
+    /* Time slots */
+    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+    .slot-btn { padding: 10px 8px; border: 2px solid var(--border); border-radius: 10px; background: white; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text); transition: all 0.2s; text-align: center; }
+    .slot-btn:hover { border-color: var(--accent); color: var(--green); }
+    .slot-btn.selected { background: var(--green); border-color: var(--green); color: white; }
+
+    /* Form */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
+    input, textarea, select {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 0.95rem; font-family: inherit; outline: none; transition: border-color 0.2s;
+      background: white;
+    }
+    input:focus, textarea:focus { border-color: var(--green); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* Summary box */
+    .summary { background: var(--green-bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .summary h3 { font-size: 0.9rem; font-weight: 700; color: var(--green); margin-bottom: 10px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; }
+    .summary-row span:first-child { color: var(--muted); }
+    .summary-row span:last-child { font-weight: 600; }
+
+    /* Buttons */
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .btn-primary { background: var(--green); color: white; }
+    .btn-primary:hover { background: var(--green-light); }
+    .btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
+    .btn-secondary { background: white; color: var(--green); border: 2px solid var(--green); }
+    .btn-secondary:hover { background: var(--green-bg); }
+    .btn-whatsapp { background: #25d366; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; font-size: 1rem; font-weight: 700; border-radius: 12px; padding: 16px; }
+    .btn-whatsapp:hover { background: #20bd5a; }
+    .btn-whatsapp svg { width: 24px; height: 24px; }
+
+    /* Success screen */
+    .success-icon { width: 72px; height: 72px; background: var(--green-bg); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; }
+    .success-icon svg { width: 36px; height: 36px; color: var(--green); }
+
+    /* Navigation */
+    .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .nav-btns .btn { flex: 1; }
+
+    /* Empty/loading states */
+    .empty { text-align: center; color: var(--muted); padding: 24px; font-size: 0.9rem; }
+    .loading { text-align: center; padding: 24px; color: var(--muted); }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .error-msg { background: #fff5f5; color: #c0392b; border: 1px solid #f5c6cb; border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
+    .error-msg.show { display: block; }
+
+    .step-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; text-align: center; }
+
+    @media (max-width: 480px) {
+      .slots-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1 id="biz-name">Cargando...</h1>
+  <p id="biz-desc"></p>
+</header>
+
+<div class="container">
+  <!-- Progress -->
+  <div class="progress" id="progress-bar">
+    <div class="step-dot active" id="dot-1">1</div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step-dot pending" id="dot-2">2</div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step-dot pending" id="dot-3">3</div>
+    <div class="step-line" id="line-3"></div>
+    <div class="step-dot pending" id="dot-4">4</div>
+  </div>
+
+  <!-- Step 1: Service -->
+  <div class="section active" id="step-1">
+    <div class="card">
+      <div class="card-title">¿Qué servicio necesitás?</div>
+      <div id="services-list"><div class="loading">Cargando servicios...</div></div>
+    </div>
+    <div class="nav-btns" style="margin-top:16px">
+      <button class="btn btn-primary" id="btn-to-2" disabled onclick="goStep(2)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Date & Time -->
+  <div class="section" id="step-2">
+    <div class="step2-layout">
+      <div class="card">
+        <div class="card-title">Elegí la fecha</div>
+        <div class="calendar-header">
+          <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+          <h3 id="cal-month"></h3>
+          <button class="cal-nav" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="calendar-grid">
+          <div class="cal-day-name">Do</div><div class="cal-day-name">Lu</div>
+          <div class="cal-day-name">Ma</div><div class="cal-day-name">Mi</div>
+          <div class="cal-day-name">Ju</div><div class="cal-day-name">Vi</div>
+          <div class="cal-day-name">Sa</div>
+          <div id="cal-days"></div>
+        </div>
+      </div>
+
+      <div class="card" id="slots-card" style="display:none">
+        <div class="card-title" id="slots-title">Elegí el horario</div>
+        <div id="slots-list"></div>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="goStep(1)">← Volver</button>
+      <button class="btn btn-primary" id="btn-to-3" disabled onclick="goStep(3)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Personal info -->
+  <div class="section" id="step-3">
+    <div class="card">
+      <div class="card-title">Tus datos</div>
+      <div class="error-msg" id="form-error"></div>
+
+      <div class="summary" id="booking-summary">
+        <h3>Resumen de tu reserva</h3>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre completo *</label>
+        <input type="text" id="f-name" placeholder="Tu nombre" required>
+      </div>
+      <div class="form-group">
+        <label>Teléfono *</label>
+        <input type="tel" id="f-phone" placeholder="Ej: 099123456" required>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="f-email" placeholder="tucorreo@email.com">
+      </div>
+      <div class="form-group">
+        <label>Instagram</label>
+        <input type="text" id="f-instagram" placeholder="@tuusuario">
+      </div>
+      <div class="form-group">
+        <label>Notas adicionales</label>
+        <textarea id="f-notes" placeholder="¿Algo que debamos saber?"></textarea>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="goStep(2)">← Volver</button>
+      <button class="btn btn-primary" id="btn-confirm" onclick="submitBooking()">Confirmar reserva</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Confirmation -->
+  <div class="section" id="step-4">
+    <div class="card" style="text-align:center;padding:32px 24px">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h2 style="font-size:1.3rem;margin-bottom:8px;color:var(--green)">¡Reserva confirmada!</h2>
+      <p style="color:var(--muted);margin-bottom:24px;font-size:0.95rem">
+        Tu turno quedó registrado. Presioná el botón para avisarnos por WhatsApp y finalizar la confirmación.
+      </p>
+
+      <div class="summary" id="confirm-summary" style="text-align:left;margin-bottom:24px"></div>
+
+      <a id="whatsapp-btn" href="#" target="_blank" class="btn-whatsapp" style="margin-bottom:12px">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Confirmar por WhatsApp
+      </a>
+
+      <button class="btn btn-secondary" onclick="newBooking()" style="margin-top:8px">Hacer otra reserva</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  services: [], professionals: [],
+  selectedService: null, selectedProfessional: null,
+  selectedDate: null, selectedTime: null,
+  availableDates: [], calYear: null, calMonth: null
+};
+
+// Init
+async function init() {
+  const biz = await fetch('/api/business').then(r => r.json());
+  document.getElementById('biz-name').textContent = biz.name;
+  document.getElementById('biz-desc').textContent = biz.description || '';
+  document.title = `Reservar turno - ${biz.name}`;
+
+  const services = await fetch('/api/services').then(r => r.json());
+  state.services = services;
+  renderServices();
+}
+
+function renderServices() {
+  const list = document.getElementById('services-list');
+  if (!state.services.length) { list.innerHTML = '<div class="empty">No hay servicios disponibles.</div>'; return; }
+
+  list.innerHTML = state.services.map(s => `
+    <button class="service-card ${state.selectedService?.id === s.id ? 'selected' : ''}" onclick="selectService(${s.id})">
+      <h3>${s.name}</h3>
+      <div class="meta">
+        <span>⏱ ${s.duration} min</span>
+        ${s.price > 0 ? `<span class="price">$${s.price.toLocaleString()}</span>` : ''}
+        ${s.deposit > 0 ? `<span>Seña: $${s.deposit.toLocaleString()}</span>` : ''}
+      </div>
+      ${s.description ? `<p class="desc">${s.description}</p>` : ''}
+    </button>
+  `).join('');
+}
+
+async function selectService(id) {
+  state.selectedService = state.services.find(s => s.id === id);
+  state.selectedProfessional = null;
+  state.selectedDate = null;
+  state.selectedTime = null;
+  renderServices();
+  document.getElementById('btn-to-2').disabled = false;
+}
+
+function goStep(step) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`step-${step}`).classList.add('active');
+  updateProgress(step);
+  if (step === 2) loadCalendar();
+  if (step === 3) renderSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress(step) {
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    if (i < step) { dot.className = 'step-dot done'; dot.textContent = '✓'; }
+    else if (i === step) { dot.className = 'step-dot active'; dot.textContent = i; }
+    else { dot.className = 'step-dot pending'; dot.textContent = i; }
+  }
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById(`line-${i}`).className = `step-line${i < step ? ' done' : ''}`;
+  }
+}
+
+// Calendar
+async function loadCalendar() {
+  const now = new Date();
+  if (!state.calYear) { state.calYear = now.getFullYear(); state.calMonth = now.getMonth(); }
+
+  const datesRes = await fetch(`/api/available-dates?service_id=${state.selectedService.id}${state.selectedProfessional ? '&professional_id='+state.selectedProfessional.id : ''}`);
+  state.availableDates = await datesRes.json();
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const { calYear: y, calMonth: m } = state;
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('cal-month').textContent = `${months[m]} ${y}`;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+
+  let html = '';
+  // Prev month days
+  for (let i = firstDay - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month">${prevDays - i}</div>`;
+  }
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const date = new Date(y, m, d);
+    const isToday = date.getTime() === today.getTime();
+    const isPast = date < today;
+    const isAvail = state.availableDates.includes(dateStr);
+    const isSel = state.selectedDate === dateStr;
+
+    let cls = 'cal-day';
+    if (isPast) cls += ' past';
+    else if (isAvail) cls += ' available';
+    if (isSel) cls += ' selected';
+    if (isToday) cls += ' today';
+
+    const click = isAvail && !isPast ? `onclick="selectDate('${dateStr}')"` : '';
+    html += `<div class="${cls}" ${click}>${d}</div>`;
+  }
+  // Next month padding
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remaining; i++) html += `<div class="cal-day other-month">${i}</div>`;
+
+  document.getElementById('cal-days').innerHTML = html;
+}
+
+function changeMonth(dir) {
+  state.calMonth += dir;
+  if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
+  if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+  renderCalendar();
+}
+
+async function selectDate(dateStr) {
+  state.selectedDate = dateStr;
+  state.selectedTime = null;
+  document.getElementById('btn-to-3').disabled = true;
+  renderCalendar();
+
+  const card = document.getElementById('slots-card');
+  const list = document.getElementById('slots-list');
+  card.style.display = 'block';
+  list.innerHTML = '<div class="loading">Cargando horarios...</div>';
+
+  const [,, dy] = dateStr.split('-');
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const [y, mo] = dateStr.split('-');
+  document.getElementById('slots-title').textContent = `Horarios para el ${parseInt(dy)} de ${months[parseInt(mo)-1]}`;
+
+  const slots = await fetch(`/api/available-slots?date=${dateStr}&service_id=${state.selectedService.id}${state.selectedProfessional ? '&professional_id='+state.selectedProfessional.id : ''}`).then(r => r.json());
+
+  if (!slots.length) {
+    list.innerHTML = '<div class="empty">No hay horarios disponibles para este día.</div>';
+    return;
+  }
+
+  list.innerHTML = `<div class="slots-grid">${slots.map(t => `
+    <button class="slot-btn ${state.selectedTime === t ? 'selected' : ''}" onclick="selectTime('${t}')">${t}</button>
+  `).join('')}</div>`;
+}
+
+function selectTime(time) {
+  state.selectedTime = time;
+  document.querySelectorAll('.slot-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent.trim() === time);
+  });
+  document.getElementById('btn-to-3').disabled = false;
+}
+
+function renderSummary() {
+  const s = state;
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const [y, mo, dy] = s.selectedDate.split('-');
+  const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
+
+  const rows = [
+    ['Servicio', s.selectedService.name],
+    s.selectedProfessional ? ['Profesional', s.selectedProfessional.name] : null,
+    ['Fecha', dateStr],
+    ['Hora', s.selectedTime],
+    s.selectedService.price > 0 ? ['Precio', `$${s.selectedService.price.toLocaleString()}`] : null,
+    s.selectedService.deposit > 0 ? ['Seña', `$${s.selectedService.deposit.toLocaleString()}`] : null,
+  ].filter(Boolean);
+
+  document.getElementById('booking-summary').innerHTML = `
+    <h3>Resumen de tu reserva</h3>
+    ${rows.map(([k,v]) => `<div class="summary-row"><span>${k}</span><span>${v}</span></div>`).join('')}
+  `;
+}
+
+async function submitBooking() {
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const instagram = document.getElementById('f-instagram').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  const errorEl = document.getElementById('form-error');
+
+  if (!name || !phone) {
+    errorEl.textContent = 'Por favor completá nombre y teléfono.';
+    errorEl.classList.add('show');
+    return;
+  }
+  errorEl.classList.remove('show');
+
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true; btn.textContent = 'Reservando...';
+
+  try {
+    const res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, phone, email, instagram, notes,
+        service_id: state.selectedService.id,
+        professional_id: state.selectedProfessional?.id,
+        date: state.selectedDate,
+        time: state.selectedTime,
+      })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorEl.textContent = data.error || 'Error al crear la reserva. Intentá de nuevo.';
+      errorEl.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Confirmar reserva';
+      return;
+    }
+
+    // Success
+    const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const [y, mo, dy] = state.selectedDate.split('-');
+    const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
+
+    document.getElementById('confirm-summary').innerHTML = `
+      <h3>Detalle de tu reserva</h3>
+      <div class="summary-row"><span>Nº de reserva</span><span>#${data.booking_id}</span></div>
+      <div class="summary-row"><span>Servicio</span><span>${state.selectedService.name}</span></div>
+      ${state.selectedProfessional ? `<div class="summary-row"><span>Profesional</span><span>${state.selectedProfessional.name}</span></div>` : ''}
+      <div class="summary-row"><span>Fecha</span><span>${dateStr}</span></div>
+      <div class="summary-row"><span>Hora</span><span>${state.selectedTime}</span></div>
+      <div class="summary-row"><span>Nombre</span><span>${name}</span></div>
+      ${state.selectedService.price > 0 ? `<div class="summary-row"><span>Precio</span><span>$${state.selectedService.price.toLocaleString()}</span></div>` : ''}
+    `;
+
+    if (data.whatsapp_url) {
+      document.getElementById('whatsapp-btn').href = data.whatsapp_url;
+    } else {
+      document.getElementById('whatsapp-btn').style.display = 'none';
+    }
+
+    goStep(4);
+  } catch (e) {
+    errorEl.textContent = 'Error de conexión. Por favor intentá de nuevo.';
+    errorEl.classList.add('show');
+    btn.disabled = false; btn.textContent = 'Confirmar reserva';
+  }
+}
+
+function newBooking() {
+  state.selectedService = null; state.selectedProfessional = null;
+  state.selectedDate = null; state.selectedTime = null;
+  state.calYear = null; state.calMonth = null;
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-instagram').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('btn-to-2').disabled = true;
+  goStep(1);
+  renderServices();
+}
+
+init();
+</script>
+</body>
+</html>
