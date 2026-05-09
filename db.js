@@ -7,6 +7,7 @@ const DB_DIR = process.env.DATABASE_PATH
   : process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
 const DB_PATH = process.env.DATABASE_PATH || path.join(DB_DIR, 'agenda.db');
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+console.log(`SQLite database: ${DB_PATH}`);
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 
@@ -78,6 +79,12 @@ db.exec(`
     FOREIGN KEY (client_id) REFERENCES clients(id),
     FOREIGN KEY (service_id) REFERENCES services(id),
     FOREIGN KEY (professional_id) REFERENCES professionals(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    sess TEXT NOT NULL,
+    expired_at INTEGER NOT NULL
   );
 `);
 
@@ -467,6 +474,58 @@ function getRevenue({ period, year, month }) {
   return {};
 }
 
+function createSessionStore(session) {
+  const Store = session.Store;
+  const getStmt = db.prepare('SELECT sess FROM sessions WHERE sid=? AND expired_at > ?');
+  const setStmt = db.prepare(`
+    INSERT INTO sessions (sid, sess, expired_at) VALUES (?, ?, ?)
+    ON CONFLICT(sid) DO UPDATE SET sess=excluded.sess, expired_at=excluded.expired_at
+  `);
+  const destroyStmt = db.prepare('DELETE FROM sessions WHERE sid=?');
+  const cleanupStmt = db.prepare('DELETE FROM sessions WHERE expired_at <= ?');
+
+  const expiryFromSession = (sess) => {
+    const expires = sess.cookie && sess.cookie.expires;
+    return expires ? new Date(expires).getTime() : Date.now() + 24 * 60 * 60 * 1000;
+  };
+
+  class SQLiteSessionStore extends Store {
+    get(sid, callback) {
+      try {
+        const row = getStmt.get(sid, Date.now());
+        callback(null, row ? JSON.parse(row.sess) : null);
+      } catch (err) {
+        callback(err);
+      }
+    }
+
+    set(sid, sess, callback = () => {}) {
+      try {
+        setStmt.run(sid, JSON.stringify(sess), expiryFromSession(sess));
+        cleanupStmt.run(Date.now());
+        callback(null);
+      } catch (err) {
+        callback(err);
+      }
+    }
+
+    destroy(sid, callback = () => {}) {
+      try {
+        destroyStmt.run(sid);
+        callback(null);
+      } catch (err) {
+        callback(err);
+      }
+    }
+
+    touch(sid, sess, callback = () => {}) {
+      this.set(sid, sess, callback);
+    }
+  }
+
+  return new SQLiteSessionStore();
+}
+
 module.exports = {
   getSettings, updateSettings,
   getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional,
@@ -476,4 +535,5 @@ module.exports = {
   upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
   createBooking, getBookings, getBookingById, updateBooking, cancelBooking,
   getDashboardStats, getRevenue,
+  createSessionStore,
 };

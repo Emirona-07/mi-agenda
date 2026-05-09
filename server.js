@@ -12,6 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
+  store: db.createSessionStore(session),
   secret: process.env.SESSION_SECRET || 'agenda-secret-2024',
   resave: false,
   saveUninitialized: false,
