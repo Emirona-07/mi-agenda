@@ -413,11 +413,15 @@
         </div>
       </div>
       <div class="card mt-2">
-        <div class="card-header"><h3>📱 WhatsApp automático</h3></div>
-        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">Escaneá el QR con tu WhatsApp para conectar el envío automático de mensajes al confirmar una reserva.</p>
-        <div id="wa-status-box" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div class="card-header"><h3>📱 WhatsApp Business API</h3></div>
+        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">Mensajes automáticos vía la API oficial de Meta. Configurá las variables de entorno <code>WHATSAPP_PHONE_NUMBER_ID</code> y <code>WHATSAPP_ACCESS_TOKEN</code> en Railway.</p>
+        <div id="wa-status-box">
           <div id="wa-status-badge" style="font-size:0.9rem;font-weight:600">Cargando...</div>
-          <img id="wa-qr-img" src="" alt="QR WhatsApp" style="display:none;width:200px;height:200px;border:1px solid #eee;border-radius:8px">
+          <div style="margin-top:12px;font-size:0.85rem;color:var(--muted);line-height:1.7">
+            <strong>Plantillas requeridas en Meta Business Manager:</strong><br>
+            • <code>confirmacion_reserva</code> — 7 parámetros: nombre, negocio, servicio, profesional, fecha, hora, nro reserva<br>
+            • <code>nueva_reserva</code> — 6 parámetros: nro reserva, servicio, cliente, teléfono, fecha, hora
+          </div>
         </div>
       </div>
 
@@ -542,7 +546,6 @@ function populateProfSelects() {
 }
 
 function showPage(name) {
-  if (name !== 'config' && waPoller) { clearInterval(waPoller); waPoller = null; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   $(`page-${name}`).classList.add('active');
@@ -1018,34 +1021,15 @@ async function loadConfig() {
   pollWhatsAppStatus();
 }
 
-let waPoller = null;
 async function pollWhatsAppStatus() {
-  if (waPoller) clearInterval(waPoller);
-  await refreshWaStatus();
-  waPoller = setInterval(refreshWaStatus, 5000);
-}
-
-async function refreshWaStatus() {
-  // Stop polling if user navigated away from config page
-  if (!document.getElementById('wa-status-badge')) { clearInterval(waPoller); return; }
   try {
-    const { status, qr } = await api('/api/admin/whatsapp/status');
+    const { status } = await api('/api/admin/whatsapp/status');
     const badge = $('wa-status-badge');
-    const qrImg = $('wa-qr-img');
-    if (status === 'ready') {
-      badge.innerHTML = '<span style="color:#27ae60">✅ WhatsApp conectado — los mensajes se envían automáticamente</span>';
-      qrImg.style.display = 'none';
-      clearInterval(waPoller);
-    } else if (status === 'qr' && qr) {
-      badge.innerHTML = '<span style="color:#e67e22">📱 Escaneá este QR con tu WhatsApp para conectar:</span>';
-      qrImg.src = qr;
-      qrImg.style.display = 'block';
-    } else if (status === 'connecting') {
-      badge.innerHTML = '<span style="color:#3498db">⏳ Conectando...</span>';
-      qrImg.style.display = 'none';
+    if (!badge) return;
+    if (status === 'configured') {
+      badge.innerHTML = '<span style="color:#27ae60">✅ API configurada — los mensajes se envían automáticamente al confirmar una reserva</span>';
     } else {
-      badge.innerHTML = '<span style="color:#e74c3c">🔴 Desconectado — reiniciando...</span>';
-      qrImg.style.display = 'none';
+      badge.innerHTML = '<span style="color:#e67e22">⚠️ API no configurada — configurá las variables de entorno en Railway</span>';
     }
   } catch(e) { /* silently ignore */ }
 }

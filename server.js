@@ -88,35 +88,22 @@ app.post('/api/bookings', (req, res) => {
   const profName = professional ? professional.name : '';
   const bizName = s.business_name || 'Mi Negocio';
 
-  // Message to CLIENT
-  const msgClient = `Hola ${name}! 👋\n\n` +
-    `Tu turno en *${bizName}* fue confirmado ✅\n\n` +
-    `📋 *Servicio:* ${service.name}\n` +
-    `${profName ? `👩‍💼 *Profesional:* ${profName}\n` : ''}` +
-    `📅 *Fecha:* ${formatDate(date)}\n` +
-    `⏰ *Hora:* ${time}\n` +
-    `${service.deposit ? `💰 *Seña:* $${service.deposit}\n` : ''}` +
-    `\nNº de reserva: *#${booking.id}*\n\n` +
-    `Si necesitás cancelar o reprogramar, contactanos con al menos 48hs de anticipación.\n` +
-    `¡Te esperamos! 🌸`;
-
-  // Message to BUSINESS OWNER
-  const msgOwner = `🔔 *Nueva reserva #${booking.id}*\n\n` +
-    `📋 *Servicio:* ${service.name}${service.price ? ' ($' + service.price + ')' : ''}\n` +
-    `${profName ? `👩‍💼 *Profesional:* ${profName}\n` : ''}` +
-    `📅 *Fecha:* ${formatDate(date)}\n` +
-    `⏰ *Hora:* ${time}\n` +
-    `👤 *Cliente:* ${name}\n` +
-    `📱 *Teléfono:* ${phone}` +
-    `${email ? `\n📧 *Email:* ${email}` : ''}` +
-    `${instagram ? `\n📸 *Instagram:* ${instagram}` : ''}` +
-    `${notes ? `\n📝 *Notas:* ${notes}` : ''}`;
-
-  // Send WhatsApp messages asynchronously (don't block the response)
+  // Send WhatsApp messages asynchronously via Meta Cloud API templates
   setImmediate(async () => {
-    await wa.sendMessage(phone, msgClient);
+    // Template: confirmacion_reserva
+    // Params: {{1}} nombre, {{2}} negocio, {{3}} servicio, {{4}} profesional, {{5}} fecha, {{6}} hora, {{7}} reserva_id
+    await wa.sendTemplate(phone, 'confirmacion_reserva', [
+      name, bizName, service.name, profName || '-', formatDate(date), time, String(booking.id)
+    ]);
+
     const ownerPhone = s.whatsapp_phone || '';
-    if (ownerPhone) await wa.sendMessage(ownerPhone, msgOwner);
+    if (ownerPhone) {
+      // Template: nueva_reserva
+      // Params: {{1}} reserva_id, {{2}} servicio, {{3}} cliente, {{4}} telefono, {{5}} fecha, {{6}} hora
+      await wa.sendTemplate(ownerPhone, 'nueva_reserva', [
+        String(booking.id), service.name, name, phone, formatDate(date), time
+      ]);
+    }
   });
 
   res.json({ success: true, booking_id: booking.id, message: 'Reserva creada exitosamente' });
@@ -234,7 +221,7 @@ app.put('/api/admin/settings', requireAuth, (req, res) => {
 
 // WhatsApp
 app.get('/api/admin/whatsapp/status', requireAuth, (req, res) => {
-  res.json({ status: wa.getStatus(), qr: wa.getQR() });
+  res.json({ status: wa.getStatus() });
 });
 
 // ═══════════════════════════════════════════════════════
@@ -243,9 +230,6 @@ app.get('/api/admin/whatsapp/status', requireAuth, (req, res) => {
 
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-// Initialize WhatsApp client
-wa.init();
 
 app.listen(PORT, () => {
   console.log(`\n✅ Agenda corriendo en http://localhost:${PORT}`);
