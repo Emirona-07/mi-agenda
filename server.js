@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const db = require('./db');
+const wa = require('./whatsapp');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -85,22 +86,40 @@ app.post('/api/bookings', (req, res) => {
 
   const s = db.getSettings();
   const profName = professional ? professional.name : '';
-  const msg = `Hola! 👋 Quiero confirmar mi reserva:\n\n` +
-    `📋 *Servicio:* ${service.name}${service.price ? ' $' + service.price : ''}\n` +
+  const bizName = s.business_name || 'Mi Negocio';
+
+  // Message to CLIENT
+  const msgClient = `Hola ${name}! 👋\n\n` +
+    `Tu turno en *${bizName}* fue confirmado ✅\n\n` +
+    `📋 *Servicio:* ${service.name}\n` +
     `${profName ? `👩‍💼 *Profesional:* ${profName}\n` : ''}` +
     `📅 *Fecha:* ${formatDate(date)}\n` +
     `⏰ *Hora:* ${time}\n` +
-    `👤 *Nombre:* ${name}\n` +
+    `${service.deposit ? `💰 *Seña:* $${service.deposit}\n` : ''}` +
+    `\nNº de reserva: *#${booking.id}*\n\n` +
+    `Si necesitás cancelar o reprogramar, contactanos con al menos 48hs de anticipación.\n` +
+    `¡Te esperamos! 🌸`;
+
+  // Message to BUSINESS OWNER
+  const msgOwner = `🔔 *Nueva reserva #${booking.id}*\n\n` +
+    `📋 *Servicio:* ${service.name}${service.price ? ' ($' + service.price + ')' : ''}\n` +
+    `${profName ? `👩‍💼 *Profesional:* ${profName}\n` : ''}` +
+    `📅 *Fecha:* ${formatDate(date)}\n` +
+    `⏰ *Hora:* ${time}\n` +
+    `👤 *Cliente:* ${name}\n` +
     `📱 *Teléfono:* ${phone}` +
     `${email ? `\n📧 *Email:* ${email}` : ''}` +
     `${instagram ? `\n📸 *Instagram:* ${instagram}` : ''}` +
-    `${notes ? `\n📝 *Notas:* ${notes}` : ''}\n\n` +
-    `Nº de reserva: ${booking.id}`;
+    `${notes ? `\n📝 *Notas:* ${notes}` : ''}`;
 
-  const phone_clean = (s.whatsapp_phone || '').replace(/\D/g, '');
-  const whatsapp_url = phone_clean ? `https://wa.me/${phone_clean}?text=${encodeURIComponent(msg)}` : null;
+  // Send WhatsApp messages asynchronously (don't block the response)
+  setImmediate(async () => {
+    await wa.sendMessage(phone, msgClient);
+    const ownerPhone = s.whatsapp_phone || '';
+    if (ownerPhone) await wa.sendMessage(ownerPhone, msgOwner);
+  });
 
-  res.json({ success: true, booking_id: booking.id, whatsapp_url, message: 'Reserva creada exitosamente' });
+  res.json({ success: true, booking_id: booking.id, message: 'Reserva creada exitosamente' });
 });
 
 // ═══════════════════════════════════════════════════════
@@ -213,12 +232,20 @@ app.put('/api/admin/settings', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// WhatsApp
+app.get('/api/admin/whatsapp/status', requireAuth, (req, res) => {
+  res.json({ status: wa.getStatus(), qr: wa.getQR() });
+});
+
 // ═══════════════════════════════════════════════════════
 // ROUTES
 // ═══════════════════════════════════════════════════════
 
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// Initialize WhatsApp client
+wa.init();
 
 app.listen(PORT, () => {
   console.log(`\n✅ Agenda corriendo en http://localhost:${PORT}`);
