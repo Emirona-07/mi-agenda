@@ -10,25 +10,25 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --p:        #9E6B73;
-      --p-dark:   #7A4E55;
-      --p-light:  #F5EDEE;
-      --p-mid:    #D4A8AE;
-      --bg:       #FEFCFB;
+      --p:        #2d6a4f;
+      --p-dark:   #1b4332;
+      --p-light:  #d8f3dc;
+      --p-mid:    #52b788;
+      --bg:       #f5f5f5;
       --white:    #ffffff;
-      --text:     #2B1F23;
-      --text-mid: #6B5058;
-      --muted:    #9B8388;
-      --border:   #E8D9DC;
-      --shadow:   0 4px 20px rgba(43,31,35,0.08), 0 1px 4px rgba(43,31,35,0.04);
-      --shadow-sm:0 1px 3px rgba(43,31,35,0.07);
+      --text:     #1b1b1b;
+      --text-mid: #4a7c59;
+      --muted:    #6c757d;
+      --border:   #e0e0e0;
+      --shadow:   0 2px 8px rgba(0,0,0,0.07);
+      --shadow-sm:0 1px 3px rgba(0,0,0,0.05);
       --r:        14px;
       --r-sm:     9px;
       --r-pill:   100px;
     }
 
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -37,30 +37,21 @@
 
     /* ── Header ─────────────────────────────────────────── */
     header {
-      background: linear-gradient(135deg, #5C3440 0%, #7A4E55 60%, #9E6B73 100%);
+      background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
       color: white;
-      padding: 32px 20px 28px;
+      padding: 28px 20px 24px;
       text-align: center;
       position: relative;
     }
-    header::after {
-      content: '';
-      display: block;
-      position: absolute;
-      bottom: -1px; left: 0; right: 0;
-      height: 20px;
-      background: var(--bg);
-      clip-path: ellipse(55% 100% at 50% 100%);
-    }
     header h1 {
-      font-size: 1.55rem;
+      font-size: 1.4rem;
       font-weight: 700;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.02em;
     }
     header p {
-      font-size: 0.85rem;
-      opacity: 0.72;
-      margin-top: 5px;
+      font-size: 0.83rem;
+      opacity: 0.75;
+      margin-top: 4px;
       font-weight: 400;
     }
 
@@ -70,7 +61,7 @@
       color: white;
       border: 1.5px solid rgba(255,255,255,0.35);
       border-radius: var(--r-pill);
-      padding: 7px 16px;
+      padding: 7px 14px;
       cursor: pointer;
       font-size: 0.8rem;
       font-weight: 500;
@@ -90,12 +81,12 @@
     .account-name { font-size: 0.8rem; color: white; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 
     /* ── Layout ─────────────────────────────────────────── */
-    .container { max-width: 540px; margin: 0 auto; padding: 32px 16px 64px; }
+    .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 64px; }
 
     /* ── Progress ───────────────────────────────────────── */
-    .progress { display: flex; align-items: center; margin-bottom: 28px; padding: 0 2px; }
+    .progress { display: flex; align-items: center; margin-bottom: 22px; padding: 0 4px; }
     .step-dot {
-      width: 30px; height: 30px;
+      width: 28px; height: 28px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 0.72rem; font-weight: 700;
@@ -112,20 +103,18 @@
     .card {
       background: var(--white);
       border-radius: var(--r);
-      padding: 24px;
+      padding: 20px;
       box-shadow: var(--shadow);
-      border: 1px solid rgba(228,217,220,0.6);
     }
     .card-title {
-      font-size: 0.98rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--text);
-      margin-bottom: 18px;
-      letter-spacing: -0.01em;
+      margin-bottom: 16px;
     }
 
     /* ── Category filter pills ──────────────────────────── */
-    .cat-filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+    .cat-filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
     .cat-pill {
       padding: 6px 14px; border-radius: var(--r-pill);
       border: 1.5px solid var(--border); background: var(--white);
@@ -133,7 +122,7 @@
       cursor: pointer; font-family: inherit; transition: all 0.15s;
       white-space: nowrap;
     }
-    .cat-pill:hover  { border-color: var(--p-mid); color: var(--p-dark); }
+    .cat-pill:hover  { border-color: var(--p-mid); color: var(--p); }
     .cat-pill.active { background: var(--p); border-color: var(--p); color: white; }
 
     /* ── Service card grid ──────────────────────────────── */
@@ -146,7 +135,7 @@
       outline: none; font-family: inherit;
       position: relative; display: flex; flex-direction: column;
     }
-    .svc-card:hover   { border-color: var(--p-mid); background: #FCF3F4; }
+    .svc-card:hover   { border-color: var(--p-mid); background: var(--p-light); }
     .svc-card.selected { border-color: var(--p); background: var(--p-light); }
     .svc-check {
       position: absolute; top: 10px; right: 10px;
@@ -160,121 +149,103 @@
       line-height: 1.3; padding-right: 22px;
       margin-bottom: auto; padding-bottom: 10px;
     }
-    .svc-price { font-size: 0.97rem; font-weight: 800; color: var(--p-dark); margin-bottom: 3px; }
+    .svc-price { font-size: 0.97rem; font-weight: 800; color: var(--p); margin-bottom: 3px; }
     .svc-meta  { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
 
-    /* ── Professional grid ──────────────────────────────── */
-    .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
-    .prof-card {
-      border: 2px solid var(--border); border-radius: var(--r);
-      padding: 16px 12px; cursor: pointer; text-align: center;
-      transition: all 0.2s; background: var(--white);
-    }
-    .prof-card:hover  { border-color: var(--p-mid); }
-    .prof-card.selected { border-color: var(--p); background: var(--p-light); }
-    .prof-avatar {
-      width: 48px; height: 48px; border-radius: 50%;
-      margin: 0 auto 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; color: white; font-size: 1.1rem;
-    }
-    .prof-card h3 { font-size: 0.86rem; font-weight: 600; }
-
     /* ── Calendar ───────────────────────────────────────── */
-    .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .calendar-header h3 { font-size: 0.93rem; font-weight: 700; text-transform: capitalize; letter-spacing: -0.01em; }
+    .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .calendar-header h3 { font-size: 0.93rem; font-weight: 700; text-transform: capitalize; }
     .cal-nav {
       background: var(--bg); border: 1px solid var(--border);
       border-radius: var(--r-sm); width: 30px; height: 30px;
       cursor: pointer; font-size: 1rem;
       display: flex; align-items: center; justify-content: center;
-      color: var(--text-mid); transition: all 0.15s;
+      color: var(--text); transition: all 0.15s;
     }
-    .cal-nav:hover { background: var(--p-light); border-color: var(--p-mid); color: var(--p-dark); }
-    .step2-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+    .cal-nav:hover { background: var(--p-light); border-color: var(--p-mid); color: var(--p); }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
     #cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; grid-column: 1 / -1; }
     .cal-day-name { text-align: center; font-size: 0.67rem; font-weight: 700; color: var(--muted); padding: 6px 0; text-transform: uppercase; letter-spacing: 0.04em; }
-    .cal-day { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: var(--r-sm); font-size: 0.82rem; cursor: default; font-weight: 500; }
-    .cal-day.available { cursor: pointer; color: var(--p-dark); font-weight: 700; background: var(--p-light); }
-    .cal-day.available:hover { background: var(--p-mid); color: var(--p-dark); }
-    .cal-day.selected { background: var(--p); color: white; box-shadow: var(--shadow-sm); }
+    .cal-day { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.82rem; cursor: default; font-weight: 500; }
+    .cal-day.available { cursor: pointer; color: var(--p); font-weight: 700; background: var(--p-light); }
+    .cal-day.available:hover { background: var(--p-mid); color: white; }
+    .cal-day.selected { background: var(--p); color: white; }
     .cal-day.today { outline: 2px solid var(--p-mid); outline-offset: -2px; }
     .cal-day.other-month { opacity: 0.2; }
     .cal-day.past { opacity: 0.28; }
-    @media (max-width: 640px) { .step2-layout { grid-template-columns: 1fr; } }
 
-    /* ── Time slots ─────────────────────────────────────── */
-    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+    /* ── Time slots (below calendar) ───────────────────── */
+    .slots-divider { border: none; border-top: 1px solid var(--border); margin: 18px 0 16px; }
+    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
     .slot-btn {
       padding: 10px 6px; border: 1.5px solid var(--border);
       border-radius: var(--r-sm); background: var(--white);
       cursor: pointer; font-size: 0.87rem; font-weight: 600;
-      color: var(--text-mid); transition: all 0.18s;
+      color: var(--text); transition: all 0.18s;
       text-align: center; font-family: inherit;
     }
-    .slot-btn:hover { border-color: var(--p-mid); color: var(--p-dark); background: var(--p-light); }
+    .slot-btn:hover { border-color: var(--p-mid); color: var(--p); background: var(--p-light); }
     .slot-btn.selected { background: var(--p); border-color: var(--p); color: white; }
 
     /* ── Form ───────────────────────────────────────────── */
-    .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-mid); letter-spacing: 0.01em; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
     input, textarea, select {
-      width: 100%; padding: 12px 14px;
+      width: 100%; padding: 11px 14px;
       border: 1.5px solid var(--border); border-radius: var(--r-sm);
       font-size: 0.93rem; font-family: inherit; outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
       background: var(--white); color: var(--text);
     }
-    input::placeholder, textarea::placeholder { color: var(--muted); }
-    input:focus, textarea:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(158,107,115,0.12); }
-    textarea { resize: vertical; min-height: 80px; }
+    input::placeholder, textarea::placeholder { color: #bbb; }
+    input:focus, textarea:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(45,106,79,0.1); }
+    textarea { resize: vertical; min-height: 70px; }
 
     /* ── Summary ────────────────────────────────────────── */
     .summary {
-      background: var(--p-light); border: 1px solid var(--p-mid);
-      border-radius: var(--r-sm); padding: 16px; margin-bottom: 20px;
+      background: var(--p-light); border: 1px solid #b7e4c7;
+      border-radius: var(--r-sm); padding: 14px; margin-bottom: 18px;
     }
-    .summary h3 { font-size: 0.76rem; font-weight: 700; color: var(--p-dark); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .summary-row { display: flex; justify-content: space-between; font-size: 0.87rem; margin-bottom: 5px; }
+    .summary h3 { font-size: 0.72rem; font-weight: 700; color: var(--p); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 0.87rem; margin-bottom: 4px; }
     .summary-row span:first-child { color: var(--muted); }
     .summary-row span:last-child { font-weight: 600; }
 
     /* ── Buttons ────────────────────────────────────────── */
     .btn {
-      width: 100%; padding: 14px;
+      width: 100%; padding: 13px;
       border: none; border-radius: var(--r-sm);
       font-size: 0.93rem; font-weight: 600;
       cursor: pointer; transition: all 0.2s;
-      font-family: inherit; letter-spacing: 0.01em;
+      font-family: inherit;
     }
     .btn-primary { background: var(--p); color: white; }
-    .btn-primary:hover { background: var(--p-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
-    .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
-    .btn-secondary { background: var(--white); color: var(--p-dark); border: 1.5px solid var(--border); }
+    .btn-primary:hover { background: var(--p-dark); }
+    .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+    .btn-secondary { background: var(--white); color: var(--p); border: 1.5px solid var(--border); }
     .btn-secondary:hover { border-color: var(--p-mid); background: var(--p-light); }
     .btn-whatsapp {
       background: #25d366; color: white;
       display: flex; align-items: center; justify-content: center; gap: 10px;
       text-decoration: none;
       font-size: 0.93rem; font-weight: 600;
-      border-radius: var(--r-sm); padding: 15px;
-      transition: all 0.2s; letter-spacing: 0.01em;
+      border-radius: var(--r-sm); padding: 14px;
+      transition: background 0.2s;
     }
-    .btn-whatsapp:hover { background: #20bd5a; transform: translateY(-1px); box-shadow: var(--shadow); }
-    .btn-whatsapp svg { width: 22px; height: 22px; }
+    .btn-whatsapp:hover { background: #20bd5a; }
+    .btn-whatsapp svg { width: 20px; height: 20px; }
 
     /* ── Success ────────────────────────────────────────── */
     .success-icon {
-      width: 68px; height: 68px;
+      width: 64px; height: 64px;
       background: var(--p-light); border-radius: 50%;
-      margin: 0 auto 16px;
+      margin: 0 auto 14px;
       display: flex; align-items: center; justify-content: center;
     }
-    .success-icon svg { width: 32px; height: 32px; color: var(--p-dark); }
+    .success-icon svg { width: 30px; height: 30px; color: var(--p); }
 
     /* ── Nav buttons ────────────────────────────────────── */
-    .nav-btns { display: flex; gap: 10px; margin-top: 16px; }
+    .nav-btns { display: flex; gap: 10px; margin-top: 14px; }
     .nav-btns .btn { flex: 1; }
 
     /* ── States ─────────────────────────────────────────── */
@@ -295,7 +266,7 @@
     /* ── Login Modal ────────────────────────────────────── */
     .modal-overlay {
       position: fixed; inset: 0;
-      background: rgba(43,31,35,0.5);
+      background: rgba(0,0,0,0.5);
       display: none; align-items: center; justify-content: center;
       z-index: 200; padding: 16px;
       backdrop-filter: blur(4px);
@@ -305,7 +276,7 @@
       background: white; border-radius: 20px;
       padding: 36px 28px 28px; max-width: 360px; width: 100%;
       position: relative; text-align: center;
-      box-shadow: 0 24px 64px rgba(43,31,35,0.18);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.2);
     }
     .modal-close {
       position: absolute; top: 14px; right: 14px;
@@ -315,7 +286,7 @@
       display: flex; align-items: center; justify-content: center;
     }
     .modal-close:hover { color: var(--text); background: var(--border); }
-    .modal-box h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .modal-box h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: var(--p); }
     .modal-box .modal-desc { color: var(--muted); font-size: 0.87rem; margin-bottom: 24px; line-height: 1.55; }
     .divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.78rem; margin: 16px 0; }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
@@ -326,18 +297,17 @@
     /* ── Account Prompt ─────────────────────────────────── */
     .account-prompt-card {
       background: white; border-radius: var(--r);
-      padding: 28px 24px; box-shadow: var(--shadow);
-      border: 1px solid var(--border);
+      padding: 24px; box-shadow: var(--shadow);
       margin-top: 14px; text-align: center;
     }
-    .account-prompt-card .prompt-emoji { font-size: 2rem; margin-bottom: 12px; }
-    .account-prompt-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
-    .account-prompt-card p { color: var(--muted); font-size: 0.86rem; margin-bottom: 20px; line-height: 1.55; }
+    .account-prompt-card .prompt-emoji { font-size: 1.8rem; margin-bottom: 10px; }
+    .account-prompt-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .account-prompt-card p { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; line-height: 1.5; }
     #google-btn-prompt { display: flex; justify-content: center; margin-bottom: 10px; }
     .btn-no-thanks { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.84rem; font-family: inherit; padding: 6px; }
 
     /* ── My Bookings ────────────────────────────────────── */
-    .bookings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .bookings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
     .bookings-header .card-title { margin-bottom: 0; }
     .btn-logout {
       background: none; border: 1px solid var(--border);
@@ -349,11 +319,11 @@
     .section-label {
       font-size: 0.7rem; font-weight: 700;
       color: var(--muted); text-transform: uppercase;
-      letter-spacing: 0.07em; margin: 20px 0 10px;
+      letter-spacing: 0.07em; margin: 18px 0 8px;
     }
     .booking-card {
       border: 1.5px solid var(--border); border-radius: var(--r);
-      padding: 16px; margin-bottom: 10px; background: var(--white);
+      padding: 14px; margin-bottom: 10px; background: var(--white);
     }
     .booking-card.upcoming { border-color: var(--p-mid); background: var(--p-light); }
     .booking-card.cancelled-card { opacity: 0.55; }
@@ -363,17 +333,17 @@
       font-size: 0.69rem; font-weight: 700;
       padding: 3px 9px; border-radius: var(--r-pill); white-space: nowrap;
     }
-    .status-badge.confirmed { background: var(--p-light); color: var(--p-dark); }
+    .status-badge.confirmed { background: var(--p-light); color: var(--p); }
     .status-badge.cancelled { background: #FFF0F0; color: #C0392B; }
     .booking-meta { font-size: 0.82rem; color: var(--muted); line-height: 1.7; }
-    .cancel-area { margin-top: 12px; }
+    .cancel-area { margin-top: 10px; }
     .btn-cancel { background: none; border: 1px solid #E8BBBB; color: #B84040; border-radius: var(--r-pill); padding: 6px 14px; font-size: 0.79rem; cursor: pointer; font-family: inherit; font-weight: 500; }
     .btn-cancel:hover { background: #FFF0F0; }
     .confirm-cancel { display: none; align-items: center; gap: 10px; font-size: 0.83rem; color: var(--muted); flex-wrap: wrap; }
     .confirm-cancel.show { display: flex; }
     .btn-yes-cancel { background: #E74C3C; color: white; border: none; border-radius: var(--r-pill); padding: 6px 14px; font-size: 0.79rem; cursor: pointer; font-family: inherit; font-weight: 500; }
     .btn-no-cancel  { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: var(--r-pill); padding: 6px 14px; font-size: 0.79rem; cursor: pointer; font-family: inherit; }
-    .user-info-box { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: var(--r-sm); padding: 12px 16px; margin-bottom: 20px; }
+    .user-info-box { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: var(--r-sm); padding: 12px 16px; margin-bottom: 18px; }
     .user-info-box img { width: 40px; height: 40px; border-radius: 50%; }
     .user-info-box .uib-placeholder { width: 40px; height: 40px; border-radius: 50%; background: var(--p); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
     .user-info-box .uib-name  { font-weight: 700; font-size: 0.92rem; }
@@ -413,27 +383,29 @@
 
   <!-- Step 2: Date & Time -->
   <div class="section" id="step-2">
-    <div class="step2-layout">
-      <div class="card">
-        <div class="card-title">Elegí la fecha</div>
-        <div class="calendar-header">
-          <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
-          <h3 id="cal-month"></h3>
-          <button class="cal-nav" onclick="changeMonth(1)">›</button>
-        </div>
-        <div class="calendar-grid">
-          <div class="cal-day-name">Do</div><div class="cal-day-name">Lu</div>
-          <div class="cal-day-name">Ma</div><div class="cal-day-name">Mi</div>
-          <div class="cal-day-name">Ju</div><div class="cal-day-name">Vi</div>
-          <div class="cal-day-name">Sa</div>
-          <div id="cal-days"></div>
-        </div>
+    <div class="card">
+      <div class="card-title">Elegí la fecha</div>
+      <div class="calendar-header">
+        <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+        <h3 id="cal-month"></h3>
+        <button class="cal-nav" onclick="changeMonth(1)">›</button>
       </div>
-      <div class="card" id="slots-card" style="display:none">
+      <div class="calendar-grid">
+        <div class="cal-day-name">Do</div><div class="cal-day-name">Lu</div>
+        <div class="cal-day-name">Ma</div><div class="cal-day-name">Mi</div>
+        <div class="cal-day-name">Ju</div><div class="cal-day-name">Vi</div>
+        <div class="cal-day-name">Sa</div>
+        <div id="cal-days"></div>
+      </div>
+
+      <!-- Slots: aparecen debajo del calendario al elegir fecha -->
+      <div id="slots-card" style="display:none">
+        <hr class="slots-divider">
         <div class="card-title" id="slots-title">Elegí el horario</div>
         <div id="slots-list"></div>
       </div>
     </div>
+
     <div class="nav-btns">
       <button class="btn btn-secondary" onclick="goStep(1)">← Volver</button>
       <button class="btn btn-primary" id="btn-to-3" disabled onclick="goStep(3)">Continuar →</button>
@@ -882,12 +854,13 @@ async function selectDate(dateStr) {
   list.innerHTML = '<div class="loading">Cargando horarios...</div>';
   const [,mo, dy] = dateStr.split('-');
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  document.getElementById('slots-title').textContent = `${parseInt(dy)} de ${months[parseInt(mo)-1]}`;
+  document.getElementById('slots-title').textContent = `Horarios disponibles · ${parseInt(dy)} de ${months[parseInt(mo)-1]}`;
   const slots = await fetch(`/api/available-slots?date=${dateStr}&service_id=${state.selectedService.id}${state.selectedProfessional ? '&professional_id='+state.selectedProfessional.id : ''}`).then(r => r.json());
-  if (!slots.length) { list.innerHTML = '<div class="empty">No hay horarios disponibles.</div>'; return; }
+  if (!slots.length) { list.innerHTML = '<div class="empty">No hay horarios disponibles para este día.</div>'; return; }
   list.innerHTML = `<div class="slots-grid">${slots.map(t => `
     <button class="slot-btn ${state.selectedTime === t ? 'selected' : ''}" onclick="selectTime('${t}')">${t}</button>
   `).join('')}</div>`;
+  setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
 }
 
 function selectTime(time) {
