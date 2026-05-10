@@ -573,6 +573,8 @@ const _migrations = [
   "ALTER TABLE bookings ADD COLUMN notes_admin TEXT",
   "ALTER TABLE bookings ADD COLUMN reminder_sent INTEGER DEFAULT 0",
   "ALTER TABLE clients ADD COLUMN google_id TEXT",
+  "ALTER TABLE bookings ADD COLUMN mp_preference_id TEXT",
+  "ALTER TABLE bookings ADD COLUMN mp_payment_id TEXT",
 ];
 for (const _m of _migrations) { try { db.exec(_m); } catch (_e) {} }
 
@@ -640,6 +642,16 @@ function getWeekBookings() {
   `).all(from, to);
 }
 
+function updateBookingPayment(id, { mp_preference_id, mp_payment_id, deposit_paid } = {}) {
+  const sets = []; const params = {};
+  if (mp_preference_id !== undefined) { sets.push('mp_preference_id = @mp_preference_id'); params.mp_preference_id = mp_preference_id; }
+  if (mp_payment_id !== undefined)    { sets.push('mp_payment_id = @mp_payment_id');       params.mp_payment_id = mp_payment_id;       }
+  if (deposit_paid   !== undefined)   { sets.push('deposit_paid = @deposit_paid');          params.deposit_paid = deposit_paid;          }
+  if (!sets.length) return;
+  params.id = id;
+  db.prepare(`UPDATE bookings SET ${sets.join(', ')} WHERE id = @id`).run(params);
+}
+
 module.exports = {
   getSettings, updateSettings,
   getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional,
@@ -652,5 +664,7 @@ module.exports = {
   findOrCreateClientByGoogle, cancelClientBooking,
   addBookingPhoto, getBookingPhotos, deleteBookingPhoto, updateBookingAdmin,
   getBookingsNeedingReminder, markReminderSent, getWeekBookings,
+  updateBookingPayment,
   createSessionStore,
 };
+
