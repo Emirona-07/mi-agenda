@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Mi Agenda</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2d6a4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Admin">
+  <link rel="apple-touch-icon" href="/icon.svg">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -710,9 +715,10 @@ async function cancelBooking(id) {
 async function openBookingModal(id) {
   const b = await api(`/api/admin/bookings/${id}`);
   const cur = settings.currency || '$';
+
   $('modal-booking-content').innerHTML = `
     <div class="detail-row"><span class="key">Nº de reserva</span><span>#${b.id}</span></div>
-    <div class="detail-row"><span class="key">Fecha y hora</span><span><strong>${formatDateShort(b.date)} - ${b.time}</strong></span></div>
+    <div class="detail-row"><span class="key">Fecha y hora</span><span><strong>${formatDateShort(b.date)} — ${b.time}</strong></span></div>
     <div class="detail-row"><span class="key">Servicio</span><span>${b.service_name} ${b.total_price > 0 ? `(${cur}${b.total_price.toLocaleString()})` : ''}</span></div>
     <div class="detail-row"><span class="key">Profesional</span><span>${b.professional_name || '-'}</span></div>
     <div class="detail-row"><span class="key">Estado</span><span>${statusBadge(b.status)}</span></div>
@@ -722,8 +728,11 @@ async function openBookingModal(id) {
     </span></div>
     <div class="detail-row"><span class="key">Email</span><span>${b.client_email || '-'}</span></div>
     <div class="detail-row"><span class="key">Instagram</span><span>${b.client_instagram ? '@' + b.client_instagram.replace('@','') : '-'}</span></div>
-    ${b.notes ? `<div class="detail-row"><span class="key">Notas</span><span>${b.notes}</span></div>` : ''}
-    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+    ${b.notes ? `<div class="detail-row"><span class="key">Notas cliente</span><span>${b.notes}</span></div>` : ''}
+    ${b.utm_source ? `<div class="detail-row"><span class="key">Origen</span><span class="chip">${b.utm_source}</span></div>` : ''}
+
+    <!-- Cambiar estado -->
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <select onchange="updateBookingStatus(${b.id}, this.value)" style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit">
         <option value="">Cambiar estado...</option>
         <option value="confirmed">Confirmada</option>
@@ -733,7 +742,40 @@ async function openBookingModal(id) {
       </select>
       ${b.client_phone ? `<a class="btn btn-primary btn-sm" href="https://wa.me/${b.client_phone.replace(/\D/g,'')}?text=${encodeURIComponent('Hola ' + b.client_name + '! Te recuerdo tu cita el ' + formatDateShort(b.date) + ' a las ' + b.time + '.')}" target="_blank">💬 WhatsApp</a>` : ''}
     </div>
+
+    <!-- Pago -->
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:0.05em">PAGO ${b.total_price > 0 ? `· Total: ${cur}${b.total_price.toLocaleString()} · Seña: ${cur}${(b.deposit_paid||0).toLocaleString()}` : ''}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${['none','deposit','full'].map(v => `
+          <button onclick="setPaymentStatus(${b.id},'${v}',this)"
+            style="padding:7px 14px;border-radius:20px;font-size:0.82rem;font-weight:700;cursor:pointer;border:2px solid ${(b.payment_status||'none')===v ? 'var(--green)' : 'var(--border)'};background:${(b.payment_status||'none')===v ? 'var(--green-bg)' : 'white'};color:${(b.payment_status||'none')===v ? 'var(--green)' : 'var(--muted)'};font-family:inherit">
+            ${v==='none'?'Sin pago':v==='deposit'?'Seña ✓':'Total ✓'}
+          </button>`).join('')}
+      </div>
+    </div>
+
+    <!-- Notas internas -->
+    <div style="margin-top:14px">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:0.05em">NOTAS INTERNAS</div>
+      <textarea id="admin-notes-${b.id}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;font-family:inherit;resize:vertical;min-height:70px;outline:none" placeholder="Notas para Maru (el cliente no las ve)..." onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">${b.notes_admin || ''}</textarea>
+      <button onclick="saveAdminNotes(${b.id})" style="margin-top:6px;padding:7px 14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.83rem;font-weight:700;cursor:pointer;font-family:inherit">Guardar nota</button>
+    </div>
+
+    <!-- Fotos -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:10px;letter-spacing:0.05em">FOTOS DE LA CITA</div>
+      <div id="photos-container-${b.id}"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="photo-input-${b.id}" accept="image/*" style="display:none" onchange="uploadPhoto(${b.id})">
+        <button onclick="document.getElementById('photo-input-${b.id}').click()" style="padding:8px 16px;background:var(--green-bg);color:var(--green);border:1.5px solid var(--accent);border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit">📷 Subir foto</button>
+        <input type="text" id="photo-comment-${b.id}" placeholder="Comentario (opcional)" style="flex:1;min-width:150px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;outline:none">
+      </div>
+    </div>
   `;
+
+  // Cargar fotos existentes
+  loadPhotos(b.id);
   openModal('modal-booking');
 }
 
@@ -743,6 +785,61 @@ async function updateBookingStatus(id, status) {
   closeModal('modal-booking');
   loadCitas();
   loadDashboard();
+}
+
+async function setPaymentStatus(bookingId, status, btn) {
+  await api(`/api/admin/bookings/${bookingId}/admin-notes`, { method: 'PUT', body: JSON.stringify({ payment_status: status }) });
+  // Actualizar UI de botones
+  const buttons = btn.parentElement.querySelectorAll('button');
+  const values = ['none','deposit','full'];
+  buttons.forEach((b, i) => {
+    const isSelected = values[i] === status;
+    b.style.border = `2px solid ${isSelected ? 'var(--green)' : 'var(--border)'}`;
+    b.style.background = isSelected ? 'var(--green-bg)' : 'white';
+    b.style.color = isSelected ? 'var(--green)' : 'var(--muted)';
+  });
+}
+
+async function saveAdminNotes(bookingId) {
+  const notes = document.getElementById(`admin-notes-${bookingId}`).value;
+  await api(`/api/admin/bookings/${bookingId}/admin-notes`, { method: 'PUT', body: JSON.stringify({ notes_admin: notes }) });
+  // Feedback visual
+  const textarea = document.getElementById(`admin-notes-${bookingId}`);
+  const btn = textarea ? textarea.nextElementSibling : null;
+  if (btn) { const orig = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = orig, 1500); }
+}
+
+async function loadPhotos(bookingId) {
+  const container = document.getElementById(`photos-container-${bookingId}`);
+  if (!container) return;
+  const photos = await api(`/api/admin/bookings/${bookingId}/photos`);
+  if (!photos.length) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--muted)">Sin fotos todavía</div>'; return; }
+  container.innerHTML = photos.map(p => `
+    <div style="position:relative;display:inline-block;margin:4px">
+      <img src="${p.file_path}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;display:block" loading="lazy">
+      ${p.comment ? `<div style="font-size:0.73rem;color:var(--muted);max-width:80px;word-break:break-word">${p.comment}</div>` : ''}
+      <button onclick="deletePhoto(${bookingId},${p.id},this.closest('div'))" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+  `).join('');
+}
+
+async function uploadPhoto(bookingId) {
+  const input = document.getElementById(`photo-input-${bookingId}`);
+  const comment = document.getElementById(`photo-comment-${bookingId}`).value;
+  if (!input.files[0]) return;
+  const formData = new FormData();
+  formData.append('photo', input.files[0]);
+  formData.append('comment', comment);
+  await fetch(`/api/admin/bookings/${bookingId}/photos`, { method: 'POST', body: formData });
+  input.value = '';
+  document.getElementById(`photo-comment-${bookingId}`).value = '';
+  loadPhotos(bookingId);
+}
+
+async function deletePhoto(bookingId, photoId, el) {
+  if (!confirm('¿Eliminar esta foto?')) return;
+  await api(`/api/admin/bookings/${bookingId}/photos/${photoId}`, { method: 'DELETE' });
+  el.remove();
 }
 
 // ─── CLIENTES ─────────────────────────────────────────
@@ -1073,6 +1170,11 @@ function formatDateShort(d) {
 
 // ─── START ────────────────────────────────────────────
 $('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 checkAuth();
 </script>
 </body>
