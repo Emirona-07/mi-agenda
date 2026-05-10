@@ -4,183 +4,380 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reservar turno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --green: #2d6a4f; --green-light: #40916c; --green-bg: #d8f3dc;
-      --accent: #52b788; --text: #1b1b1b; --muted: #6c757d;
-      --border: #dee2e6; --bg: #f8f9fa; --white: #ffffff;
-      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --p:        #9E6B73;
+      --p-dark:   #7A4E55;
+      --p-light:  #F5EDEE;
+      --p-mid:    #D4A8AE;
+      --bg:       #FEFCFB;
+      --white:    #ffffff;
+      --text:     #2B1F23;
+      --text-mid: #6B5058;
+      --muted:    #9B8388;
+      --border:   #E8D9DC;
+      --shadow:   0 4px 20px rgba(43,31,35,0.08), 0 1px 4px rgba(43,31,35,0.04);
+      --shadow-sm:0 1px 3px rgba(43,31,35,0.07);
+      --r:        14px;
+      --r-sm:     9px;
+      --r-pill:   100px;
     }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    header { background: var(--green); color: white; padding: 20px 16px; text-align: center; position: relative; }
-    header h1 { font-size: 1.5rem; font-weight: 700; }
-    header p { font-size: 0.9rem; opacity: 0.85; margin-top: 4px; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #5C3440 0%, #7A4E55 60%, #9E6B73 100%);
+      color: white;
+      padding: 32px 20px 28px;
+      text-align: center;
+      position: relative;
+    }
+    header::after {
+      content: '';
+      display: block;
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 20px;
+      background: var(--bg);
+      clip-path: ellipse(55% 100% at 50% 100%);
+    }
+    header h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    header p {
+      font-size: 0.85rem;
+      opacity: 0.72;
+      margin-top: 5px;
+      font-weight: 400;
+    }
 
     .header-account { position: absolute; top: 50%; right: 16px; transform: translateY(-50%); }
-    .btn-account { background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.5); border-radius: 20px; padding: 6px 14px; cursor: pointer; font-size: 0.85rem; font-family: inherit; transition: background 0.2s; }
-    .btn-account:hover { background: rgba(255,255,255,0.3); }
+    .btn-account {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      border-radius: var(--r-pill);
+      padding: 7px 16px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .btn-account:hover { background: rgba(255,255,255,0.25); }
     .account-user { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .account-avatar { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.7); object-fit: cover; }
-    .account-avatar-placeholder { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: white; }
-    .account-name { font-size: 0.85rem; color: white; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .account-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.65); object-fit: cover; }
+    .account-avatar-placeholder {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; color: white;
+    }
+    .account-name { font-size: 0.8rem; color: white; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 
-    .container { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+    /* ── Layout ─────────────────────────────────────────── */
+    .container { max-width: 540px; margin: 0 auto; padding: 32px 16px 64px; }
 
-    .progress { display: flex; align-items: center; margin-bottom: 28px; }
-    .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; transition: all 0.3s; flex-shrink: 0; }
-    .step-dot.active { background: var(--green); color: white; }
-    .step-dot.done { background: var(--accent); color: white; }
+    /* ── Progress ───────────────────────────────────────── */
+    .progress { display: flex; align-items: center; margin-bottom: 28px; padding: 0 2px; }
+    .step-dot {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .step-dot.active  { background: var(--p); color: white; box-shadow: 0 0 0 4px var(--p-light); }
+    .step-dot.done    { background: var(--p); color: white; }
     .step-dot.pending { background: var(--border); color: var(--muted); }
-    .step-line { flex: 1; height: 3px; background: var(--border); margin: 0 6px; transition: background 0.3s; }
-    .step-line.done { background: var(--accent); }
+    .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 6px; transition: background 0.3s; }
+    .step-line.done { background: var(--p); }
 
-    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); }
-    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--green); margin-bottom: 16px; }
+    /* ── Cards ──────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: var(--r);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(228,217,220,0.6);
+    }
+    .card-title {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
 
-    /* ── Service list (accordion) ── */
+    /* ── Service list (accordion) ───────────────────────── */
     .service-list { display: flex; flex-direction: column; }
-    .service-item { border: none; border-bottom: 1px solid var(--border); padding: 0; cursor: pointer; text-align: left; background: white; width: 100%; outline: none; transition: background 0.15s; }
-    .service-item:first-child { border-top: 1px solid var(--border); }
-    .service-item:hover .si-row { background: #f6fdf8; }
-    .service-item.selected .si-row { background: var(--green-bg); }
-    .si-row { display: flex; align-items: center; gap: 10px; padding: 14px 4px; transition: background 0.15s; }
-    .si-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-    .service-item.selected .si-check { background: var(--green); border-color: var(--green); }
+    .service-item {
+      border: none; border-bottom: 1px solid var(--border);
+      padding: 0; cursor: pointer; text-align: left;
+      background: transparent; width: 100%; outline: none;
+    }
+    .service-item:first-child  { border-top: 1px solid var(--border); }
+    .service-item:hover .si-row { background: #FBF3F4; }
+    .service-item.selected .si-row { background: var(--p-light); }
+    .si-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 0; transition: background 0.15s;
+    }
+    .si-check {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid var(--border); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .service-item.selected .si-check { background: var(--p); border-color: var(--p); }
     .si-check svg { display: none; }
     .service-item.selected .si-check svg { display: block; }
-    .si-name { flex: 1; font-size: 0.97rem; font-weight: 600; color: var(--text); }
-    .si-price { font-size: 0.95rem; font-weight: 700; color: var(--green); white-space: nowrap; }
-    .si-chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.25s; flex-shrink: 0; }
+    .si-name  { flex: 1; font-size: 0.92rem; font-weight: 600; color: var(--text); }
+    .si-price { font-size: 0.9rem; font-weight: 700; color: var(--p-dark); white-space: nowrap; }
+    .si-chevron { color: var(--muted); font-size: 0.7rem; transition: transform 0.25s; flex-shrink: 0; }
     .service-item.selected .si-chevron { transform: rotate(180deg); }
-    .si-detail { display: none; padding: 0 4px 16px 36px; animation: slideDown 0.2s ease; }
+    .si-detail { display: none; padding: 0 0 14px 32px; animation: slideDown 0.2s ease; }
     .service-item.selected .si-detail { display: block; }
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-    .si-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-    .si-chip { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 3px 12px; font-size: 0.8rem; color: var(--muted); }
-    .si-chip.price-chip { border-color: var(--accent); color: var(--green); font-weight: 600; }
-    .si-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .si-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .si-chip {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-pill); padding: 3px 10px;
+      font-size: 0.74rem; color: var(--muted); font-weight: 500;
+    }
+    .si-chip.price-chip { border-color: var(--p-mid); color: var(--p-dark); background: var(--p-light); font-weight: 600; }
+    .si-desc { font-size: 0.81rem; color: var(--muted); line-height: 1.55; }
 
-    .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
-    .prof-card { border: 2px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; }
-    .prof-card:hover { border-color: var(--accent); }
-    .prof-card.selected { border-color: var(--green); background: var(--green-bg); }
-    .prof-avatar { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.1rem; }
-    .prof-card h3 { font-size: 0.9rem; font-weight: 600; }
+    /* ── Professional grid ──────────────────────────────── */
+    .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+    .prof-card {
+      border: 2px solid var(--border); border-radius: var(--r);
+      padding: 16px 12px; cursor: pointer; text-align: center;
+      transition: all 0.2s; background: var(--white);
+    }
+    .prof-card:hover  { border-color: var(--p-mid); }
+    .prof-card.selected { border-color: var(--p); background: var(--p-light); }
+    .prof-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: white; font-size: 1.1rem;
+    }
+    .prof-card h3 { font-size: 0.86rem; font-weight: 600; }
 
-    .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .calendar-header h3 { font-size: 1rem; font-weight: 700; text-transform: capitalize; }
-    .cal-nav { background: none; border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
-    .cal-nav:hover { background: var(--bg); }
-    .step2-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    #cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; grid-column: 1 / -1; }
-    .cal-day-name { text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--muted); padding: 4px 0; }
-    .cal-day { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.85rem; cursor: default; }
+    /* ── Calendar ───────────────────────────────────────── */
+    .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .calendar-header h3 { font-size: 0.93rem; font-weight: 700; text-transform: capitalize; letter-spacing: -0.01em; }
+    .cal-nav {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); width: 30px; height: 30px;
+      cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-mid); transition: all 0.15s;
+    }
+    .cal-nav:hover { background: var(--p-light); border-color: var(--p-mid); color: var(--p-dark); }
+    .step2-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    #cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; grid-column: 1 / -1; }
+    .cal-day-name { text-align: center; font-size: 0.67rem; font-weight: 700; color: var(--muted); padding: 6px 0; text-transform: uppercase; letter-spacing: 0.04em; }
+    .cal-day { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: var(--r-sm); font-size: 0.82rem; cursor: default; font-weight: 500; }
+    .cal-day.available { cursor: pointer; color: var(--p-dark); font-weight: 700; background: var(--p-light); }
+    .cal-day.available:hover { background: var(--p-mid); color: var(--p-dark); }
+    .cal-day.selected { background: var(--p); color: white; box-shadow: var(--shadow-sm); }
+    .cal-day.today { outline: 2px solid var(--p-mid); outline-offset: -2px; }
+    .cal-day.other-month { opacity: 0.2; }
+    .cal-day.past { opacity: 0.28; }
     @media (max-width: 640px) { .step2-layout { grid-template-columns: 1fr; } }
-    .cal-day.available { cursor: pointer; font-weight: 600; color: var(--green); }
-    .cal-day.available:hover { background: var(--green-bg); }
-    .cal-day.selected { background: var(--green); color: white; }
-    .cal-day.today { outline: 2px solid var(--accent); outline-offset: -2px; }
-    .cal-day.other-month { opacity: 0.3; }
-    .cal-day.past { opacity: 0.35; }
 
-    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
-    .slot-btn { padding: 10px 8px; border: 2px solid var(--border); border-radius: 10px; background: white; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text); transition: all 0.2s; text-align: center; }
-    .slot-btn:hover { border-color: var(--accent); color: var(--green); }
-    .slot-btn.selected { background: var(--green); border-color: var(--green); color: white; }
+    /* ── Time slots ─────────────────────────────────────── */
+    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+    .slot-btn {
+      padding: 10px 6px; border: 1.5px solid var(--border);
+      border-radius: var(--r-sm); background: var(--white);
+      cursor: pointer; font-size: 0.87rem; font-weight: 600;
+      color: var(--text-mid); transition: all 0.18s;
+      text-align: center; font-family: inherit;
+    }
+    .slot-btn:hover { border-color: var(--p-mid); color: var(--p-dark); background: var(--p-light); }
+    .slot-btn.selected { background: var(--p); border-color: var(--p); color: white; }
 
+    /* ── Form ───────────────────────────────────────────── */
     .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
-    input, textarea, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; outline: none; transition: border-color 0.2s; background: white; }
-    input:focus, textarea:focus { border-color: var(--green); }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-mid); letter-spacing: 0.01em; }
+    input, textarea, select {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      font-size: 0.93rem; font-family: inherit; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: var(--white); color: var(--text);
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    input:focus, textarea:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(158,107,115,0.12); }
     textarea { resize: vertical; min-height: 80px; }
 
-    .summary { background: var(--green-bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-    .summary h3 { font-size: 0.9rem; font-weight: 700; color: var(--green); margin-bottom: 10px; }
-    .summary-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; }
+    /* ── Summary ────────────────────────────────────────── */
+    .summary {
+      background: var(--p-light); border: 1px solid var(--p-mid);
+      border-radius: var(--r-sm); padding: 16px; margin-bottom: 20px;
+    }
+    .summary h3 { font-size: 0.76rem; font-weight: 700; color: var(--p-dark); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 0.87rem; margin-bottom: 5px; }
     .summary-row span:first-child { color: var(--muted); }
     .summary-row span:last-child { font-weight: 600; }
 
-    .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-    .btn-primary { background: var(--green); color: white; }
-    .btn-primary:hover { background: var(--green-light); }
-    .btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
-    .btn-secondary { background: white; color: var(--green); border: 2px solid var(--green); }
-    .btn-secondary:hover { background: var(--green-bg); }
-    .btn-whatsapp { background: #25d366; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; font-size: 1rem; font-weight: 700; border-radius: 12px; padding: 16px; }
-    .btn-whatsapp:hover { background: #20bd5a; }
-    .btn-whatsapp svg { width: 24px; height: 24px; }
+    /* ── Buttons ────────────────────────────────────────── */
+    .btn {
+      width: 100%; padding: 14px;
+      border: none; border-radius: var(--r-sm);
+      font-size: 0.93rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      font-family: inherit; letter-spacing: 0.01em;
+    }
+    .btn-primary { background: var(--p); color: white; }
+    .btn-primary:hover { background: var(--p-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+    .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-secondary { background: var(--white); color: var(--p-dark); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--p-mid); background: var(--p-light); }
+    .btn-whatsapp {
+      background: #25d366; color: white;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      text-decoration: none;
+      font-size: 0.93rem; font-weight: 600;
+      border-radius: var(--r-sm); padding: 15px;
+      transition: all 0.2s; letter-spacing: 0.01em;
+    }
+    .btn-whatsapp:hover { background: #20bd5a; transform: translateY(-1px); box-shadow: var(--shadow); }
+    .btn-whatsapp svg { width: 22px; height: 22px; }
 
-    .success-icon { width: 72px; height: 72px; background: var(--green-bg); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; }
-    .success-icon svg { width: 36px; height: 36px; color: var(--green); }
+    /* ── Success ────────────────────────────────────────── */
+    .success-icon {
+      width: 68px; height: 68px;
+      background: var(--p-light); border-radius: 50%;
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .success-icon svg { width: 32px; height: 32px; color: var(--p-dark); }
 
-    .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
+    /* ── Nav buttons ────────────────────────────────────── */
+    .nav-btns { display: flex; gap: 10px; margin-top: 16px; }
     .nav-btns .btn { flex: 1; }
 
-    .empty { text-align: center; color: var(--muted); padding: 24px; font-size: 0.9rem; }
-    .loading { text-align: center; padding: 24px; color: var(--muted); }
-
+    /* ── States ─────────────────────────────────────────── */
+    .empty   { text-align: center; color: var(--muted); padding: 28px 16px; font-size: 0.87rem; }
+    .loading { text-align: center; padding: 28px; color: var(--muted); font-size: 0.87rem; }
     .section { display: none; }
     .section.active { display: block; }
-
-    .error-msg { background: #fff5f5; color: #c0392b; border: 1px solid #f5c6cb; border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
+    .error-msg {
+      background: #FFF5F5; color: #B83232;
+      border: 1px solid #F5C4C4;
+      border-radius: var(--r-sm); padding: 12px;
+      margin-bottom: 14px; font-size: 0.87rem; display: none;
+    }
     .error-msg.show { display: block; }
-
-    .step-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; text-align: center; }
 
     @media (max-width: 480px) { .slots-grid { grid-template-columns: repeat(3, 1fr); } }
 
-    /* ── Login Modal ── */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+    /* ── Login Modal ────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(43,31,35,0.5);
+      display: none; align-items: center; justify-content: center;
+      z-index: 200; padding: 16px;
+      backdrop-filter: blur(4px);
+    }
     .modal-overlay.open { display: flex; }
-    .modal-box { background: white; border-radius: 20px; padding: 36px 28px 28px; max-width: 380px; width: 100%; position: relative; text-align: center; }
-    .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--muted); line-height: 1; }
-    .modal-close:hover { color: var(--text); }
-    .modal-box h2 { font-size: 1.25rem; margin-bottom: 8px; }
-    .modal-box .modal-desc { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5; }
-    .divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.82rem; margin: 16px 0; }
+    .modal-box {
+      background: white; border-radius: 20px;
+      padding: 36px 28px 28px; max-width: 360px; width: 100%;
+      position: relative; text-align: center;
+      box-shadow: 0 24px 64px rgba(43,31,35,0.18);
+    }
+    .modal-close {
+      position: absolute; top: 14px; right: 14px;
+      background: var(--bg); border: none;
+      width: 28px; height: 28px; border-radius: 50%;
+      font-size: 0.95rem; cursor: pointer; color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { color: var(--text); background: var(--border); }
+    .modal-box h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .modal-box .modal-desc { color: var(--muted); font-size: 0.87rem; margin-bottom: 24px; line-height: 1.55; }
+    .divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.78rem; margin: 16px 0; }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-    .btn-skip { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; font-family: inherit; padding: 8px; text-decoration: underline; }
+    .btn-skip { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.87rem; font-family: inherit; padding: 8px; text-decoration: underline; }
     .btn-skip:hover { color: var(--text); }
     #google-btn-modal { display: flex; justify-content: center; }
 
-    /* ── Account Prompt (step 4) ── */
-    .account-prompt-card { background: white; border-radius: 16px; padding: 28px 24px; box-shadow: var(--shadow); margin-top: 16px; text-align: center; }
-    .account-prompt-card .prompt-emoji { font-size: 2.2rem; margin-bottom: 12px; }
+    /* ── Account Prompt ─────────────────────────────────── */
+    .account-prompt-card {
+      background: white; border-radius: var(--r);
+      padding: 28px 24px; box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin-top: 14px; text-align: center;
+    }
+    .account-prompt-card .prompt-emoji { font-size: 2rem; margin-bottom: 12px; }
     .account-prompt-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
-    .account-prompt-card p { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; line-height: 1.5; }
+    .account-prompt-card p { color: var(--muted); font-size: 0.86rem; margin-bottom: 20px; line-height: 1.55; }
     #google-btn-prompt { display: flex; justify-content: center; margin-bottom: 10px; }
-    .btn-no-thanks { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; font-family: inherit; padding: 6px; }
+    .btn-no-thanks { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.84rem; font-family: inherit; padding: 6px; }
 
-    /* ── Mis Reservas ── */
+    /* ── My Bookings ────────────────────────────────────── */
     .bookings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .bookings-header .card-title { margin-bottom: 0; }
-    .btn-logout { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
-    .btn-logout:hover { border-color: #c0392b; color: #c0392b; }
-    .section-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 10px; }
-    .booking-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 10px; }
-    .booking-card.upcoming { border-color: var(--accent); background: #f9fffe; }
+    .btn-logout {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); border-radius: var(--r-pill);
+      padding: 6px 14px; font-size: 0.78rem;
+      cursor: pointer; font-family: inherit; font-weight: 500;
+    }
+    .btn-logout:hover { border-color: #C0392B; color: #C0392B; }
+    .section-label {
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.07em; margin: 20px 0 10px;
+    }
+    .booking-card {
+      border: 1.5px solid var(--border); border-radius: var(--r);
+      padding: 16px; margin-bottom: 10px; background: var(--white);
+    }
+    .booking-card.upcoming { border-color: var(--p-mid); background: var(--p-light); }
     .booking-card.cancelled-card { opacity: 0.55; }
     .booking-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-    .booking-card h3 { font-size: 0.95rem; font-weight: 700; }
-    .status-badge { font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
-    .status-badge.confirmed { background: var(--green-bg); color: var(--green); }
-    .status-badge.cancelled { background: #fff0f0; color: #c0392b; }
-    .booking-meta { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+    .booking-card h3 { font-size: 0.92rem; font-weight: 700; }
+    .status-badge {
+      font-size: 0.69rem; font-weight: 700;
+      padding: 3px 9px; border-radius: var(--r-pill); white-space: nowrap;
+    }
+    .status-badge.confirmed { background: var(--p-light); color: var(--p-dark); }
+    .status-badge.cancelled { background: #FFF0F0; color: #C0392B; }
+    .booking-meta { font-size: 0.82rem; color: var(--muted); line-height: 1.7; }
     .cancel-area { margin-top: 12px; }
-    .btn-cancel { background: none; border: 1px solid #e74c3c; color: #e74c3c; border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
-    .btn-cancel:hover { background: #fff0f0; }
-    .confirm-cancel { display: none; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--muted); }
+    .btn-cancel { background: none; border: 1px solid #E8BBBB; color: #B84040; border-radius: var(--r-pill); padding: 6px 14px; font-size: 0.79rem; cursor: pointer; font-family: inherit; font-weight: 500; }
+    .btn-cancel:hover { background: #FFF0F0; }
+    .confirm-cancel { display: none; align-items: center; gap: 10px; font-size: 0.83rem; color: var(--muted); flex-wrap: wrap; }
     .confirm-cancel.show { display: flex; }
-    .btn-yes-cancel { background: #e74c3c; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
-    .btn-no-cancel { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
-    .user-info-box { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; }
-    .user-info-box img { width: 42px; height: 42px; border-radius: 50%; }
-    .user-info-box .uib-placeholder { width: 42px; height: 42px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
-    .user-info-box .uib-name { font-weight: 700; font-size: 0.95rem; }
-    .user-info-box .uib-email { font-size: 0.82rem; color: var(--muted); }
+    .btn-yes-cancel { background: #E74C3C; color: white; border: none; border-radius: var(--r-pill); padding: 6px 14px; font-size: 0.79rem; cursor: pointer; font-family: inherit; font-weight: 500; }
+    .btn-no-cancel  { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: var(--r-pill); padding: 6px 14px; font-size: 0.79rem; cursor: pointer; font-family: inherit; }
+    .user-info-box { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: var(--r-sm); padding: 12px 16px; margin-bottom: 20px; }
+    .user-info-box img { width: 40px; height: 40px; border-radius: 50%; }
+    .user-info-box .uib-placeholder { width: 40px; height: 40px; border-radius: 50%; background: var(--p); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+    .user-info-box .uib-name  { font-weight: 700; font-size: 0.92rem; }
+    .user-info-box .uib-email { font-size: 0.79rem; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -206,11 +403,11 @@
   <!-- Step 1: Service -->
   <div class="section active" id="step-1">
     <div class="card">
-      <div class="card-title">¿Qué servicio necesitás?</div>
+      <div class="card-title">¿Qué servicio querés?</div>
       <div id="services-list"><div class="loading">Cargando servicios...</div></div>
     </div>
     <div class="nav-btns" style="margin-top:16px">
-      <button class="btn btn-primary" id="btn-to-2" disabled onclick="goStep(2)">Siguiente →</button>
+      <button class="btn btn-primary" id="btn-to-2" disabled onclick="goStep(2)">Continuar →</button>
     </div>
   </div>
 
@@ -239,7 +436,7 @@
     </div>
     <div class="nav-btns">
       <button class="btn btn-secondary" onclick="goStep(1)">← Volver</button>
-      <button class="btn btn-primary" id="btn-to-3" disabled onclick="goStep(3)">Siguiente →</button>
+      <button class="btn btn-primary" id="btn-to-3" disabled onclick="goStep(3)">Continuar →</button>
     </div>
   </div>
 
@@ -248,14 +445,14 @@
     <div class="card">
       <div class="card-title">Tus datos</div>
       <div class="error-msg" id="form-error"></div>
-      <div class="summary" id="booking-summary"><h3>Resumen de tu reserva</h3></div>
+      <div class="summary" id="booking-summary"><h3>Resumen</h3></div>
       <div class="form-group">
         <label>Nombre completo *</label>
         <input type="text" id="f-name" placeholder="Tu nombre" required>
       </div>
       <div class="form-group">
         <label>Teléfono *</label>
-        <input type="tel" id="f-phone" placeholder="Ej: 099123456" required>
+        <input type="tel" id="f-phone" placeholder="Ej: 099 123 456" required>
       </div>
       <div class="form-group">
         <label>Email</label>
@@ -278,15 +475,15 @@
 
   <!-- Step 4: Confirmation -->
   <div class="section" id="step-4">
-    <div class="card" style="text-align:center;padding:32px 24px">
+    <div class="card" style="text-align:center;padding:36px 24px">
       <div class="success-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
       </div>
-      <h2 style="font-size:1.3rem;margin-bottom:8px;color:var(--green)">¡Reserva confirmada!</h2>
-      <p style="color:var(--muted);margin-bottom:24px;font-size:0.95rem">
-        Tu turno quedó registrado. Presioná el botón para avisarnos por WhatsApp y finalizar la confirmación.
+      <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em">¡Reserva confirmada!</h2>
+      <p style="color:var(--muted);margin-bottom:24px;font-size:0.9rem;line-height:1.55">
+        Tu turno quedó registrado. Avisanos por WhatsApp para terminar de confirmar.
       </p>
       <div class="summary" id="confirm-summary" style="text-align:left;margin-bottom:24px"></div>
       <a id="whatsapp-btn" href="#" target="_blank" class="btn-whatsapp" style="margin-bottom:12px">
@@ -296,7 +493,6 @@
       <button class="btn btn-secondary" onclick="newBooking()" style="margin-top:8px">Hacer otra reserva</button>
     </div>
 
-    <!-- Account prompt (solo si no está logueado) -->
     <div class="account-prompt-card" id="account-prompt" style="display:none">
       <div class="prompt-emoji">🗓️</div>
       <h3>Guardá tus reservas</h3>
@@ -305,8 +501,7 @@
       <button class="btn-no-thanks" onclick="document.getElementById('account-prompt').style.display='none'">No, gracias</button>
     </div>
 
-    <!-- Acceso directo si ya está logueado -->
-    <div id="goto-bookings-card" style="display:none;margin-top:16px">
+    <div id="goto-bookings-card" style="display:none;margin-top:14px">
       <button class="btn btn-secondary" onclick="showMyBookings()">Ver mis reservas →</button>
     </div>
   </div>
@@ -331,9 +526,9 @@
 <div class="modal-overlay" id="login-modal">
   <div class="modal-box">
     <button class="modal-close" onclick="closeLoginModal()">✕</button>
-    <div style="font-size:2rem;margin-bottom:12px">👤</div>
+    <div style="font-size:1.8rem;margin-bottom:12px">👤</div>
     <h2>Mi cuenta</h2>
-    <p class="modal-desc">Iniciá sesión para ver y gestionar tus reservas cuando quieras.</p>
+    <p class="modal-desc">Iniciá sesión para ver y gestionar tus reservas fácilmente.</p>
     <div id="google-btn-modal"></div>
     <div class="divider">o</div>
     <button class="btn-skip" onclick="closeLoginModal()">Continuar sin cuenta</button>
@@ -352,8 +547,6 @@ const state = {
   googleReady: false,
 };
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-
 async function init() {
   const [biz, cfg, me] = await Promise.all([
     fetch('/api/business').then(r => r.json()),
@@ -363,35 +556,25 @@ async function init() {
 
   document.getElementById('biz-name').textContent = biz.name;
   document.getElementById('biz-desc').textContent = biz.description || '';
-  document.title = `Reservar turno - ${biz.name}`;
+  document.title = `Reservar turno · ${biz.name}`;
 
   state.googleClientId = cfg.google_client_id;
-  if (me.client) {
-    state.clientUser = me.client;
-  }
+  if (me.client) state.clientUser = me.client;
 
   renderHeader();
-
-  if (state.googleClientId) {
-    loadGoogleScript();
-  }
+  if (state.googleClientId) loadGoogleScript();
 
   const services = await fetch('/api/services').then(r => r.json());
   state.services = services;
   renderServices();
 }
 
-// ── Google Identity Services ──────────────────────────────────────────────────
-
 function loadGoogleScript() {
   const script = document.createElement('script');
   script.src = 'https://accounts.google.com/gsi/client';
   script.async = true;
   script.onload = () => {
-    google.accounts.id.initialize({
-      client_id: state.googleClientId,
-      callback: handleGoogleCredential,
-    });
+    google.accounts.id.initialize({ client_id: state.googleClientId, callback: handleGoogleCredential });
     state.googleReady = true;
   };
   document.head.appendChild(script);
@@ -402,17 +585,12 @@ function renderGoogleButton(containerId, options = {}) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '';
-  google.accounts.id.renderButton(el, {
-    theme: 'outline', size: 'large', locale: 'es', width: 300,
-    text: options.text || 'continue_with',
-    ...options,
-  });
+  google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', locale: 'es', width: 300, text: options.text || 'continue_with', ...options });
 }
 
 async function handleGoogleCredential(response) {
   const loginError = document.getElementById('login-error');
   if (loginError) loginError.classList.remove('show');
-
   try {
     const res = await fetch('/api/client/auth/google', {
       method: 'POST',
@@ -421,24 +599,17 @@ async function handleGoogleCredential(response) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión');
-
     state.clientUser = data.client;
     closeLoginModal();
     renderHeader();
-    // If we're on step 4, update the post-booking UI
     if (document.getElementById('step-4').classList.contains('active')) {
       document.getElementById('account-prompt').style.display = 'none';
       document.getElementById('goto-bookings-card').style.display = 'block';
     }
   } catch (e) {
-    if (loginError) {
-      loginError.textContent = e.message;
-      loginError.classList.add('show');
-    }
+    if (loginError) { loginError.textContent = e.message; loginError.classList.add('show'); }
   }
 }
-
-// ── Header ────────────────────────────────────────────────────────────────────
 
 function renderHeader() {
   const el = document.getElementById('header-account');
@@ -447,11 +618,7 @@ function renderHeader() {
     const avatarHtml = state.clientUser.picture
       ? `<img class="account-avatar" src="${state.clientUser.picture}" alt="">`
       : `<div class="account-avatar-placeholder">${initials}</div>`;
-    el.innerHTML = `
-      <div class="account-user" onclick="showMyBookings()" title="Mis reservas">
-        ${avatarHtml}
-        <span class="account-name">${state.clientUser.name || ''}</span>
-      </div>`;
+    el.innerHTML = `<div class="account-user" onclick="showMyBookings()" title="Mis reservas">${avatarHtml}<span class="account-name">${state.clientUser.name || ''}</span></div>`;
   } else if (state.googleClientId) {
     el.innerHTML = `<button class="btn-account" onclick="showLoginModal()">Mi cuenta</button>`;
   } else {
@@ -459,30 +626,20 @@ function renderHeader() {
   }
 }
 
-// ── Login Modal ───────────────────────────────────────────────────────────────
-
 function showLoginModal() {
   document.getElementById('login-modal').classList.add('open');
   document.getElementById('login-error').classList.remove('show');
-  // Give the DOM a tick to render, then mount the button
   setTimeout(() => renderGoogleButton('google-btn-modal'), 50);
 }
-
-function closeLoginModal() {
-  document.getElementById('login-modal').classList.remove('open');
-}
-
-// ── Mis Reservas ──────────────────────────────────────────────────────────────
+function closeLoginModal() { document.getElementById('login-modal').classList.remove('open'); }
 
 async function showMyBookings() {
   if (!state.clientUser) { showLoginModal(); return; }
-
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('section-bookings').classList.add('active');
   document.getElementById('progress-bar').style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  // User info box
   const u = state.clientUser;
   const initials = (u.name || 'U').charAt(0).toUpperCase();
   document.getElementById('user-info-box').innerHTML = `
@@ -496,7 +653,6 @@ async function showMyBookings() {
 
   const content = document.getElementById('my-bookings-content');
   content.innerHTML = '<div class="loading">Cargando reservas...</div>';
-
   try {
     const bookings = await fetch('/api/client/my-bookings').then(r => r.json());
     renderMyBookings(bookings);
@@ -507,33 +663,15 @@ async function showMyBookings() {
 
 function renderMyBookings(bookings) {
   const content = document.getElementById('my-bookings-content');
-  if (!bookings.length) {
-    content.innerHTML = '<div class="empty">Todavía no tenés reservas.</div>';
-    return;
-  }
-
+  if (!bookings.length) { content.innerHTML = '<div class="empty">Todavía no tenés reservas.</div>'; return; }
   const today = new Date().toISOString().split('T')[0];
   const upcoming = bookings.filter(b => b.date >= today && b.status !== 'cancelled');
   const past = bookings.filter(b => b.date < today || b.status === 'cancelled');
-
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  function fmtDate(d) {
-    const [y,m,day] = d.split('-');
-    return `${parseInt(day)} de ${months[parseInt(m)-1]} de ${y}`;
-  }
-
+  function fmtDate(d) { const [y,m,day] = d.split('-'); return `${parseInt(day)} de ${months[parseInt(m)-1]} de ${y}`; }
   let html = '';
-
-  if (upcoming.length) {
-    html += `<div class="section-label">Próximas</div>`;
-    html += upcoming.map(b => bookingCardHtml(b, fmtDate, true)).join('');
-  }
-
-  if (past.length) {
-    html += `<div class="section-label">Historial</div>`;
-    html += past.map(b => bookingCardHtml(b, fmtDate, false)).join('');
-  }
-
+  if (upcoming.length) { html += `<div class="section-label">Próximas</div>` + upcoming.map(b => bookingCardHtml(b, fmtDate, true)).join(''); }
+  if (past.length)     { html += `<div class="section-label">Historial</div>`  + past.map(b => bookingCardHtml(b, fmtDate, false)).join(''); }
   content.innerHTML = html;
 }
 
@@ -541,18 +679,16 @@ function bookingCardHtml(b, fmtDate, canCancel) {
   const isCancelled = b.status === 'cancelled';
   const statusLabel = isCancelled ? 'Cancelado' : 'Confirmado';
   const statusClass = isCancelled ? 'cancelled' : 'confirmed';
-  const cardClass = isCancelled ? 'cancelled-card' : (canCancel ? 'upcoming' : '');
-
-  const cancelArea = canCancel && !isCancelled ? `
+  const cardClass   = isCancelled ? 'cancelled-card' : (canCancel ? 'upcoming' : '');
+  const cancelArea  = canCancel && !isCancelled ? `
     <div class="cancel-area">
       <button class="btn-cancel" onclick="initCancel(${b.id}, this)">Cancelar turno</button>
       <div class="confirm-cancel" id="confirm-${b.id}">
         ¿Confirmar cancelación?
         <button class="btn-yes-cancel" onclick="confirmCancel(${b.id})">Sí, cancelar</button>
-        <button class="btn-no-cancel" onclick="abortCancel(${b.id}, this)">No</button>
+        <button class="btn-no-cancel"  onclick="abortCancel(${b.id}, this)">No</button>
       </div>
     </div>` : '';
-
   return `
     <div class="booking-card ${cardClass}" id="booking-card-${b.id}">
       <div class="booking-card-top">
@@ -572,27 +708,22 @@ function initCancel(id, btn) {
   btn.style.display = 'none';
   document.getElementById(`confirm-${id}`).classList.add('show');
 }
-
 function abortCancel(id, btn) {
   document.getElementById(`confirm-${id}`).classList.remove('show');
   document.querySelector(`#booking-card-${id} .btn-cancel`).style.display = '';
 }
-
 async function confirmCancel(id) {
   try {
-    const res = await fetch(`/api/client/my-bookings/${id}/cancel`, { method: 'POST' });
+    const res  = await fetch(`/api/client/my-bookings/${id}/cancel`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) {
       alert(data.error === 'turno_pasado' ? 'No podés cancelar un turno pasado.' :
             data.error === 'ya_cancelado' ? 'Este turno ya está cancelado.' : 'Error al cancelar.');
       return;
     }
-    // Reload bookings
     const bookings = await fetch('/api/client/my-bookings').then(r => r.json());
     renderMyBookings(bookings);
-  } catch {
-    alert('Error al cancelar. Intentá de nuevo.');
-  }
+  } catch { alert('Error al cancelar. Intentá de nuevo.'); }
 }
 
 async function logout() {
@@ -603,12 +734,10 @@ async function logout() {
   document.getElementById('progress-bar').style.display = '';
 }
 
-// ── Services ──────────────────────────────────────────────────────────────────
-
 function renderServices() {
   const list = document.getElementById('services-list');
   if (!state.services.length) { list.innerHTML = '<div class="empty">No hay servicios disponibles.</div>'; return; }
-  const checkSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const checkSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
   list.innerHTML = `<div class="service-list">${state.services.map(s => {
     const sel = state.selectedService?.id === s.id;
     const chips = [
@@ -649,7 +778,7 @@ function goStep(step) {
   if (step === 3) {
     renderSummary();
     if (state.clientUser) {
-      if (!document.getElementById('f-name').value) document.getElementById('f-name').value = state.clientUser.name || '';
+      if (!document.getElementById('f-name').value)  document.getElementById('f-name').value  = state.clientUser.name  || '';
       if (!document.getElementById('f-email').value) document.getElementById('f-email').value = state.clientUser.email || '';
     }
   }
@@ -669,16 +798,14 @@ function goStep(step) {
 function updateProgress(step) {
   for (let i = 1; i <= 4; i++) {
     const dot = document.getElementById(`dot-${i}`);
-    if (i < step) { dot.className = 'step-dot done'; dot.textContent = '✓'; }
-    else if (i === step) { dot.className = 'step-dot active'; dot.textContent = i; }
-    else { dot.className = 'step-dot pending'; dot.textContent = i; }
+    if (i < step)      { dot.className = 'step-dot done';    dot.textContent = '✓'; }
+    else if (i===step) { dot.className = 'step-dot active';  dot.textContent = i;   }
+    else               { dot.className = 'step-dot pending'; dot.textContent = i;   }
   }
   for (let i = 1; i <= 3; i++) {
     document.getElementById(`line-${i}`).className = `step-line${i < step ? ' done' : ''}`;
   }
 }
-
-// ── Calendar ──────────────────────────────────────────────────────────────────
 
 async function loadCalendar() {
   const now = new Date();
@@ -692,21 +819,19 @@ function renderCalendar() {
   const { calYear: y, calMonth: m } = state;
   const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   document.getElementById('cal-month').textContent = `${months[m]} ${y}`;
-
   const today = new Date(); today.setHours(0,0,0,0);
   const firstDay = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const prevDays = new Date(y, m, 0).getDate();
-
   let html = '';
   for (let i = firstDay - 1; i >= 0; i--) html += `<div class="cal-day other-month">${prevDays - i}</div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const date = new Date(y, m, d);
-    const isToday = date.getTime() === today.getTime();
-    const isPast = date < today;
-    const isAvail = state.availableDates.includes(dateStr);
-    const isSel = state.selectedDate === dateStr;
+    const isToday  = date.getTime() === today.getTime();
+    const isPast   = date < today;
+    const isAvail  = state.availableDates.includes(dateStr);
+    const isSel    = state.selectedDate === dateStr;
     let cls = 'cal-day';
     if (isPast) cls += ' past';
     else if (isAvail) cls += ' available';
@@ -724,7 +849,7 @@ function renderCalendar() {
 function changeMonth(dir) {
   state.calMonth += dir;
   if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
-  if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+  if (state.calMonth < 0)  { state.calMonth = 11; state.calYear--; }
   renderCalendar();
 }
 
@@ -733,19 +858,15 @@ async function selectDate(dateStr) {
   state.selectedTime = null;
   document.getElementById('btn-to-3').disabled = true;
   renderCalendar();
-
   const card = document.getElementById('slots-card');
-  const list = document.getElementById('slots-list');
+  const list  = document.getElementById('slots-list');
   card.style.display = 'block';
   list.innerHTML = '<div class="loading">Cargando horarios...</div>';
-
   const [,mo, dy] = dateStr.split('-');
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  document.getElementById('slots-title').textContent = `Horarios para el ${parseInt(dy)} de ${months[parseInt(mo)-1]}`;
-
+  document.getElementById('slots-title').textContent = `${parseInt(dy)} de ${months[parseInt(mo)-1]}`;
   const slots = await fetch(`/api/available-slots?date=${dateStr}&service_id=${state.selectedService.id}${state.selectedProfessional ? '&professional_id='+state.selectedProfessional.id : ''}`).then(r => r.json());
-
-  if (!slots.length) { list.innerHTML = '<div class="empty">No hay horarios disponibles para este día.</div>'; return; }
+  if (!slots.length) { list.innerHTML = '<div class="empty">No hay horarios disponibles.</div>'; return; }
   list.innerHTML = `<div class="slots-grid">${slots.map(t => `
     <button class="slot-btn ${state.selectedTime === t ? 'selected' : ''}" onclick="selectTime('${t}')">${t}</button>
   `).join('')}</div>`;
@@ -753,9 +874,7 @@ async function selectDate(dateStr) {
 
 function selectTime(time) {
   state.selectedTime = time;
-  document.querySelectorAll('.slot-btn').forEach(b => {
-    b.classList.toggle('selected', b.textContent.trim() === time);
-  });
+  document.querySelectorAll('.slot-btn').forEach(b => b.classList.toggle('selected', b.textContent.trim() === time));
   document.getElementById('btn-to-3').disabled = false;
 }
 
@@ -769,61 +888,50 @@ function renderSummary() {
     s.selectedProfessional ? ['Profesional', s.selectedProfessional.name] : null,
     ['Fecha', dateStr],
     ['Hora', s.selectedTime],
-    s.selectedService.price > 0 ? ['Precio', `$${s.selectedService.price.toLocaleString()}`] : null,
-    s.selectedService.deposit > 0 ? ['Seña', `$${s.selectedService.deposit.toLocaleString()}`] : null,
+    s.selectedService.price   > 0 ? ['Precio', `$${s.selectedService.price.toLocaleString()}`]   : null,
+    s.selectedService.deposit > 0 ? ['Seña',   `$${s.selectedService.deposit.toLocaleString()}`] : null,
   ].filter(Boolean);
   document.getElementById('booking-summary').innerHTML = `
-    <h3>Resumen de tu reserva</h3>
+    <h3>Resumen</h3>
     ${rows.map(([k,v]) => `<div class="summary-row"><span>${k}</span><span>${v}</span></div>`).join('')}`;
 }
 
-// ── Booking submission ────────────────────────────────────────────────────────
-
 async function submitBooking() {
-  const name = document.getElementById('f-name').value.trim();
-  const phone = document.getElementById('f-phone').value.trim();
-  const email = document.getElementById('f-email').value.trim();
+  const name      = document.getElementById('f-name').value.trim();
+  const phone     = document.getElementById('f-phone').value.trim();
+  const email     = document.getElementById('f-email').value.trim();
   const instagram = document.getElementById('f-instagram').value.trim();
-  const notes = document.getElementById('f-notes').value.trim();
-  const errorEl = document.getElementById('form-error');
-
+  const notes     = document.getElementById('f-notes').value.trim();
+  const errorEl   = document.getElementById('form-error');
   if (!name || !phone) {
     errorEl.textContent = 'Por favor completá nombre y teléfono.';
     errorEl.classList.add('show');
     return;
   }
   errorEl.classList.remove('show');
-
   const btn = document.getElementById('btn-confirm');
   btn.disabled = true; btn.textContent = 'Reservando...';
-
   try {
     const res = await fetch('/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name, phone, email, instagram, notes,
+      body: JSON.stringify({ name, phone, email, instagram, notes,
         service_id: state.selectedService.id,
         professional_id: state.selectedProfessional?.id,
-        date: state.selectedDate,
-        time: state.selectedTime,
-      })
+        date: state.selectedDate, time: state.selectedTime }),
     });
     const data = await res.json();
-
     if (!res.ok) {
       errorEl.textContent = data.error || 'Error al crear la reserva. Intentá de nuevo.';
       errorEl.classList.add('show');
       btn.disabled = false; btn.textContent = 'Confirmar reserva';
       return;
     }
-
     const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const [y, mo, dy] = state.selectedDate.split('-');
     const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
-
     document.getElementById('confirm-summary').innerHTML = `
-      <h3>Detalle de tu reserva</h3>
+      <h3>Detalle</h3>
       <div class="summary-row"><span>Nº de reserva</span><span>#${data.booking_id}</span></div>
       <div class="summary-row"><span>Servicio</span><span>${state.selectedService.name}</span></div>
       ${state.selectedProfessional ? `<div class="summary-row"><span>Profesional</span><span>${state.selectedProfessional.name}</span></div>` : ''}
@@ -832,13 +940,8 @@ async function submitBooking() {
       <div class="summary-row"><span>Nombre</span><span>${name}</span></div>
       ${state.selectedService.price > 0 ? `<div class="summary-row"><span>Precio</span><span>$${state.selectedService.price.toLocaleString()}</span></div>` : ''}
     `;
-
-    if (data.whatsapp_url) {
-      document.getElementById('whatsapp-btn').href = data.whatsapp_url;
-    } else {
-      document.getElementById('whatsapp-btn').style.display = 'none';
-    }
-
+    if (data.whatsapp_url) document.getElementById('whatsapp-btn').href = data.whatsapp_url;
+    else document.getElementById('whatsapp-btn').style.display = 'none';
     goStep(4);
   } catch (e) {
     errorEl.textContent = 'Error de conexión. Por favor intentá de nuevo.';
