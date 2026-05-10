@@ -2,7 +2,13 @@ require('dotenv').config();
 const multer = require('multer');
 const cron = require('node-cron');
 const emailSvc = require('./email');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const express = require('express');
+
+// Mercado Pago — se inicializa solo si MP_ACCESS_TOKEN está configurado
+const mpClient = process.env.MP_ACCESS_TOKEN
+  ? new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN })
+  : null;
 const session = require('express-session');
 const path = require('path');
 const db = require('./db');
@@ -102,7 +108,7 @@ app.get('/api/available-slots', (req, res) => {
   res.json(db.getAvailableSlots(date, parseInt(service_id), professional_id ? parseInt(professional_id) : null));
 });
 
-app.post('/api/bookings', (req, res) => {
+app.post('/api/bookings', async (req, res) => {
   const { name, phone, email, instagram, service_id, professional_id, date, time, notes } = req.body;
   if (!name || !phone || !service_id || !date || !time)
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
@@ -145,7 +151,78 @@ app.post('/api/bookings', (req, res) => {
     }
   });
 
-  res.json({ success: true, booking_id: booking.id, message: 'Reserva creada exitosamente' });
+  // Si MP está configurado y el servicio tiene seña, crear preferencia de pago
+  let mp_checkout_url = null;
+  let mp_sandbox_url = null;
+  if (mpClient && service.deposit > 0) {
+    try {
+      const pref = new Preference(mpClient);
+      const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+      const result = await pref.create({ body: {
+        items: [{ id: `booking-${booking.id}`, title: `Seña - ${service.name}`,
+          description: `Reserva #${booking.id} · ${bizName}`,
+          quantity: 1, unit_price: service.deposit, currency_id: 'UYU' }],
+        external_reference: String(booking.id),
+        back_urls: {
+          success: `${publicUrl}/?payment=success&booking=${booking.id}`,
+          failure: `${publicUrl}/?payment=failure&booking=${booking.id}`,
+          pending: `${publicUrl}/?payment=pending&booking=${booking.id}`,
+        },
+        auto_return: 'approved',
+        notification_url: `${publicUrl}/api/payments/webhook`,
+        statement_descriptor: bizName.slice(0, 22),
+        metadata: { booking_id: booking.id, client_name: name },
+      }});
+      mp_checkout_url = result.init_point;
+      mp_sandbox_url = result.sandbox_init_point;
+      db.updateBookingPayment(booking.id, { mp_preference_id: result.id });
+    } catch (mpErr) {
+      console.error('MP preference error:', mpErr.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    booking_id: booking.id,
+    deposit: service.deposit,
+    message: 'Reserva creada exitosamente',
+    mp_checkout_url,
+    mp_sandbox_url,
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// MERCADO PAGO
+// ═══════════════════════════════════════════════════════
+
+// Webhook de MP (no requiere auth — MP llama desde sus servidores)
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  res.sendStatus(200); // siempre 200 a MP primero
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    if (body.type !== 'payment' || !body.data?.id) return;
+    if (!mpClient) return;
+    const payment = new Payment(mpClient);
+    const payData = await payment.get({ id: body.data.id });
+    if (payData.status === 'approved') {
+      const bookingId = parseInt(payData.external_reference);
+      if (!isNaN(bookingId)) {
+        db.updateBookingAdmin(bookingId, { payment_status: 'deposit' });
+        db.updateBookingPayment(bookingId, {
+          deposit_paid: payData.transaction_amount,
+          mp_payment_id: String(body.data.id),
+        });
+        console.log(`MP pago aprobado: booking #${bookingId}, $${payData.transaction_amount}`);
+      }
+    }
+  } catch (err) { console.error('MP webhook error:', err.message); }
+});
+
+// Estado de pago de una reserva
+app.get('/api/payments/status/:bookingId', (req, res) => {
+  const b = db.getBookingById(parseInt(req.params.bookingId));
+  if (!b) return res.status(404).json({ error: 'No encontrado' });
+  res.json({ deposit_paid: b.deposit_paid, payment_status: b.payment_status, mp_payment_id: b.mp_payment_id });
 });
 
 // ═══════════════════════════════════════════════════════
@@ -380,4 +457,5 @@ app.listen(PORT, () => {
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   admin123 (cambiala en Configuración)\n`);
 });
+
 
