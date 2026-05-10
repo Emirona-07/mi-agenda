@@ -300,14 +300,6 @@ app.get('/api/admin/whatsapp/status', requireAuth, (req, res) => {
 });
 
 
-// ═══════════════════════════════════════════════════════
-// ROUTES
-// ═══════════════════════════════════════════════════════
-
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-
 // ─── ADMIN: fotos de citas ────────────────────────────────────────────────────
 app.get('/api/admin/bookings/:id/photos', requireAuth, (req, res) => {
   res.json(db.getBookingPhotos(parseInt(req.params.id)));
@@ -336,6 +328,13 @@ app.get('/api/client/my-bookings/:id/photos', (req, res) => {
   if (!bookings.find(b => b.id === parseInt(req.params.id))) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getBookingPhotos(parseInt(req.params.id)));
 });
+
+// ═══════════════════════════════════════════════════════
+// ROUTES (wildcard siempre al final)
+// ═══════════════════════════════════════════════════════
+
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ─── CRON: recordatorio 48h (cada hora) ──────────────────────────────────────
 cron.schedule('0 * * * *', async () => {
@@ -381,3 +380,4 @@ app.listen(PORT, () => {
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   admin123 (cambiala en Configuración)\n`);
 });
+
