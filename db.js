@@ -88,6 +88,12 @@ db.exec(`
   );
 `);
 
+// Migrate clients table for Google auth
+const _clientCols = db.prepare("PRAGMA table_info(clients)").all().map(c => c.name);
+if (!_clientCols.includes('google_id')) db.exec("ALTER TABLE clients ADD COLUMN google_id TEXT");
+if (!_clientCols.includes('google_picture')) db.exec("ALTER TABLE clients ADD COLUMN google_picture TEXT");
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_google_id ON clients(google_id) WHERE google_id IS NOT NULL"); } catch {}
+
 // Default settings
 const initSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
 [
@@ -474,6 +480,35 @@ function getRevenue({ period, year, month }) {
   return {};
 }
 
+function findOrCreateClientByGoogle({ google_id, email, name, picture }) {
+  let client = db.prepare('SELECT * FROM clients WHERE google_id=?').get(google_id);
+  if (client) {
+    if (picture) db.prepare('UPDATE clients SET google_picture=? WHERE id=?').run(picture, client.id);
+    return db.prepare('SELECT * FROM clients WHERE id=?').get(client.id);
+  }
+  if (email) {
+    client = db.prepare("SELECT * FROM clients WHERE email=? AND (google_id IS NULL OR google_id='')").get(email);
+    if (client) {
+      db.prepare('UPDATE clients SET google_id=?, google_picture=? WHERE id=?').run(google_id, picture || null, client.id);
+      return db.prepare('SELECT * FROM clients WHERE id=?').get(client.id);
+    }
+  }
+  const r = db.prepare('INSERT INTO clients (name, phone, email, google_id, google_picture) VALUES (?, ?, ?, ?, ?)').run(
+    name || 'Usuario', `g_${google_id.slice(-8)}`, email || null, google_id, picture || null
+  );
+  return db.prepare('SELECT * FROM clients WHERE id=?').get(r.lastInsertRowid);
+}
+
+function cancelClientBooking(bookingId, clientId) {
+  const b = db.prepare('SELECT * FROM bookings WHERE id=? AND client_id=?').get(bookingId, clientId);
+  if (!b) return { error: 'no_encontrado' };
+  if (b.status === 'cancelled') return { error: 'ya_cancelado' };
+  const today = new Date().toISOString().split('T')[0];
+  if (b.date < today) return { error: 'turno_pasado' };
+  db.prepare("UPDATE bookings SET status='cancelled' WHERE id=?").run(bookingId);
+  return { success: true };
+}
+
 function createSessionStore(session) {
   const Store = session.Store;
   const getStmt = db.prepare('SELECT sess FROM sessions WHERE sid=? AND expired_at > ?');
@@ -535,5 +570,6 @@ module.exports = {
   upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
   createBooking, getBookings, getBookingById, updateBooking, cancelBooking,
   getDashboardStats, getRevenue,
+  findOrCreateClientByGoogle, cancelClientBooking,
   createSessionStore,
 };

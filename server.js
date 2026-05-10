@@ -30,9 +30,24 @@ function formatDate(d) {
   return `${parseInt(day)} de ${months[parseInt(m)-1]} de ${y}`;
 }
 
+async function verifyGoogleToken(credential) {
+  try {
+    const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    const data = await r.json();
+    if (!r.ok || data.error || !data.sub) return null;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (clientId && data.aud !== clientId) return null;
+    return { google_id: data.sub, email: data.email, name: data.name, picture: data.picture };
+  } catch { return null; }
+}
+
 // ═══════════════════════════════════════════════════════
 // PUBLIC API
 // ═══════════════════════════════════════════════════════
+
+app.get('/api/config', (req, res) => {
+  res.json({ google_client_id: process.env.GOOGLE_CLIENT_ID || null });
+});
 
 app.get('/api/business', (req, res) => {
   const s = db.getSettings();
@@ -108,6 +123,42 @@ app.post('/api/bookings', (req, res) => {
   });
 
   res.json({ success: true, booking_id: booking.id, message: 'Reserva creada exitosamente' });
+});
+
+// ═══════════════════════════════════════════════════════
+// CLIENT AUTH
+// ═══════════════════════════════════════════════════════
+
+app.post('/api/client/auth/google', async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) return res.status(400).json({ error: 'Falta credential' });
+  const info = await verifyGoogleToken(credential);
+  if (!info) return res.status(401).json({ error: 'Token de Google inválido' });
+  const client = db.findOrCreateClientByGoogle(info);
+  req.session.clientUser = { id: client.id, name: client.name, email: client.email, picture: info.picture };
+  res.json({ success: true, client: req.session.clientUser });
+});
+
+app.get('/api/client/me', (req, res) => {
+  res.json({ client: req.session.clientUser || null });
+});
+
+app.get('/api/client/my-bookings', (req, res) => {
+  if (!req.session.clientUser) return res.status(401).json({ error: 'No autenticado' });
+  const bookings = db.getClientBookings(req.session.clientUser.id);
+  res.json(bookings);
+});
+
+app.post('/api/client/my-bookings/:id/cancel', (req, res) => {
+  if (!req.session.clientUser) return res.status(401).json({ error: 'No autenticado' });
+  const result = db.cancelClientBooking(parseInt(req.params.id), req.session.clientUser.id);
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.json({ success: true });
+});
+
+app.post('/api/client/logout', (req, res) => {
+  delete req.session.clientUser;
+  res.json({ success: true });
 });
 
 // ═══════════════════════════════════════════════════════

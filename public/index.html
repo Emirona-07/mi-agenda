@@ -14,13 +14,20 @@
     }
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    header { background: var(--green); color: white; padding: 20px 16px; text-align: center; }
+    header { background: var(--green); color: white; padding: 20px 16px; text-align: center; position: relative; }
     header h1 { font-size: 1.5rem; font-weight: 700; }
     header p { font-size: 0.9rem; opacity: 0.85; margin-top: 4px; }
 
+    .header-account { position: absolute; top: 50%; right: 16px; transform: translateY(-50%); }
+    .btn-account { background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.5); border-radius: 20px; padding: 6px 14px; cursor: pointer; font-size: 0.85rem; font-family: inherit; transition: background 0.2s; }
+    .btn-account:hover { background: rgba(255,255,255,0.3); }
+    .account-user { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .account-avatar { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.7); object-fit: cover; }
+    .account-avatar-placeholder { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: white; }
+    .account-name { font-size: 0.85rem; color: white; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     .container { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
 
-    /* Progress bar */
     .progress { display: flex; align-items: center; margin-bottom: 28px; }
     .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; transition: all 0.3s; flex-shrink: 0; }
     .step-dot.active { background: var(--green); color: white; }
@@ -29,11 +36,9 @@
     .step-line { flex: 1; height: 3px; background: var(--border); margin: 0 6px; transition: background 0.3s; }
     .step-line.done { background: var(--accent); }
 
-    /* Cards */
     .card { background: white; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); }
     .card-title { font-size: 1.1rem; font-weight: 700; color: var(--green); margin-bottom: 16px; }
 
-    /* Service cards */
     .service-grid { display: grid; gap: 12px; }
     .service-card { border: 2px solid var(--border); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: left; background: white; width: 100%; }
     .service-card:hover { border-color: var(--accent); background: #f0faf4; }
@@ -43,7 +48,6 @@
     .service-card .price { color: var(--green); font-weight: 700; }
     .service-card .desc { font-size: 0.82rem; color: var(--muted); margin-top: 6px; line-height: 1.4; }
 
-    /* Professional cards */
     .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
     .prof-card { border: 2px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; }
     .prof-card:hover { border-color: var(--accent); }
@@ -51,7 +55,6 @@
     .prof-avatar { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.1rem; }
     .prof-card h3 { font-size: 0.9rem; font-weight: 600; }
 
-    /* Calendar */
     .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .calendar-header h3 { font-size: 1rem; font-weight: 700; text-transform: capitalize; }
     .cal-nav { background: none; border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
@@ -69,31 +72,23 @@
     .cal-day.other-month { opacity: 0.3; }
     .cal-day.past { opacity: 0.35; }
 
-    /* Time slots */
     .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
     .slot-btn { padding: 10px 8px; border: 2px solid var(--border); border-radius: 10px; background: white; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text); transition: all 0.2s; text-align: center; }
     .slot-btn:hover { border-color: var(--accent); color: var(--green); }
     .slot-btn.selected { background: var(--green); border-color: var(--green); color: white; }
 
-    /* Form */
     .form-group { margin-bottom: 16px; }
     label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
-    input, textarea, select {
-      width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
-      font-size: 0.95rem; font-family: inherit; outline: none; transition: border-color 0.2s;
-      background: white;
-    }
+    input, textarea, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; outline: none; transition: border-color 0.2s; background: white; }
     input:focus, textarea:focus { border-color: var(--green); }
     textarea { resize: vertical; min-height: 80px; }
 
-    /* Summary box */
     .summary { background: var(--green-bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
     .summary h3 { font-size: 0.9rem; font-weight: 700; color: var(--green); margin-bottom: 10px; }
     .summary-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; }
     .summary-row span:first-child { color: var(--muted); }
     .summary-row span:last-child { font-weight: 600; }
 
-    /* Buttons */
     .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; }
     .btn-primary { background: var(--green); color: white; }
     .btn-primary:hover { background: var(--green-light); }
@@ -104,15 +99,12 @@
     .btn-whatsapp:hover { background: #20bd5a; }
     .btn-whatsapp svg { width: 24px; height: 24px; }
 
-    /* Success screen */
     .success-icon { width: 72px; height: 72px; background: var(--green-bg); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; }
     .success-icon svg { width: 36px; height: 36px; color: var(--green); }
 
-    /* Navigation */
     .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
     .nav-btns .btn { flex: 1; }
 
-    /* Empty/loading states */
     .empty { text-align: center; color: var(--muted); padding: 24px; font-size: 0.9rem; }
     .loading { text-align: center; padding: 24px; color: var(--muted); }
 
@@ -124,9 +116,57 @@
 
     .step-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; text-align: center; }
 
-    @media (max-width: 480px) {
-      .slots-grid { grid-template-columns: repeat(3, 1fr); }
-    }
+    @media (max-width: 480px) { .slots-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    /* ── Login Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: white; border-radius: 20px; padding: 36px 28px 28px; max-width: 380px; width: 100%; position: relative; text-align: center; }
+    .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--muted); line-height: 1; }
+    .modal-close:hover { color: var(--text); }
+    .modal-box h2 { font-size: 1.25rem; margin-bottom: 8px; }
+    .modal-box .modal-desc { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5; }
+    .divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.82rem; margin: 16px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .btn-skip { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; font-family: inherit; padding: 8px; text-decoration: underline; }
+    .btn-skip:hover { color: var(--text); }
+    #google-btn-modal { display: flex; justify-content: center; }
+
+    /* ── Account Prompt (step 4) ── */
+    .account-prompt-card { background: white; border-radius: 16px; padding: 28px 24px; box-shadow: var(--shadow); margin-top: 16px; text-align: center; }
+    .account-prompt-card .prompt-emoji { font-size: 2.2rem; margin-bottom: 12px; }
+    .account-prompt-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .account-prompt-card p { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; line-height: 1.5; }
+    #google-btn-prompt { display: flex; justify-content: center; margin-bottom: 10px; }
+    .btn-no-thanks { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; font-family: inherit; padding: 6px; }
+
+    /* ── Mis Reservas ── */
+    .bookings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .bookings-header .card-title { margin-bottom: 0; }
+    .btn-logout { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+    .btn-logout:hover { border-color: #c0392b; color: #c0392b; }
+    .section-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 10px; }
+    .booking-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+    .booking-card.upcoming { border-color: var(--accent); background: #f9fffe; }
+    .booking-card.cancelled-card { opacity: 0.55; }
+    .booking-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .booking-card h3 { font-size: 0.95rem; font-weight: 700; }
+    .status-badge { font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .status-badge.confirmed { background: var(--green-bg); color: var(--green); }
+    .status-badge.cancelled { background: #fff0f0; color: #c0392b; }
+    .booking-meta { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+    .cancel-area { margin-top: 12px; }
+    .btn-cancel { background: none; border: 1px solid #e74c3c; color: #e74c3c; border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+    .btn-cancel:hover { background: #fff0f0; }
+    .confirm-cancel { display: none; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--muted); }
+    .confirm-cancel.show { display: flex; }
+    .btn-yes-cancel { background: #e74c3c; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+    .btn-no-cancel { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+    .user-info-box { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; }
+    .user-info-box img { width: 42px; height: 42px; border-radius: 50%; }
+    .user-info-box .uib-placeholder { width: 42px; height: 42px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
+    .user-info-box .uib-name { font-weight: 700; font-size: 0.95rem; }
+    .user-info-box .uib-email { font-size: 0.82rem; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -134,6 +174,7 @@
 <header>
   <h1 id="biz-name">Cargando...</h1>
   <p id="biz-desc"></p>
+  <div class="header-account" id="header-account"></div>
 </header>
 
 <div class="container">
@@ -177,13 +218,11 @@
           <div id="cal-days"></div>
         </div>
       </div>
-
       <div class="card" id="slots-card" style="display:none">
         <div class="card-title" id="slots-title">Elegí el horario</div>
         <div id="slots-list"></div>
       </div>
     </div>
-
     <div class="nav-btns">
       <button class="btn btn-secondary" onclick="goStep(1)">← Volver</button>
       <button class="btn btn-primary" id="btn-to-3" disabled onclick="goStep(3)">Siguiente →</button>
@@ -195,11 +234,7 @@
     <div class="card">
       <div class="card-title">Tus datos</div>
       <div class="error-msg" id="form-error"></div>
-
-      <div class="summary" id="booking-summary">
-        <h3>Resumen de tu reserva</h3>
-      </div>
-
+      <div class="summary" id="booking-summary"><h3>Resumen de tu reserva</h3></div>
       <div class="form-group">
         <label>Nombre completo *</label>
         <input type="text" id="f-name" placeholder="Tu nombre" required>
@@ -221,7 +256,6 @@
         <textarea id="f-notes" placeholder="¿Algo que debamos saber?"></textarea>
       </div>
     </div>
-
     <div class="nav-btns">
       <button class="btn btn-secondary" onclick="goStep(2)">← Volver</button>
       <button class="btn btn-primary" id="btn-confirm" onclick="submitBooking()">Confirmar reserva</button>
@@ -240,16 +274,56 @@
       <p style="color:var(--muted);margin-bottom:24px;font-size:0.95rem">
         Tu turno quedó registrado. Presioná el botón para avisarnos por WhatsApp y finalizar la confirmación.
       </p>
-
       <div class="summary" id="confirm-summary" style="text-align:left;margin-bottom:24px"></div>
-
       <a id="whatsapp-btn" href="#" target="_blank" class="btn-whatsapp" style="margin-bottom:12px">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Confirmar por WhatsApp
       </a>
-
       <button class="btn btn-secondary" onclick="newBooking()" style="margin-top:8px">Hacer otra reserva</button>
     </div>
+
+    <!-- Account prompt (solo si no está logueado) -->
+    <div class="account-prompt-card" id="account-prompt" style="display:none">
+      <div class="prompt-emoji">🗓️</div>
+      <h3>Guardá tus reservas</h3>
+      <p>Creá tu cuenta para ver y cancelar tus turnos cuando quieras, sin tener que llamar.</p>
+      <div id="google-btn-prompt"></div>
+      <button class="btn-no-thanks" onclick="document.getElementById('account-prompt').style.display='none'">No, gracias</button>
+    </div>
+
+    <!-- Acceso directo si ya está logueado -->
+    <div id="goto-bookings-card" style="display:none;margin-top:16px">
+      <button class="btn btn-secondary" onclick="showMyBookings()">Ver mis reservas →</button>
+    </div>
+  </div>
+
+  <!-- Mis Reservas -->
+  <div class="section" id="section-bookings">
+    <div class="card">
+      <div class="bookings-header">
+        <div class="card-title">Mis reservas</div>
+        <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+      </div>
+      <div id="user-info-box"></div>
+      <div id="my-bookings-content"><div class="loading">Cargando...</div></div>
+    </div>
+    <div class="nav-btns" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="goStep(1)">Hacer nueva reserva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeLoginModal()">✕</button>
+    <div style="font-size:2rem;margin-bottom:12px">👤</div>
+    <h2>Mi cuenta</h2>
+    <p class="modal-desc">Iniciá sesión para ver y gestionar tus reservas cuando quieras.</p>
+    <div id="google-btn-modal"></div>
+    <div class="divider">o</div>
+    <button class="btn-skip" onclick="closeLoginModal()">Continuar sin cuenta</button>
+    <div class="error-msg" id="login-error" style="margin-top:12px;text-align:left"></div>
   </div>
 </div>
 
@@ -258,25 +332,268 @@ const state = {
   services: [], professionals: [],
   selectedService: null, selectedProfessional: null,
   selectedDate: null, selectedTime: null,
-  availableDates: [], calYear: null, calMonth: null
+  availableDates: [], calYear: null, calMonth: null,
+  clientUser: null,
+  googleClientId: null,
+  googleReady: false,
 };
 
-// Init
+// ── Init ──────────────────────────────────────────────────────────────────────
+
 async function init() {
-  const biz = await fetch('/api/business').then(r => r.json());
+  const [biz, cfg, me] = await Promise.all([
+    fetch('/api/business').then(r => r.json()),
+    fetch('/api/config').then(r => r.json()),
+    fetch('/api/client/me').then(r => r.json()),
+  ]);
+
   document.getElementById('biz-name').textContent = biz.name;
   document.getElementById('biz-desc').textContent = biz.description || '';
   document.title = `Reservar turno - ${biz.name}`;
+
+  state.googleClientId = cfg.google_client_id;
+  if (me.client) {
+    state.clientUser = me.client;
+  }
+
+  renderHeader();
+
+  if (state.googleClientId) {
+    loadGoogleScript();
+  }
 
   const services = await fetch('/api/services').then(r => r.json());
   state.services = services;
   renderServices();
 }
 
+// ── Google Identity Services ──────────────────────────────────────────────────
+
+function loadGoogleScript() {
+  const script = document.createElement('script');
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.async = true;
+  script.onload = () => {
+    google.accounts.id.initialize({
+      client_id: state.googleClientId,
+      callback: handleGoogleCredential,
+    });
+    state.googleReady = true;
+  };
+  document.head.appendChild(script);
+}
+
+function renderGoogleButton(containerId, options = {}) {
+  if (!state.googleReady || !state.googleClientId) return;
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  google.accounts.id.renderButton(el, {
+    theme: 'outline', size: 'large', locale: 'es', width: 300,
+    text: options.text || 'continue_with',
+    ...options,
+  });
+}
+
+async function handleGoogleCredential(response) {
+  const loginError = document.getElementById('login-error');
+  if (loginError) loginError.classList.remove('show');
+
+  try {
+    const res = await fetch('/api/client/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión');
+
+    state.clientUser = data.client;
+    closeLoginModal();
+    renderHeader();
+    // If we're on step 4, update the post-booking UI
+    if (document.getElementById('step-4').classList.contains('active')) {
+      document.getElementById('account-prompt').style.display = 'none';
+      document.getElementById('goto-bookings-card').style.display = 'block';
+    }
+  } catch (e) {
+    if (loginError) {
+      loginError.textContent = e.message;
+      loginError.classList.add('show');
+    }
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+function renderHeader() {
+  const el = document.getElementById('header-account');
+  if (state.clientUser) {
+    const initials = (state.clientUser.name || 'U').charAt(0).toUpperCase();
+    const avatarHtml = state.clientUser.picture
+      ? `<img class="account-avatar" src="${state.clientUser.picture}" alt="">`
+      : `<div class="account-avatar-placeholder">${initials}</div>`;
+    el.innerHTML = `
+      <div class="account-user" onclick="showMyBookings()" title="Mis reservas">
+        ${avatarHtml}
+        <span class="account-name">${state.clientUser.name || ''}</span>
+      </div>`;
+  } else if (state.googleClientId) {
+    el.innerHTML = `<button class="btn-account" onclick="showLoginModal()">Mi cuenta</button>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+// ── Login Modal ───────────────────────────────────────────────────────────────
+
+function showLoginModal() {
+  document.getElementById('login-modal').classList.add('open');
+  document.getElementById('login-error').classList.remove('show');
+  // Give the DOM a tick to render, then mount the button
+  setTimeout(() => renderGoogleButton('google-btn-modal'), 50);
+}
+
+function closeLoginModal() {
+  document.getElementById('login-modal').classList.remove('open');
+}
+
+// ── Mis Reservas ──────────────────────────────────────────────────────────────
+
+async function showMyBookings() {
+  if (!state.clientUser) { showLoginModal(); return; }
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-bookings').classList.add('active');
+  document.getElementById('progress-bar').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // User info box
+  const u = state.clientUser;
+  const initials = (u.name || 'U').charAt(0).toUpperCase();
+  document.getElementById('user-info-box').innerHTML = `
+    <div class="user-info-box">
+      ${u.picture ? `<img src="${u.picture}" alt="">` : `<div class="uib-placeholder">${initials}</div>`}
+      <div>
+        <div class="uib-name">${u.name || ''}</div>
+        ${u.email ? `<div class="uib-email">${u.email}</div>` : ''}
+      </div>
+    </div>`;
+
+  const content = document.getElementById('my-bookings-content');
+  content.innerHTML = '<div class="loading">Cargando reservas...</div>';
+
+  try {
+    const bookings = await fetch('/api/client/my-bookings').then(r => r.json());
+    renderMyBookings(bookings);
+  } catch {
+    content.innerHTML = '<div class="empty">Error al cargar las reservas.</div>';
+  }
+}
+
+function renderMyBookings(bookings) {
+  const content = document.getElementById('my-bookings-content');
+  if (!bookings.length) {
+    content.innerHTML = '<div class="empty">Todavía no tenés reservas.</div>';
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const upcoming = bookings.filter(b => b.date >= today && b.status !== 'cancelled');
+  const past = bookings.filter(b => b.date < today || b.status === 'cancelled');
+
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  function fmtDate(d) {
+    const [y,m,day] = d.split('-');
+    return `${parseInt(day)} de ${months[parseInt(m)-1]} de ${y}`;
+  }
+
+  let html = '';
+
+  if (upcoming.length) {
+    html += `<div class="section-label">Próximas</div>`;
+    html += upcoming.map(b => bookingCardHtml(b, fmtDate, true)).join('');
+  }
+
+  if (past.length) {
+    html += `<div class="section-label">Historial</div>`;
+    html += past.map(b => bookingCardHtml(b, fmtDate, false)).join('');
+  }
+
+  content.innerHTML = html;
+}
+
+function bookingCardHtml(b, fmtDate, canCancel) {
+  const isCancelled = b.status === 'cancelled';
+  const statusLabel = isCancelled ? 'Cancelado' : 'Confirmado';
+  const statusClass = isCancelled ? 'cancelled' : 'confirmed';
+  const cardClass = isCancelled ? 'cancelled-card' : (canCancel ? 'upcoming' : '');
+
+  const cancelArea = canCancel && !isCancelled ? `
+    <div class="cancel-area">
+      <button class="btn-cancel" onclick="initCancel(${b.id}, this)">Cancelar turno</button>
+      <div class="confirm-cancel" id="confirm-${b.id}">
+        ¿Confirmar cancelación?
+        <button class="btn-yes-cancel" onclick="confirmCancel(${b.id})">Sí, cancelar</button>
+        <button class="btn-no-cancel" onclick="abortCancel(${b.id}, this)">No</button>
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="booking-card ${cardClass}" id="booking-card-${b.id}">
+      <div class="booking-card-top">
+        <h3>${b.service_name}</h3>
+        <span class="status-badge ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="booking-meta">
+        📅 ${fmtDate(b.date)} a las ${b.time}<br>
+        ${b.professional_name ? `👩 ${b.professional_name}<br>` : ''}
+        🔖 Reserva #${b.id}
+      </div>
+      ${cancelArea}
+    </div>`;
+}
+
+function initCancel(id, btn) {
+  btn.style.display = 'none';
+  document.getElementById(`confirm-${id}`).classList.add('show');
+}
+
+function abortCancel(id, btn) {
+  document.getElementById(`confirm-${id}`).classList.remove('show');
+  document.querySelector(`#booking-card-${id} .btn-cancel`).style.display = '';
+}
+
+async function confirmCancel(id) {
+  try {
+    const res = await fetch(`/api/client/my-bookings/${id}/cancel`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error === 'turno_pasado' ? 'No podés cancelar un turno pasado.' :
+            data.error === 'ya_cancelado' ? 'Este turno ya está cancelado.' : 'Error al cancelar.');
+      return;
+    }
+    // Reload bookings
+    const bookings = await fetch('/api/client/my-bookings').then(r => r.json());
+    renderMyBookings(bookings);
+  } catch {
+    alert('Error al cancelar. Intentá de nuevo.');
+  }
+}
+
+async function logout() {
+  await fetch('/api/client/logout', { method: 'POST' });
+  state.clientUser = null;
+  renderHeader();
+  goStep(1);
+  document.getElementById('progress-bar').style.display = '';
+}
+
+// ── Services ──────────────────────────────────────────────────────────────────
+
 function renderServices() {
   const list = document.getElementById('services-list');
   if (!state.services.length) { list.innerHTML = '<div class="empty">No hay servicios disponibles.</div>'; return; }
-
   list.innerHTML = state.services.map(s => `
     <button class="service-card ${state.selectedService?.id === s.id ? 'selected' : ''}" onclick="selectService(${s.id})">
       <h3>${s.name}</h3>
@@ -302,9 +619,26 @@ async function selectService(id) {
 function goStep(step) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(`step-${step}`).classList.add('active');
+  document.getElementById('progress-bar').style.display = '';
   updateProgress(step);
   if (step === 2) loadCalendar();
-  if (step === 3) renderSummary();
+  if (step === 3) {
+    renderSummary();
+    if (state.clientUser) {
+      if (!document.getElementById('f-name').value) document.getElementById('f-name').value = state.clientUser.name || '';
+      if (!document.getElementById('f-email').value) document.getElementById('f-email').value = state.clientUser.email || '';
+    }
+  }
+  if (step === 4) {
+    if (state.clientUser) {
+      document.getElementById('account-prompt').style.display = 'none';
+      document.getElementById('goto-bookings-card').style.display = 'block';
+    } else if (state.googleClientId) {
+      document.getElementById('account-prompt').style.display = 'block';
+      document.getElementById('goto-bookings-card').style.display = 'none';
+      setTimeout(() => renderGoogleButton('google-btn-prompt', { text: 'signup_with' }), 50);
+    }
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -320,11 +654,11 @@ function updateProgress(step) {
   }
 }
 
-// Calendar
+// ── Calendar ──────────────────────────────────────────────────────────────────
+
 async function loadCalendar() {
   const now = new Date();
   if (!state.calYear) { state.calYear = now.getFullYear(); state.calMonth = now.getMonth(); }
-
   const datesRes = await fetch(`/api/available-dates?service_id=${state.selectedService.id}${state.selectedProfessional ? '&professional_id='+state.selectedProfessional.id : ''}`);
   state.availableDates = await datesRes.json();
   renderCalendar();
@@ -341,11 +675,7 @@ function renderCalendar() {
   const prevDays = new Date(y, m, 0).getDate();
 
   let html = '';
-  // Prev month days
-  for (let i = firstDay - 1; i >= 0; i--) {
-    html += `<div class="cal-day other-month">${prevDays - i}</div>`;
-  }
-  // Current month days
+  for (let i = firstDay - 1; i >= 0; i--) html += `<div class="cal-day other-month">${prevDays - i}</div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const date = new Date(y, m, d);
@@ -353,21 +683,17 @@ function renderCalendar() {
     const isPast = date < today;
     const isAvail = state.availableDates.includes(dateStr);
     const isSel = state.selectedDate === dateStr;
-
     let cls = 'cal-day';
     if (isPast) cls += ' past';
     else if (isAvail) cls += ' available';
     if (isSel) cls += ' selected';
     if (isToday) cls += ' today';
-
     const click = isAvail && !isPast ? `onclick="selectDate('${dateStr}')"` : '';
     html += `<div class="${cls}" ${click}>${d}</div>`;
   }
-  // Next month padding
   const total = firstDay + daysInMonth;
   const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let i = 1; i <= remaining; i++) html += `<div class="cal-day other-month">${i}</div>`;
-
   document.getElementById('cal-days').innerHTML = html;
 }
 
@@ -389,18 +715,13 @@ async function selectDate(dateStr) {
   card.style.display = 'block';
   list.innerHTML = '<div class="loading">Cargando horarios...</div>';
 
-  const [,, dy] = dateStr.split('-');
+  const [,mo, dy] = dateStr.split('-');
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  const [y, mo] = dateStr.split('-');
   document.getElementById('slots-title').textContent = `Horarios para el ${parseInt(dy)} de ${months[parseInt(mo)-1]}`;
 
   const slots = await fetch(`/api/available-slots?date=${dateStr}&service_id=${state.selectedService.id}${state.selectedProfessional ? '&professional_id='+state.selectedProfessional.id : ''}`).then(r => r.json());
 
-  if (!slots.length) {
-    list.innerHTML = '<div class="empty">No hay horarios disponibles para este día.</div>';
-    return;
-  }
-
+  if (!slots.length) { list.innerHTML = '<div class="empty">No hay horarios disponibles para este día.</div>'; return; }
   list.innerHTML = `<div class="slots-grid">${slots.map(t => `
     <button class="slot-btn ${state.selectedTime === t ? 'selected' : ''}" onclick="selectTime('${t}')">${t}</button>
   `).join('')}</div>`;
@@ -419,7 +740,6 @@ function renderSummary() {
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const [y, mo, dy] = s.selectedDate.split('-');
   const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
-
   const rows = [
     ['Servicio', s.selectedService.name],
     s.selectedProfessional ? ['Profesional', s.selectedProfessional.name] : null,
@@ -428,12 +748,12 @@ function renderSummary() {
     s.selectedService.price > 0 ? ['Precio', `$${s.selectedService.price.toLocaleString()}`] : null,
     s.selectedService.deposit > 0 ? ['Seña', `$${s.selectedService.deposit.toLocaleString()}`] : null,
   ].filter(Boolean);
-
   document.getElementById('booking-summary').innerHTML = `
     <h3>Resumen de tu reserva</h3>
-    ${rows.map(([k,v]) => `<div class="summary-row"><span>${k}</span><span>${v}</span></div>`).join('')}
-  `;
+    ${rows.map(([k,v]) => `<div class="summary-row"><span>${k}</span><span>${v}</span></div>`).join('')}`;
 }
+
+// ── Booking submission ────────────────────────────────────────────────────────
 
 async function submitBooking() {
   const name = document.getElementById('f-name').value.trim();
@@ -474,7 +794,6 @@ async function submitBooking() {
       return;
     }
 
-    // Success
     const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const [y, mo, dy] = state.selectedDate.split('-');
     const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
@@ -508,11 +827,7 @@ function newBooking() {
   state.selectedService = null; state.selectedProfessional = null;
   state.selectedDate = null; state.selectedTime = null;
   state.calYear = null; state.calMonth = null;
-  document.getElementById('f-name').value = '';
-  document.getElementById('f-phone').value = '';
-  document.getElementById('f-email').value = '';
-  document.getElementById('f-instagram').value = '';
-  document.getElementById('f-notes').value = '';
+  ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('btn-to-2').disabled = true;
   goStep(1);
   renderServices();
