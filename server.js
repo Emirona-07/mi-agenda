@@ -151,31 +151,38 @@ app.post('/api/bookings', async (req, res) => {
     }
   });
 
-  // Si MP está configurado y el servicio tiene seña, crear preferencia de pago
-  let mp_checkout_url = null;
-  let mp_sandbox_url = null;
-  if (mpClient && service.deposit > 0) {
-    try {
-      const pref = new Preference(mpClient);
-      const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
-      const result = await pref.create({ body: {
-        items: [{ id: `booking-${booking.id}`, title: `Seña - ${service.name}`,
-          description: `Reserva #${booking.id} · ${bizName}`,
-          quantity: 1, unit_price: service.deposit, currency_id: 'UYU' }],
-        external_reference: String(booking.id),
+  // Si MP está configurado crear preferencias: una para seña y otra para total
+  let mp_url_deposit = null;
+  let mp_url_full = null;
+
+  if (mpClient && (service.deposit > 0 || service.price > 0)) {
+    const pref = new Preference(mpClient);
+    const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+
+    const makePref = async (amount, payType, label) => {
+      const r = await pref.create({ body: {
+        items: [{ id: `booking-${booking.id}-${payType}`, title: `${label} - ${service.name}`,
+          description: `Reserva #${booking.id} · ${bizName}`, quantity: 1,
+          unit_price: amount, currency_id: 'UYU' }],
+        external_reference: `${booking.id}:${payType}`,
         back_urls: {
-          success: `${publicUrl}/?payment=success&booking=${booking.id}`,
-          failure: `${publicUrl}/?payment=failure&booking=${booking.id}`,
-          pending: `${publicUrl}/?payment=pending&booking=${booking.id}`,
+          success: `${publicUrl}/?payment=success&type=${payType}&booking=${booking.id}`,
+          failure: `${publicUrl}/?payment=failure&type=${payType}&booking=${booking.id}`,
+          pending: `${publicUrl}/?payment=pending&type=${payType}&booking=${booking.id}`,
         },
         auto_return: 'approved',
         notification_url: `${publicUrl}/api/payments/webhook`,
         statement_descriptor: bizName.slice(0, 22),
-        metadata: { booking_id: booking.id, client_name: name },
+        metadata: { booking_id: booking.id, pay_type: payType },
       }});
-      mp_checkout_url = result.init_point;
-      mp_sandbox_url = result.sandbox_init_point;
-      db.updateBookingPayment(booking.id, { mp_preference_id: result.id });
+      return r.init_point;
+    };
+
+    try {
+      const tasks = [];
+      if (service.deposit > 0) tasks.push(makePref(service.deposit, 'deposit', 'Seña').then(u => { mp_url_deposit = u; }));
+      if (service.price > 0)   tasks.push(makePref(service.price,   'full',    'Total').then(u => { mp_url_full = u; }));
+      await Promise.all(tasks);
     } catch (mpErr) {
       console.error('MP preference error:', mpErr.message);
     }
@@ -185,9 +192,10 @@ app.post('/api/bookings', async (req, res) => {
     success: true,
     booking_id: booking.id,
     deposit: service.deposit,
+    price: service.price,
     message: 'Reserva creada exitosamente',
-    mp_checkout_url,
-    mp_sandbox_url,
+    mp_url_deposit,
+    mp_url_full,
   });
 });
 
@@ -205,14 +213,16 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
     const payment = new Payment(mpClient);
     const payData = await payment.get({ id: body.data.id });
     if (payData.status === 'approved') {
-      const bookingId = parseInt(payData.external_reference);
+      const [bookingIdStr, payType = 'deposit'] = (payData.external_reference || '').split(':');
+      const bookingId = parseInt(bookingIdStr);
       if (!isNaN(bookingId)) {
-        db.updateBookingAdmin(bookingId, { payment_status: 'deposit' });
+        const newPaymentStatus = payType === 'full' ? 'full' : 'deposit';
+        db.updateBookingAdmin(bookingId, { payment_status: newPaymentStatus });
         db.updateBookingPayment(bookingId, {
           deposit_paid: payData.transaction_amount,
           mp_payment_id: String(body.data.id),
         });
-        console.log(`MP pago aprobado: booking #${bookingId}, $${payData.transaction_amount}`);
+        console.log(`MP pago aprobado: booking #${bookingId}, tipo=${payType}, $${payData.transaction_amount}`);
       }
     }
   } catch (err) { console.error('MP webhook error:', err.message); }
@@ -457,5 +467,6 @@ app.listen(PORT, () => {
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   admin123 (cambiala en Configuración)\n`);
 });
+
 
 
