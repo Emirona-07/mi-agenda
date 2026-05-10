@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reservar turno</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2d6a4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mi Piel">
+  <link rel="apple-touch-icon" href="/icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -418,9 +424,15 @@
       <div class="card-title">Tus datos</div>
       <div class="error-msg" id="form-error"></div>
       <div class="summary" id="booking-summary"><h3>Resumen</h3></div>
-      <div class="form-group">
-        <label>Nombre completo *</label>
-        <input type="text" id="f-name" placeholder="Tu nombre" required>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="f-firstname" placeholder="Nombre" required autocomplete="given-name">
+        </div>
+        <div class="form-group">
+          <label>Apellido</label>
+          <input type="text" id="f-lastname" placeholder="Apellido" autocomplete="family-name">
+        </div>
       </div>
       <div class="form-group">
         <label>Teléfono *</label>
@@ -461,6 +473,9 @@
       <a id="whatsapp-btn" href="#" target="_blank" class="btn-whatsapp" style="margin-bottom:12px">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Confirmar por WhatsApp
+      </a>
+      <a id="gcal-btn" href="#" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;padding:13px;border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--p);font-size:0.9rem;font-weight:600;text-decoration:none;background:white;transition:all 0.2s" onmouseover="this.style.background='var(--p-light)'" onmouseout="this.style.background='white'">
+        📅 Agregar a Google Calendar
       </a>
       <button class="btn btn-secondary" onclick="newBooking()" style="margin-top:8px">Hacer otra reserva</button>
     </div>
@@ -517,9 +532,15 @@ const state = {
   clientUser: null,
   googleClientId: null,
   googleReady: false,
+  utmSource: null,
 };
 
 async function init() {
+  state.utmSource = new URLSearchParams(window.location.search).get('ref')
+    || new URLSearchParams(window.location.search).get('utm_source')
+    || new URLSearchParams(window.location.search).get('source')
+    || null;
+
   const [biz, cfg, me] = await Promise.all([
     fetch('/api/business').then(r => r.json()),
     fetch('/api/config').then(r => r.json()),
@@ -661,6 +682,10 @@ function bookingCardHtml(b, fmtDate, canCancel) {
         <button class="btn-no-cancel"  onclick="abortCancel(${b.id}, this)">No</button>
       </div>
     </div>` : '';
+  const photosBtn = `<div class="cancel-area" style="margin-top:8px">
+    <button class="btn-cancel" style="color:var(--p);border-color:var(--p-light)" onclick="loadBookingPhotos(${b.id}, this)">📷 Ver fotos</button>
+    <div id="photos-${b.id}" style="margin-top:8px;display:none"></div>
+  </div>`;
   return `
     <div class="booking-card ${cardClass}" id="booking-card-${b.id}">
       <div class="booking-card-top">
@@ -673,7 +698,26 @@ function bookingCardHtml(b, fmtDate, canCancel) {
         🔖 Reserva #${b.id}
       </div>
       ${cancelArea}
+      ${photosBtn}
     </div>`;
+}
+
+async function loadBookingPhotos(id, btn) {
+  const container = document.getElementById(`photos-${id}`);
+  if (container.style.display !== 'none') { container.style.display = 'none'; btn.textContent = '📷 Ver fotos'; return; }
+  container.style.display = 'block';
+  btn.textContent = '📷 Ocultar fotos';
+  container.innerHTML = '<div class="loading" style="padding:8px">Cargando...</div>';
+  try {
+    const photos = await fetch(`/api/client/my-bookings/${id}/photos`).then(r => r.json());
+    if (!photos.length) { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px">Sin fotos todavía</div>'; return; }
+    container.innerHTML = photos.map(p => `
+      <div style="margin-bottom:10px">
+        <img src="${p.file_path}" style="max-width:100%;border-radius:8px;display:block" loading="lazy">
+        ${p.comment ? `<div style="font-size:0.82rem;color:var(--muted);margin-top:4px">${p.comment}</div>` : ''}
+      </div>
+    `).join('');
+  } catch { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted)">Error al cargar</div>'; }
 }
 
 function initCancel(id, btn) {
@@ -768,7 +812,9 @@ function goStep(step) {
   if (step === 3) {
     renderSummary();
     if (state.clientUser) {
-      if (!document.getElementById('f-name').value)  document.getElementById('f-name').value  = state.clientUser.name  || '';
+      const parts = (state.clientUser.name || '').split(' ');
+      if (!document.getElementById('f-firstname').value) document.getElementById('f-firstname').value = parts[0] || '';
+      if (!document.getElementById('f-lastname').value) document.getElementById('f-lastname').value = parts.slice(1).join(' ') || '';
       if (!document.getElementById('f-email').value) document.getElementById('f-email').value = state.clientUser.email || '';
     }
   }
@@ -888,13 +934,15 @@ function renderSummary() {
 }
 
 async function submitBooking() {
-  const name      = document.getElementById('f-name').value.trim();
+  const firstName = document.getElementById('f-firstname').value.trim();
+  const lastName  = document.getElementById('f-lastname').value.trim();
+  const name      = [firstName, lastName].filter(Boolean).join(' ');
   const phone     = document.getElementById('f-phone').value.trim();
   const email     = document.getElementById('f-email').value.trim();
   const instagram = document.getElementById('f-instagram').value.trim();
   const notes     = document.getElementById('f-notes').value.trim();
   const errorEl   = document.getElementById('form-error');
-  if (!name || !phone) {
+  if (!firstName || !phone) {
     errorEl.textContent = 'Por favor completá nombre y teléfono.';
     errorEl.classList.add('show');
     return;
@@ -909,7 +957,8 @@ async function submitBooking() {
       body: JSON.stringify({ name, phone, email, instagram, notes,
         service_id: state.selectedService.id,
         professional_id: state.selectedProfessional?.id,
-        date: state.selectedDate, time: state.selectedTime }),
+        date: state.selectedDate, time: state.selectedTime,
+        utm_source: state.utmSource }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -933,6 +982,21 @@ async function submitBooking() {
     `;
     if (data.whatsapp_url) document.getElementById('whatsapp-btn').href = data.whatsapp_url;
     else document.getElementById('whatsapp-btn').style.display = 'none';
+
+    // Build Google Calendar link
+    const gcalStart = (() => {
+      const [yy,mm,dd] = state.selectedDate.split('-');
+      const [hh,mi] = state.selectedTime.split(':');
+      return `${yy}${mm}${dd}T${hh}${mi}00`;
+    })();
+    const gcalEnd = (() => {
+      const d = new Date(parseInt(state.selectedDate.split('-')[0]), parseInt(state.selectedDate.split('-')[1])-1, parseInt(state.selectedDate.split('-')[2]), parseInt(state.selectedTime.split(':')[0]), parseInt(state.selectedTime.split(':')[1]) + (state.selectedService.duration || 60));
+      return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}00`;
+    })();
+    const gcalText = encodeURIComponent(`${state.selectedService.name}`);
+    const gcalDetails = encodeURIComponent(`Turno en ${document.getElementById('biz-name').textContent}${state.selectedProfessional ? ' con ' + state.selectedProfessional.name : ''}`);
+    document.getElementById('gcal-btn').href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalText}&dates=${gcalStart}/${gcalEnd}&details=${gcalDetails}`;
+
     goStep(4);
   } catch (e) {
     errorEl.textContent = 'Error de conexión. Por favor intentá de nuevo.';
@@ -946,10 +1010,14 @@ function newBooking() {
   state.selectedDate = null; state.selectedTime = null;
   state.calYear = null; state.calMonth = null;
   _activeCat = 'Todos';
-  ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
+  ['f-firstname','f-lastname','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('btn-to-2').disabled = true;
   goStep(1);
   renderServices();
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
 init();
