@@ -788,39 +788,43 @@ async function updateBookingStatus(id, status) {
 }
 
 async function setPaymentStatus(bookingId, status, btn) {
-  await api(`/api/admin/bookings/${bookingId}/admin-notes`, { method: 'PUT', body: JSON.stringify({ payment_status: status }) });
-  // Actualizar UI de botones
-  const buttons = btn.parentElement.querySelectorAll('button');
-  const values = ['none','deposit','full'];
-  buttons.forEach((b, i) => {
-    const isSelected = values[i] === status;
-    b.style.border = `2px solid ${isSelected ? 'var(--green)' : 'var(--border)'}`;
-    b.style.background = isSelected ? 'var(--green-bg)' : 'white';
-    b.style.color = isSelected ? 'var(--green)' : 'var(--muted)';
-  });
+  try {
+    await api(`/api/admin/bookings/${bookingId}/admin-notes`, { method: 'PUT', body: JSON.stringify({ payment_status: status }) });
+    const buttons = btn.parentElement.querySelectorAll('button');
+    const values = ['none','deposit','full'];
+    buttons.forEach((b, i) => {
+      const isSelected = values[i] === status;
+      b.style.border = `2px solid ${isSelected ? 'var(--green)' : 'var(--border)'}`;
+      b.style.background = isSelected ? 'var(--green-bg)' : 'white';
+      b.style.color = isSelected ? 'var(--green)' : 'var(--muted)';
+    });
+  } catch(e) { alert('Error al guardar estado de pago'); }
 }
 
 async function saveAdminNotes(bookingId) {
-  const notes = document.getElementById(`admin-notes-${bookingId}`).value;
-  await api(`/api/admin/bookings/${bookingId}/admin-notes`, { method: 'PUT', body: JSON.stringify({ notes_admin: notes }) });
-  // Feedback visual
-  const textarea = document.getElementById(`admin-notes-${bookingId}`);
-  const btn = textarea ? textarea.nextElementSibling : null;
-  if (btn) { const orig = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = orig, 1500); }
+  try {
+    const notes = document.getElementById(`admin-notes-${bookingId}`).value;
+    await api(`/api/admin/bookings/${bookingId}/admin-notes`, { method: 'PUT', body: JSON.stringify({ notes_admin: notes }) });
+    const textarea = document.getElementById(`admin-notes-${bookingId}`);
+    const btn = textarea ? textarea.nextElementSibling : null;
+    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = orig, 1500); }
+  } catch(e) { alert('Error al guardar nota'); }
 }
 
 async function loadPhotos(bookingId) {
   const container = document.getElementById(`photos-container-${bookingId}`);
   if (!container) return;
-  const photos = await api(`/api/admin/bookings/${bookingId}/photos`);
-  if (!photos.length) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--muted)">Sin fotos todavía</div>'; return; }
-  container.innerHTML = photos.map(p => `
-    <div style="position:relative;display:inline-block;margin:4px">
-      <img src="${p.file_path}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;display:block" loading="lazy">
-      ${p.comment ? `<div style="font-size:0.73rem;color:var(--muted);max-width:80px;word-break:break-word">${p.comment}</div>` : ''}
-      <button onclick="deletePhoto(${bookingId},${p.id},this.closest('div'))" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
-    </div>
-  `).join('');
+  try {
+    const photos = await api(`/api/admin/bookings/${bookingId}/photos`);
+    if (!Array.isArray(photos) || !photos.length) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--muted)">Sin fotos todavía</div>'; return; }
+    container.innerHTML = photos.map(p => `
+      <div style="position:relative;display:inline-block;margin:4px">
+        <img src="${p.file_path}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;display:block" loading="lazy">
+        ${p.comment ? `<div style="font-size:0.73rem;color:var(--muted);max-width:80px;word-break:break-word">${p.comment}</div>` : ''}
+        <button onclick="deletePhoto(${bookingId},${p.id},this.closest('div'))" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+    `).join('');
+  } catch(e) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--muted)">Error al cargar fotos</div>'; }
 }
 
 async function uploadPhoto(bookingId) {
@@ -1179,3 +1183,4 @@ checkAuth();
 </script>
 </body>
 </html>
+
