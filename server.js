@@ -276,6 +276,37 @@ app.get('/api/admin/whatsapp/status', requireAuth, (req, res) => {
   res.json({ status: wa.getStatus() });
 });
 
+// TEMP: import koob historical bookings
+app.post('/api/admin/import-koob-bookings', requireAuth, (req, res) => {
+  const records = req.body.records;
+  if (!Array.isArray(records)) return res.status(400).json({ error: 'records must be array' });
+  const results = { created: 0, skipped: 0, errors: [] };
+  const svcPrices = {};
+  db.getAllServices().forEach(s => { svcPrices[s.id] = s.price; });
+  for (const r of records) {
+    try {
+      if (!r.service_id || !r.date || !r.time) { results.skipped++; continue; }
+      // Find or create client by phone (don't overwrite existing)
+      let client = db.findClientByPhone(r.phone);
+      if (!client) client = db.upsertClient({ name: r.name, phone: r.phone, email: '', instagram: '' });
+      // Create booking
+      db.createBooking({
+        client_id: client.id,
+        service_id: r.service_id,
+        professional_id: 2,
+        date: r.date,
+        time: r.time,
+        notes: r.notes || '',
+        total_price: svcPrices[r.service_id] || 0,
+        deposit_paid: 0,
+        status: 'completed'
+      });
+      results.created++;
+    } catch(e) { results.errors.push(r.date + ' ' + r.name + ': ' + e.message); }
+  }
+  res.json(results);
+});
+
 
 // ═══════════════════════════════════════════════════════
 // ROUTES

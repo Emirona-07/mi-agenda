@@ -302,6 +302,10 @@ function isSlotAvailable(date, time, serviceId, professionalId) {
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
+function findClientByPhone(phone) {
+  return db.prepare('SELECT * FROM clients WHERE phone=?').get(phone) || null;
+}
+
 function upsertClient({ name, phone, email, instagram }) {
   const existing = db.prepare('SELECT * FROM clients WHERE phone=?').get(phone);
   if (existing) {
@@ -361,11 +365,11 @@ function deleteClient(id) {
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
-function createBooking({ client_id, service_id, professional_id, date, time, notes, total_price, deposit_paid }) {
+function createBooking({ client_id, service_id, professional_id, date, time, notes, total_price, deposit_paid, status }) {
   const r = db.prepare(`
     INSERT INTO bookings (client_id, service_id, professional_id, date, time, notes, total_price, deposit_paid, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')
-  `).run(client_id, service_id, professional_id || null, date, time, notes, total_price, deposit_paid || 0);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(client_id, service_id, professional_id || null, date, time, notes, total_price, deposit_paid || 0, status || 'confirmed');
   return db.prepare('SELECT * FROM bookings WHERE id=?').get(r.lastInsertRowid);
 }
 
@@ -567,7 +571,7 @@ module.exports = {
   getActiveServices, getAllServices, getServiceById, createService, updateService, deleteService,
   getBusinessHours, updateBusinessHours,
   getAvailableSlots, getAvailableDates, isSlotAvailable,
-  upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
+  findClientByPhone, upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
   createBooking, getBookings, getBookingById, updateBooking, cancelBooking,
   getDashboardStats, getRevenue,
   findOrCreateClientByGoogle, cancelClientBooking,
