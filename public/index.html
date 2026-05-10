@@ -424,15 +424,9 @@
       <div class="card-title">Tus datos</div>
       <div class="error-msg" id="form-error"></div>
       <div class="summary" id="booking-summary"><h3>Resumen</h3></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-group">
-          <label>Nombre *</label>
-          <input type="text" id="f-firstname" placeholder="Nombre" required autocomplete="given-name">
-        </div>
-        <div class="form-group">
-          <label>Apellido</label>
-          <input type="text" id="f-lastname" placeholder="Apellido" autocomplete="family-name">
-        </div>
+      <div class="form-group">
+        <label>Nombre completo *</label>
+        <input type="text" id="f-name" placeholder="Nombre y apellido" required autocomplete="name">
       </div>
       <div class="form-group">
         <label>Teléfono *</label>
@@ -697,6 +691,7 @@ function bookingCardHtml(b, fmtDate, canCancel) {
         ${b.professional_name ? `👩 ${b.professional_name}<br>` : ''}
         🔖 Reserva #${b.id}
       </div>
+      ${b.notes_admin ? `<div style="margin-top:8px;padding:8px 10px;background:var(--p-light);border-radius:8px;font-size:0.83rem;color:var(--p-dark)">📝 ${b.notes_admin}</div>` : ''}
       ${cancelArea}
       ${photosBtn}
     </div>`;
@@ -709,8 +704,10 @@ async function loadBookingPhotos(id, btn) {
   btn.textContent = '📷 Ocultar fotos';
   container.innerHTML = '<div class="loading" style="padding:8px">Cargando...</div>';
   try {
-    const photos = await fetch(`/api/client/my-bookings/${id}/photos`).then(r => r.json());
-    if (!photos.length) { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px">Sin fotos todavía</div>'; return; }
+    const r = await fetch(`/api/client/my-bookings/${id}/photos`);
+    if (!r.ok) { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px">Sin fotos todavía</div>'; return; }
+    const photos = await r.json();
+    if (!Array.isArray(photos) || !photos.length) { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px">Sin fotos todavía</div>'; return; }
     container.innerHTML = photos.map(p => `
       <div style="margin-bottom:10px">
         <img src="${p.file_path}" style="max-width:100%;border-radius:8px;display:block" loading="lazy">
@@ -813,8 +810,7 @@ function goStep(step) {
     renderSummary();
     if (state.clientUser) {
       const parts = (state.clientUser.name || '').split(' ');
-      if (!document.getElementById('f-firstname').value) document.getElementById('f-firstname').value = parts[0] || '';
-      if (!document.getElementById('f-lastname').value) document.getElementById('f-lastname').value = parts.slice(1).join(' ') || '';
+      if (!document.getElementById('f-name').value) document.getElementById('f-name').value = state.clientUser.name || '';
       if (!document.getElementById('f-email').value) document.getElementById('f-email').value = state.clientUser.email || '';
     }
   }
@@ -934,15 +930,13 @@ function renderSummary() {
 }
 
 async function submitBooking() {
-  const firstName = document.getElementById('f-firstname').value.trim();
-  const lastName  = document.getElementById('f-lastname').value.trim();
-  const name      = [firstName, lastName].filter(Boolean).join(' ');
+  const name      = document.getElementById('f-name').value.trim();
   const phone     = document.getElementById('f-phone').value.trim();
   const email     = document.getElementById('f-email').value.trim();
   const instagram = document.getElementById('f-instagram').value.trim();
   const notes     = document.getElementById('f-notes').value.trim();
   const errorEl   = document.getElementById('form-error');
-  if (!firstName || !phone) {
+  if (!name || !phone) {
     errorEl.textContent = 'Por favor completá nombre y teléfono.';
     errorEl.classList.add('show');
     return;
@@ -1010,7 +1004,7 @@ function newBooking() {
   state.selectedDate = null; state.selectedTime = null;
   state.calYear = null; state.calMonth = null;
   _activeCat = 'Todos';
-  ['f-firstname','f-lastname','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('btn-to-2').disabled = true;
   goStep(1);
   renderServices();
@@ -1024,3 +1018,4 @@ init();
 </script>
 </body>
 </html>
+
