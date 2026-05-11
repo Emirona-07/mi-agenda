@@ -416,6 +416,38 @@ app.get('/api/client/my-bookings/:id/photos', (req, res) => {
   res.json(db.getBookingPhotos(parseInt(req.params.id)));
 });
 
+// ─── WHATSAPP WEBHOOK ─────────────────────────────────────────────────────────
+// Verificación del webhook (GET) — Meta envía hub.challenge para confirmar la URL
+app.get('/api/whatsapp/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  const expected = process.env.WHATSAPP_WEBHOOK_TOKEN || 'mipiel_whatsapp_2026';
+  if (mode === 'subscribe' && token === expected) {
+    console.log('WhatsApp webhook verificado');
+    return res.status(200).send(challenge);
+  }
+  res.sendStatus(403);
+});
+
+// Notificaciones entrantes de WhatsApp (POST)
+app.post('/api/whatsapp/webhook', express.json(), (req, res) => {
+  res.sendStatus(200); // siempre 200 a Meta
+  const body = req.body;
+  if (body.object === 'whatsapp_business_account') {
+    body.entry?.forEach(entry => {
+      entry.changes?.forEach(change => {
+        const statuses = change.value?.statuses;
+        if (statuses) {
+          statuses.forEach(s => {
+            console.log(`WA status: mensaje ${s.id} → ${s.status}`);
+          });
+        }
+      });
+    });
+  }
+});
+
 // ═══════════════════════════════════════════════════════
 // ROUTES (wildcard siempre al final)
 // ═══════════════════════════════════════════════════════
@@ -467,6 +499,7 @@ app.listen(PORT, () => {
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   admin123 (cambiala en Configuración)\n`);
 });
+
 
 
 
