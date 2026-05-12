@@ -172,6 +172,22 @@ function deleteProfessional(id) {
   db.prepare('UPDATE professionals SET active=0 WHERE id=?').run(id);
 }
 
+function purgeProfessional(id) {
+  db.prepare('DELETE FROM service_professionals WHERE professional_id=?').run(id);
+  db.prepare('DELETE FROM business_hours WHERE professional_id=?').run(id);
+  db.prepare('DELETE FROM professionals WHERE id=?').run(id);
+}
+
+function purgeCancelledBookings() {
+  const ids = db.prepare("SELECT id FROM bookings WHERE status='cancelled'").all().map(r => r.id);
+  if (!ids.length) return 0;
+  ids.forEach(id => {
+    db.prepare('DELETE FROM booking_photos WHERE booking_id=?').run(id);
+    db.prepare('DELETE FROM bookings WHERE id=?').run(id);
+  });
+  return ids.length;
+}
+
 // ─── Services ─────────────────────────────────────────────────────────────────
 
 function getActiveServices() {
@@ -654,7 +670,8 @@ function updateBookingPayment(id, { mp_preference_id, mp_payment_id, deposit_pai
 
 module.exports = {
   getSettings, updateSettings,
-  getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional,
+  getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional, purgeProfessional,
+  purgeCancelledBookings,
   getActiveServices, getAllServices, getServiceById, createService, updateService, deleteService,
   getBusinessHours, updateBusinessHours,
   getAvailableSlots, getAvailableDates, isSlotAvailable,
@@ -667,4 +684,5 @@ module.exports = {
   updateBookingPayment,
   createSessionStore,
 };
+
 
