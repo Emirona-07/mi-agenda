@@ -306,6 +306,10 @@ app.put('/api/admin/bookings/:id', requireAuth, (req, res) => {
   db.updateBooking(parseInt(req.params.id), req.body);
   res.json({ success: true });
 });
+app.delete('/api/admin/bookings/purge-cancelled', requireAuth, (req, res) => {
+  const count = db.purgeCancelledBookings();
+  res.json({ success: true, deleted: count });
+});
 app.delete('/api/admin/bookings/:id', requireAuth, (req, res) => {
   db.cancelBooking(parseInt(req.params.id));
   res.json({ success: true });
@@ -361,10 +365,6 @@ app.delete('/api/admin/professionals/:id', requireAuth, (req, res) => {
 app.delete('/api/admin/professionals/:id/purge', requireAuth, (req, res) => {
   db.purgeProfessional(parseInt(req.params.id));
   res.json({ success: true });
-});
-app.delete('/api/admin/bookings/purge-cancelled', requireAuth, (req, res) => {
-  const count = db.purgeCancelledBookings();
-  res.json({ success: true, deleted: count });
 });
 
 // Business hours
