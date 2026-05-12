@@ -358,6 +358,14 @@ app.delete('/api/admin/professionals/:id', requireAuth, (req, res) => {
   db.deleteProfessional(parseInt(req.params.id));
   res.json({ success: true });
 });
+app.delete('/api/admin/professionals/:id/purge', requireAuth, (req, res) => {
+  db.purgeProfessional(parseInt(req.params.id));
+  res.json({ success: true });
+});
+app.delete('/api/admin/bookings/purge-cancelled', requireAuth, (req, res) => {
+  const count = db.purgeCancelledBookings();
+  res.json({ success: true, deleted: count });
+});
 
 // Business hours
 app.get('/api/admin/hours/:professionalId', requireAuth, (req, res) => {
@@ -499,6 +507,7 @@ app.listen(PORT, () => {
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   admin123 (cambiala en Configuración)\n`);
 });
+
 
 
 
