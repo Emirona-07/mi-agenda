@@ -626,6 +626,44 @@ function updateBookingAdmin(id, { notes_admin, payment_status }) {
   if (payment_status !== undefined) db.prepare('UPDATE bookings SET payment_status = ? WHERE id = ?').run(payment_status, id);
 }
 
+function getCurrentBooking() {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const currentMin = now.getHours() * 60 + now.getMinutes();
+
+  // Busca citas de hoy que no estén canceladas
+  const bookings = db.prepare(`
+    SELECT b.*, c.name as client_name, s.name as service_name, s.duration,
+           p.name as professional_name
+    FROM bookings b
+    JOIN clients c ON b.client_id = c.id
+    JOIN services s ON b.service_id = s.id
+    LEFT JOIN professionals p ON b.professional_id = p.id
+    WHERE b.date = ? AND b.status != 'cancelled'
+    ORDER BY b.time ASC
+  `).all(today);
+
+  if (!bookings.length) return null;
+
+  // Encuentra la cita más cercana a la hora actual (en progreso o recién terminada)
+  let best = null;
+  let bestDiff = Infinity;
+  for (const b of bookings) {
+    const [h, m] = b.time.split(':').map(Number);
+    const startMin = h * 60 + m;
+    const endMin = startMin + (b.duration || 60);
+    // Prioriza citas en progreso, luego la más próxima
+    const diff = Math.abs(currentMin - startMin);
+    if (currentMin >= startMin - 10 && currentMin <= endMin + 30) {
+      // Está en progreso o acaba de terminar → prioridad máxima
+      if (diff < bestDiff) { best = b; bestDiff = diff; }
+    } else if (!best) {
+      if (diff < bestDiff) { best = b; bestDiff = diff; }
+    }
+  }
+  return best;
+}
+
 function getBookingsNeedingReminder() {
   const in48h = new Date(Date.now() + 48 * 60 * 60 * 1000);
   const dateStr = in48h.toISOString().split('T')[0];
@@ -672,7 +710,7 @@ function updateBookingPayment(id, { mp_preference_id, mp_payment_id, deposit_pai
 module.exports = {
   getSettings, updateSettings,
   getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional, purgeProfessional,
-  purgeCancelledBookings,
+  purgeCancelledBookings, getCurrentBooking,
   getActiveServices, getAllServices, getServiceById, createService, updateService, deleteService,
   getBusinessHours, updateBusinessHours,
   getAvailableSlots, getAvailableDates, isSlotAvailable,
@@ -685,5 +723,6 @@ module.exports = {
   updateBookingPayment,
   createSessionStore,
 };
+
 
 
