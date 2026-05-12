@@ -456,6 +456,37 @@ app.post('/api/whatsapp/webhook', express.json(), (req, res) => {
   }
 });
 
+// ─── QUICK PHOTO — para el Shortcut de iOS de Maru ───────────────────────────
+// Recibe una foto, la adjunta a la cita en progreso del día
+app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
+  const token = req.headers['x-quick-token'] || req.query.token || '';
+  const expected = process.env.QUICK_PHOTO_TOKEN || process.env.ADMIN_PASSWORD || 'admin123';
+  if (token !== expected) return res.status(401).json({ error: 'Token inválido' });
+  if (!req.file) return res.status(400).json({ error: 'No se recibió foto' });
+
+  const booking = db.getCurrentBooking();
+  if (!booking) {
+    // Sin cita actual — guardamos la foto sin asociar e informamos
+    return res.status(404).json({
+      error: 'No hay cita en progreso ahora',
+      tip: 'La foto no fue guardada. Verificá el horario.'
+    });
+  }
+
+  const comment = req.body.comment || '';
+  db.addBookingPhoto(booking.id, `/uploads/${req.file.filename}`, comment);
+
+  const [h, m] = booking.time.split(':');
+  res.json({
+    ok: true,
+    booking_id: booking.id,
+    client: booking.client_name,
+    service: booking.service_name,
+    time: booking.time,
+    message: `Foto agregada a la cita de ${booking.client_name} (${booking.service_name} ${booking.time})`
+  });
+});
+
 // ═══════════════════════════════════════════════════════
 // ROUTES (wildcard siempre al final)
 // ═══════════════════════════════════════════════════════
@@ -507,6 +538,7 @@ app.listen(PORT, () => {
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   admin123 (cambiala en Configuración)\n`);
 });
+
 
 
 
