@@ -173,6 +173,7 @@ function deleteProfessional(id) {
 }
 
 function purgeProfessional(id) {
+  db.prepare('UPDATE bookings SET professional_id=NULL WHERE professional_id=?').run(id);
   db.prepare('DELETE FROM service_professionals WHERE professional_id=?').run(id);
   db.prepare('DELETE FROM business_hours WHERE professional_id=?').run(id);
   db.prepare('DELETE FROM professionals WHERE id=?').run(id);
