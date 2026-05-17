@@ -196,7 +196,10 @@ app.post('/api/bookings', async (req, res) => {
         statement_descriptor: bizName.slice(0, 22),
         metadata: { booking_id: booking.id, pay_type: payType },
       }});
-      return r.init_point;
+      // En modo test usar sandbox_init_point para no cobrar dinero real
+      const isTest = (process.env.MP_ACCESS_TOKEN || '').includes('-TEST-') ||
+                     process.env.MP_SANDBOX === 'true';
+      return isTest ? r.sandbox_init_point : r.init_point;
     };
 
     try {
