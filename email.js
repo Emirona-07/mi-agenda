@@ -10,7 +10,10 @@ function buildTransporter(settings) {
   const pass = settings?.email_pass || process.env.GMAIL_APP_PASSWORD || '';
   if (!user || !pass) return null;
   if (!host || host === 'smtp.gmail.com') {
-    return nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
+    // Puerto 465 (SSL) — más compatible con hosting cloud que 587
+    return nodemailer.createTransport({
+      host: 'smtp.gmail.com', port: 465, secure: true, auth: { user, pass },
+    });
   }
   return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
 }
