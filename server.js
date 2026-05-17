@@ -13,7 +13,6 @@ const session = require('express-session');
 const path = require('path');
 const db = require('./db');
 const wa = require('./whatsapp');
-const emailSvc = require('./email');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
