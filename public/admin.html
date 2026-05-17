@@ -380,8 +380,12 @@
             <input type="text" class="form-control" id="cfg-address">
           </div>
           <div class="form-group">
-            <label class="form-label">📱 Número WhatsApp (con código de país, ej: 598912345678)</label>
+            <label class="form-label">📱 Número WhatsApp dueña (con código de país, ej: 598912345678)</label>
             <input type="text" class="form-control" id="cfg-whatsapp" placeholder="598912345678">
+          </div>
+          <div class="form-group">
+            <label class="form-label">📧 Email de la dueña (recibe aviso de nueva reserva)</label>
+            <input type="email" class="form-control" id="cfg-owner-email" placeholder="mipiel@gmail.com">
           </div>
           <button class="btn btn-primary" onclick="saveConfig()">Guardar</button>
         </div>
@@ -417,6 +421,63 @@
           <p id="cfg-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
         </div>
       </div>
+      <!-- Canal de notificaciones -->
+      <div class="card mt-2">
+        <div class="card-header"><h3>🔔 Canal de notificaciones</h3></div>
+        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">Elegí cómo se envían los mensajes de confirmación al cliente y los avisos a la dueña al crearse una reserva.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-email">
+            <input type="radio" name="notification_channel" value="email" id="ch-email" onchange="updateChannelUI()"> 📧 Solo email
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-whatsapp">
+            <input type="radio" name="notification_channel" value="whatsapp" id="ch-whatsapp" onchange="updateChannelUI()"> 📱 Solo WhatsApp
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-both">
+            <input type="radio" name="notification_channel" value="both" id="ch-both" onchange="updateChannelUI()"> 📧📱 Ambos
+          </label>
+        </div>
+        <button class="btn btn-primary" onclick="saveChannel()">Guardar canal</button>
+        <p id="ch-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
+      </div>
+
+      <!-- Email SMTP -->
+      <div class="card mt-2">
+        <div class="card-header"><h3>📧 Configuración de email (SMTP)</h3></div>
+        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">
+          Para Gmail: usá <strong>smtp.gmail.com</strong>, puerto <strong>587</strong>, y en lugar de tu contraseña normal generá una
+          <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--green)">Contraseña de aplicación</a> en tu cuenta Google.
+        </p>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Servidor SMTP</label>
+            <input type="text" class="form-control" id="cfg-email-host" placeholder="smtp.gmail.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Puerto</label>
+            <input type="number" class="form-control" id="cfg-email-port" placeholder="587">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Usuario (email de envío)</label>
+          <input type="email" class="form-control" id="cfg-email-user" placeholder="mipiel@gmail.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña / App Password</label>
+          <input type="password" class="form-control" id="cfg-email-pass" placeholder="••••••••••••">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nombre del remitente (opcional)</label>
+          <input type="text" class="form-control" id="cfg-email-from" placeholder="Mi Piel">
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveEmail()">Guardar</button>
+          <button class="btn btn-outline" onclick="testEmail()">Probar conexión</button>
+          <span id="email-test-result" style="font-size:0.85rem"></span>
+        </div>
+        <div id="email-status-badge" style="margin-top:12px;font-size:0.9rem;font-weight:600">Cargando...</div>
+      </div>
+
+      <!-- WhatsApp Business API -->
       <div class="card mt-2">
         <div class="card-header"><h3>📱 WhatsApp Business API</h3></div>
         <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">Mensajes automáticos vía la API oficial de Meta. Configurá las variables de entorno <code>WHATSAPP_PHONE_NUMBER_ID</code> y <code>WHATSAPP_ACCESS_TOKEN</code> en Railway.</p>
@@ -1116,10 +1177,74 @@ async function loadConfig() {
   const s = await api('/api/admin/settings');
   $('cfg-name').value = s.business_name || ''; $('cfg-desc').value = s.business_description || '';
   $('cfg-address').value = s.business_address || ''; $('cfg-whatsapp').value = s.whatsapp_phone || '';
+  $('cfg-owner-email').value = s.owner_email || '';
   $('cfg-interval').value = s.slot_interval || '30'; $('cfg-advance').value = s.booking_advance_days || '60';
   $('cfg-currency').value = s.currency || '$';
+  // Canal
+  const ch = s.notification_channel || 'email';
+  const radio = document.querySelector(`input[name="notification_channel"][value="${ch}"]`);
+  if (radio) radio.checked = true;
+  updateChannelUI();
+  // Email SMTP
+  $('cfg-email-host').value = s.email_host || ''; $('cfg-email-port').value = s.email_port || '587';
+  $('cfg-email-user').value = s.email_user || ''; $('cfg-email-pass').value = s.email_pass || '';
+  $('cfg-email-from').value = s.email_from || '';
   $('public-url').value = window.location.origin;
-  pollWhatsAppStatus();
+  pollWhatsAppStatus(); pollEmailStatus();
+}
+
+function updateChannelUI() {
+  const ch = document.querySelector('input[name="notification_channel"]:checked')?.value || 'email';
+  ['email','whatsapp','both'].forEach(v => {
+    const lbl = $(`ch-label-${v}`);
+    if (lbl) lbl.style.borderColor = ch === v ? 'var(--green)' : 'var(--border)';
+    if (lbl) lbl.style.background  = ch === v ? 'var(--green-light,#f0faf4)' : '';
+  });
+}
+
+async function saveChannel() {
+  const ch = document.querySelector('input[name="notification_channel"]:checked')?.value;
+  if (!ch) return;
+  await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({ notification_channel: ch }) });
+  const m = $('ch-msg'); m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 2000);
+}
+
+async function saveEmail() {
+  await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({
+    email_host: $('cfg-email-host').value,
+    email_port: $('cfg-email-port').value,
+    email_user: $('cfg-email-user').value,
+    email_pass: $('cfg-email-pass').value,
+    email_from: $('cfg-email-from').value,
+  })});
+  pollEmailStatus();
+  const r = $('email-test-result'); r.textContent = '✅ Guardado'; r.style.color = 'var(--green)';
+  setTimeout(() => r.textContent = '', 2000);
+}
+
+async function testEmail() {
+  const r = $('email-test-result'); r.textContent = 'Probando...'; r.style.color = 'var(--muted)';
+  // Save first so test uses latest values
+  await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({
+    email_host: $('cfg-email-host').value, email_port: $('cfg-email-port').value,
+    email_user: $('cfg-email-user').value, email_pass: $('cfg-email-pass').value,
+    email_from: $('cfg-email-from').value,
+  })});
+  const res = await api('/api/admin/email/test', { method: 'POST' });
+  if (res.ok) { r.textContent = '✅ Conexión exitosa'; r.style.color = 'var(--green)'; }
+  else        { r.textContent = `❌ ${res.reason}`; r.style.color = '#e74c3c'; }
+  setTimeout(() => r.textContent = '', 5000);
+}
+
+async function pollEmailStatus() {
+  try {
+    const { status } = await api('/api/admin/email/status');
+    const badge = $('email-status-badge');
+    if (!badge) return;
+    badge.innerHTML = status === 'configured'
+      ? '<span style="color:#27ae60">✅ Email configurado — se envían notificaciones automáticas</span>'
+      : '<span style="color:#e67e22">⚠️ Email no configurado — completá los datos SMTP arriba</span>';
+  } catch(e) { /* ignore */ }
 }
 
 async function pollWhatsAppStatus() {
@@ -1139,6 +1264,7 @@ async function saveConfig() {
   await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({
     business_name: $('cfg-name').value, business_description: $('cfg-desc').value,
     business_address: $('cfg-address').value, whatsapp_phone: $('cfg-whatsapp').value,
+    owner_email: $('cfg-owner-email').value,
   })});
   settings = await api('/api/admin/settings');
   $('nav-biz-name').textContent = settings.business_name;

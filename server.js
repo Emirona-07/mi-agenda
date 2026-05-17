@@ -13,6 +13,7 @@ const session = require('express-session');
 const path = require('path');
 const db = require('./db');
 const wa = require('./whatsapp');
+const emailSvc = require('./email');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -133,21 +134,42 @@ app.post('/api/bookings', async (req, res) => {
   const profName = professional ? professional.name : '';
   const bizName = s.business_name || 'Mi Negocio';
 
-  // Send WhatsApp messages asynchronously via Meta Cloud API templates
+  // Send notifications asynchronously (WhatsApp and/or Email based on channel setting)
   setImmediate(async () => {
-    // Template: confirmacion_reserva
-    // Params: {{1}} nombre, {{2}} negocio, {{3}} servicio, {{4}} profesional, {{5}} fecha, {{6}} hora, {{7}} reserva_id
-    await wa.sendTemplate(phone, 'confirmacion_reserva', [
-      name, bizName, service.name, profName || '-', formatDate(date), time, String(booking.id)
-    ]);
+    const channel = s.notification_channel || 'email';
+    const sendWA    = channel === 'whatsapp' || channel === 'both';
+    const sendEmail = channel === 'email'    || channel === 'both';
+    const fmtDate   = formatDate(date);
 
-    const ownerPhone = s.whatsapp_phone || '';
-    if (ownerPhone) {
-      // Template: nueva_reserva
-      // Params: {{1}} reserva_id, {{2}} servicio, {{3}} cliente, {{4}} telefono, {{5}} fecha, {{6}} hora
-      await wa.sendTemplate(ownerPhone, 'nueva_reserva', [
-        String(booking.id), service.name, name, phone, formatDate(date), time
+    if (sendWA) {
+      // Template: confirmacion_reserva — {{1}} nombre {{2}} negocio {{3}} servicio {{4}} profesional {{5}} fecha {{6}} hora {{7}} reserva_id
+      await wa.sendTemplate(phone, 'confirmacion_reserva', [
+        name, bizName, service.name, profName || '-', fmtDate, time, String(booking.id)
       ]);
+      const ownerPhone = s.whatsapp_phone || '';
+      if (ownerPhone) {
+        // Template: nueva_reserva — {{1}} reserva_id {{2}} servicio {{3}} cliente {{4}} telefono {{5}} fecha {{6}} hora
+        await wa.sendTemplate(ownerPhone, 'nueva_reserva', [
+          String(booking.id), service.name, name, phone, fmtDate, time
+        ]);
+      }
+    }
+
+    if (sendEmail) {
+      const clientEmail = client.email || '';
+      if (clientEmail) {
+        await emailSvc.sendConfirmation(clientEmail, {
+          name, serviceName: service.name, profName: profName || '',
+          date: fmtDate, time, bookingId: String(booking.id),
+        }, s);
+      }
+      const ownerEmail = s.owner_email || '';
+      if (ownerEmail) {
+        await emailSvc.sendOwnerNotification(ownerEmail, {
+          bookingId: String(booking.id), serviceName: service.name,
+          clientName: name, phone, date: fmtDate, time,
+        }, s);
+      }
     }
   });
 
@@ -392,6 +414,15 @@ app.put('/api/admin/settings', requireAuth, (req, res) => {
 // WhatsApp
 app.get('/api/admin/whatsapp/status', requireAuth, (req, res) => {
   res.json({ status: wa.getStatus() });
+});
+
+// Email
+app.get('/api/admin/email/status', requireAuth, (req, res) => {
+  res.json({ status: emailSvc.getStatus(db.getSettings()) });
+});
+app.post('/api/admin/email/test', requireAuth, async (req, res) => {
+  const result = await emailSvc.testConnection(db.getSettings());
+  res.json(result);
 });
 
 

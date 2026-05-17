@@ -105,6 +105,13 @@ const initSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALU
   ['booking_advance_days', '60'],
   ['slot_interval', '30'],
   ['currency', '$'],
+  ['notification_channel', 'email'],
+  ['owner_email', ''],
+  ['email_host', ''],
+  ['email_port', '587'],
+  ['email_user', ''],
+  ['email_pass', ''],
+  ['email_from', ''],
 ].forEach(([k, v]) => initSetting.run(k, v));
 
 // Default professional if none exist
