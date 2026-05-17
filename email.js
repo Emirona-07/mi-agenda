@@ -132,12 +132,17 @@ function weeklySummaryHTML({ bizName, bookings, weekLabel }) {
 
 async function sendMail({ to, subject, html }, settings) {
   const t = buildTransporter(settings);
-  if (!t || !to) return { ok: false, reason: !t ? 'smtp_no_configurado' : 'sin_destinatario' };
+  if (!t) {
+    console.error('[email] SMTP no configurado — falta email_user/email_pass en settings o GMAIL_USER/GMAIL_APP_PASSWORD en env');
+    return { ok: false, reason: 'smtp_no_configurado' };
+  }
+  if (!to) return { ok: false, reason: 'sin_destinatario' };
   try {
     await t.sendMail({ from: fromAddress(settings), to, subject, html });
+    console.log(`[email] ✓ Enviado a ${to}: ${subject}`);
     return { ok: true };
   } catch (e) {
-    console.error('[email] sendMail error:', e.message);
+    console.error(`[email] Error enviando a ${to}:`, e.message);
     return { ok: false, reason: e.message };
   }
 }
