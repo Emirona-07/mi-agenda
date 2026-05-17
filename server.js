@@ -556,6 +556,10 @@ cron.schedule('0 * * * *', async () => {
     const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const s = db.getSettings();
     for (const b of bookings) {
+      // Marcar primero — si otra instancia ya lo marcó, skip (previene duplicados)
+      const claimed = db.markReminderSent(b.id);
+      if (!claimed) continue;
+
       const [y, mo, dy] = b.date.split('-');
       const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
       if (b.client_phone) {
@@ -565,7 +569,6 @@ cron.schedule('0 * * * *', async () => {
       if (b.client_email) {
         await emailSvc.sendReminder({ ...b, date_formatted: dateStr, business_name: s.business_name }).catch(() => {});
       }
-      db.markReminderSent(b.id);
     }
     if (bookings.length) console.log(`Recordatorios enviados: ${bookings.length}`);
   } catch (err) { console.error('Cron recordatorio:', err.message); }

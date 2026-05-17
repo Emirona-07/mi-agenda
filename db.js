@@ -687,8 +687,10 @@ function getBookingsNeedingReminder() {
   `).all(dateStr);
 }
 
+// Retorna true solo si el UPDATE afectó una fila (previene doble envío con múltiples instancias)
 function markReminderSent(id) {
-  db.prepare('UPDATE bookings SET reminder_sent = 1 WHERE id = ?').run(id);
+  const result = db.prepare('UPDATE bookings SET reminder_sent = 1 WHERE id = ? AND reminder_sent = 0').run(id);
+  return result.changes > 0;
 }
 
 function getWeekBookings() {
