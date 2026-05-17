@@ -203,12 +203,15 @@ function weeklySummaryHTML({ bizName, bookings, weekLabel }) {
 async function sendMail({ to, subject, html }, settings) {
   if (!to) return { ok: false, reason: 'sin_destinatario' };
   const from = fromAddress(settings);
+  const replyTo = process.env.REPLY_TO_EMAIL || settings?.owner_email || '';
 
   // — Resend (HTTPS, funciona en Railway) —
   const resend = getResendClient();
   if (resend) {
     try {
-      const { error } = await resend.emails.send({ from, to, subject, html });
+      const payload = { from, to, subject, html };
+      if (replyTo) payload.reply_to = replyTo;
+      const { error } = await resend.emails.send(payload);
       if (error) throw new Error(error.message || JSON.stringify(error));
       console.log(`[email/resend] ✓ Enviado a ${to}: ${subject}`);
       return { ok: true };
