@@ -1034,6 +1034,12 @@ async function loadServices() {
       <td>${s.deposit > 0 ? cur + s.deposit.toLocaleString() : '-'}</td>
       <td>${s.professionals.map(p => `<span class="chip">${p.name}</span>`).join(' ') || '-'}</td>
       <td>${s.active ? '<span class="badge badge-confirmed">Activo</span>' : '<span class="badge badge-cancelled">Inactivo</span>'}</td>
+      <td style="text-align:center">
+        ${s.photo ? `<img src="${s.photo}" style="width:48px;height:36px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px">` : '<span style="font-size:0.72rem;color:var(--muted)">Sin foto</span><br>'}
+        <input type="file" id="svc-photo-input-${s.id}" accept="image/*" style="display:none" onchange="uploadServicePhoto(${s.id})">
+        <button class="btn-icon" onclick="document.getElementById('svc-photo-input-${s.id}').click()" title="Subir foto">📷</button>
+        ${s.photo ? `<button class="btn-icon" onclick="deleteServicePhoto(${s.id})" title="Quitar foto" style="color:var(--danger)">✕</button>` : ''}
+      </td>
       <td>
         <button class="btn-icon" onclick="openServiceModal(${s.id})">✏️</button>
         <button class="btn-icon" onclick="deleteService(${s.id})" style="color:var(--danger)">🗑</button>
@@ -1087,6 +1093,21 @@ async function saveService() {
 async function deleteService(id) {
   if (!confirm('¿Desactivar este servicio?')) return;
   await api(`/api/admin/services/${id}`, { method: 'DELETE' });
+  loadServices();
+}
+
+async function uploadServicePhoto(id) {
+  const input = document.getElementById(`svc-photo-input-${id}`);
+  if (!input.files[0]) return;
+  const fd = new FormData();
+  fd.append('photo', input.files[0]);
+  await fetch(`/api/admin/services/${id}/photo`, { method: 'POST', body: fd });
+  loadServices();
+}
+
+async function deleteServicePhoto(id) {
+  if (!confirm('¿Quitar la foto de este servicio?')) return;
+  await api(`/api/admin/services/${id}/photo`, { method: 'DELETE' });
   loadServices();
 }
 

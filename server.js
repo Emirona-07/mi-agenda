@@ -85,6 +85,7 @@ app.get('/api/business', (req, res) => {
     description: s.business_description,
     address: s.business_address,
     notification_channel: s.notification_channel || 'email',
+    mp_surcharge: parseFloat(s.mp_surcharge || '5'),
   });
 });
 
@@ -400,6 +401,22 @@ app.put('/api/admin/services/:id', requireAuth, (req, res) => {
 app.delete('/api/admin/services/:id', requireAuth, (req, res) => {
   db.deleteService(parseInt(req.params.id));
   res.json({ success: true });
+});
+
+app.post('/api/admin/services/:id/photo', requireAuth, upload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' });
+  const photoPath = `/uploads/${req.file.filename}`;
+  db.updateServicePhoto(parseInt(req.params.id), photoPath);
+  res.json({ path: photoPath });
+});
+
+app.delete('/api/admin/services/:id/photo', requireAuth, (req, res) => {
+  const svc = db.getServiceById(parseInt(req.params.id));
+  if (svc?.photo) {
+    try { require('fs').unlinkSync(require('path').join(uploadsDir, require('path').basename(svc.photo))); } catch (_e) {}
+  }
+  db.updateServicePhoto(parseInt(req.params.id), null);
+  res.json({ ok: true });
 });
 
 // Professionals

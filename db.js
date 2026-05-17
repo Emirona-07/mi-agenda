@@ -106,6 +106,7 @@ const initSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALU
   ['slot_interval', '30'],
   ['currency', '$'],
   ['notification_channel', 'email'],
+  ['mp_surcharge', '5'],
   ['owner_email', ''],
   ['email_host', ''],
   ['email_port', '587'],
@@ -235,6 +236,7 @@ function updateService(id, { name, duration, price, deposit, description, active
   }
 }
 function deleteService(id) { db.prepare('UPDATE services SET active=0 WHERE id=?').run(id); }
+function updateServicePhoto(id, photo) { db.prepare('UPDATE services SET photo=? WHERE id=?').run(photo || null, id); }
 
 // ─── Business Hours ────────────────────────────────────────────────────────────
 
@@ -601,6 +603,7 @@ const _migrations = [
   "ALTER TABLE bookings ADD COLUMN mp_payment_id TEXT",
   "ALTER TABLE bookings ADD COLUMN mp_url_deposit TEXT",
   "ALTER TABLE bookings ADD COLUMN mp_url_full TEXT",
+  "ALTER TABLE services ADD COLUMN photo TEXT",
 ];
 for (const _m of _migrations) { try { db.exec(_m); } catch (_e) {} }
 
@@ -724,7 +727,7 @@ module.exports = {
   getSettings, updateSettings,
   getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional, purgeProfessional,
   purgeCancelledBookings, getCurrentBooking,
-  getActiveServices, getAllServices, getServiceById, createService, updateService, deleteService,
+  getActiveServices, getAllServices, getServiceById, createService, updateService, deleteService, updateServicePhoto,
   getBusinessHours, updateBusinessHours,
   getAvailableSlots, getAvailableDates, isSlotAvailable,
   findClientByPhone, upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
