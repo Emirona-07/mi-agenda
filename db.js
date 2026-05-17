@@ -599,6 +599,8 @@ const _migrations = [
   "ALTER TABLE clients ADD COLUMN google_id TEXT",
   "ALTER TABLE bookings ADD COLUMN mp_preference_id TEXT",
   "ALTER TABLE bookings ADD COLUMN mp_payment_id TEXT",
+  "ALTER TABLE bookings ADD COLUMN mp_url_deposit TEXT",
+  "ALTER TABLE bookings ADD COLUMN mp_url_full TEXT",
 ];
 for (const _m of _migrations) { try { db.exec(_m); } catch (_e) {} }
 
@@ -704,11 +706,13 @@ function getWeekBookings() {
   `).all(from, to);
 }
 
-function updateBookingPayment(id, { mp_preference_id, mp_payment_id, deposit_paid } = {}) {
+function updateBookingPayment(id, { mp_preference_id, mp_payment_id, deposit_paid, mp_url_deposit, mp_url_full } = {}) {
   const sets = []; const params = {};
   if (mp_preference_id !== undefined) { sets.push('mp_preference_id = @mp_preference_id'); params.mp_preference_id = mp_preference_id; }
   if (mp_payment_id !== undefined)    { sets.push('mp_payment_id = @mp_payment_id');       params.mp_payment_id = mp_payment_id;       }
   if (deposit_paid   !== undefined)   { sets.push('deposit_paid = @deposit_paid');          params.deposit_paid = deposit_paid;          }
+  if (mp_url_deposit !== undefined)   { sets.push('mp_url_deposit = @mp_url_deposit');      params.mp_url_deposit = mp_url_deposit;      }
+  if (mp_url_full    !== undefined)   { sets.push('mp_url_full = @mp_url_full');            params.mp_url_full = mp_url_full;            }
   if (!sets.length) return;
   params.id = id;
   db.prepare(`UPDATE bookings SET ${sets.join(', ')} WHERE id = @id`).run(params);

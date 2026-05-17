@@ -133,46 +133,7 @@ app.post('/api/bookings', async (req, res) => {
   const profName = professional ? professional.name : '';
   const bizName = s.business_name || 'Mi Negocio';
 
-  // Send notifications asynchronously (WhatsApp and/or Email based on channel setting)
-  setImmediate(async () => {
-    const channel = s.notification_channel || 'email';
-    const sendWA    = channel === 'whatsapp' || channel === 'both';
-    const sendEmail = channel === 'email'    || channel === 'both';
-    const fmtDate   = formatDate(date);
-
-    if (sendWA) {
-      // Template: confirmacion_reserva — {{1}} nombre {{2}} negocio {{3}} servicio {{4}} profesional {{5}} fecha {{6}} hora {{7}} reserva_id
-      await wa.sendTemplate(phone, 'confirmacion_reserva', [
-        name, bizName, service.name, profName || '-', fmtDate, time, String(booking.id)
-      ]);
-      const ownerPhone = s.whatsapp_phone || '';
-      if (ownerPhone) {
-        // Template: nueva_reserva — {{1}} reserva_id {{2}} servicio {{3}} cliente {{4}} telefono {{5}} fecha {{6}} hora
-        await wa.sendTemplate(ownerPhone, 'nueva_reserva', [
-          String(booking.id), service.name, name, phone, fmtDate, time
-        ]);
-      }
-    }
-
-    if (sendEmail) {
-      const clientEmail = client.email || '';
-      if (clientEmail) {
-        await emailSvc.sendConfirmation(clientEmail, {
-          name, serviceName: service.name, profName: profName || '',
-          date: fmtDate, time, bookingId: String(booking.id),
-        }, s);
-      }
-      const ownerEmail = s.owner_email || '';
-      if (ownerEmail) {
-        await emailSvc.sendOwnerNotification(ownerEmail, {
-          bookingId: String(booking.id), serviceName: service.name,
-          clientName: name, phone, date: fmtDate, time,
-        }, s);
-      }
-    }
-  });
-
-  // Si MP está configurado crear preferencias: una para seña y otra para total
+  // Crear preferencias de MP primero (necesitamos las URLs para el email)
   let mp_url_deposit = null;
   let mp_url_full = null;
 
@@ -196,7 +157,6 @@ app.post('/api/bookings', async (req, res) => {
         statement_descriptor: bizName.slice(0, 22),
         metadata: { booking_id: booking.id, pay_type: payType },
       }});
-      // En modo test usar sandbox_init_point para no cobrar dinero real
       const isTest = (process.env.MP_ACCESS_TOKEN || '').includes('-TEST-') ||
                      process.env.MP_SANDBOX === 'true';
       return isTest ? r.sandbox_init_point : r.init_point;
@@ -207,10 +167,54 @@ app.post('/api/bookings', async (req, res) => {
       if (service.deposit > 0) tasks.push(makePref(service.deposit, 'deposit', 'Seña').then(u => { mp_url_deposit = u; }));
       if (service.price > 0)   tasks.push(makePref(service.price,   'full',    'Total').then(u => { mp_url_full = u; }));
       await Promise.all(tasks);
+      // Guardar URLs en DB para recuperarlas desde el webhook
+      if (mp_url_deposit || mp_url_full) {
+        db.updateBookingPayment(booking.id, { mp_url_deposit, mp_url_full });
+      }
     } catch (mpErr) {
       console.error('MP preference error:', mpErr.message);
     }
   }
+
+  // Notificaciones (con las URLs de MP ya disponibles)
+  setImmediate(async () => {
+    const channel = s.notification_channel || 'email';
+    const sendWA    = channel === 'whatsapp' || channel === 'both';
+    const sendEmail = channel === 'email'    || channel === 'both';
+    const fmtDate   = formatDate(date);
+
+    if (sendWA) {
+      await wa.sendTemplate(phone, 'confirmacion_reserva', [
+        name, bizName, service.name, profName || '-', fmtDate, time, String(booking.id)
+      ]);
+      const ownerPhone = s.whatsapp_phone || '';
+      if (ownerPhone) {
+        await wa.sendTemplate(ownerPhone, 'nueva_reserva', [
+          String(booking.id), service.name, name, phone, fmtDate, time
+        ]);
+      }
+    }
+
+    if (sendEmail) {
+      const clientEmail = client.email || '';
+      if (clientEmail) {
+        await emailSvc.sendConfirmation(clientEmail, {
+          name, serviceName: service.name, profName: profName || '',
+          date: fmtDate, time,
+          price: service.price, deposit: service.deposit,
+          mp_url_deposit, mp_url_full,
+        }, s);
+      }
+      const ownerEmail = s.owner_email || '';
+      if (ownerEmail) {
+        await emailSvc.sendOwnerNotification(ownerEmail, {
+          bookingId: String(booking.id), serviceName: service.name,
+          clientName: name, phone, date: fmtDate, time,
+          price: service.price, deposit: service.deposit,
+        }, s);
+      }
+    }
+  });
 
   res.json({
     success: true,
@@ -247,6 +251,24 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
           mp_payment_id: String(body.data.id),
         });
         console.log(`MP pago aprobado: booking #${bookingId}, tipo=${payType}, $${payData.transaction_amount}`);
+
+        // Email de pago confirmado al cliente
+        const s = db.getSettings();
+        const channel = s.notification_channel || 'email';
+        if (channel === 'email' || channel === 'both') {
+          const b = db.getBookingById(bookingId);
+          if (b?.client_email) {
+            await emailSvc.sendPaymentConfirmation(b.client_email, {
+              name: b.client_name || '',
+              serviceName: b.service_name || '',
+              date: b.date, time: b.time,
+              amountPaid: payData.transaction_amount,
+              payType,
+              totalPrice: b.total_price || 0,
+              mp_url_full: payType === 'deposit' ? (b.mp_url_full || '') : '',
+            }, s);
+          }
+        }
       }
     }
   } catch (err) { console.error('MP webhook error:', err.message); }

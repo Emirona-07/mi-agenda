@@ -40,7 +40,26 @@ function fromAddress(settings) {
 
 /* ─── HTML templates ──────────────────────────────────────────────── */
 
-function confirmacionHTML({ name, bizName, serviceName, profName, date, time, bookingId }) {
+function btnMP(url, label) {
+  return `<a href="${url}" style="display:inline-block;background:#009ee3;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:.95rem">${label}</a>`;
+}
+
+function fmtPeso(n) { return '$ ' + Number(n).toLocaleString('es-UY'); }
+
+function confirmacionHTML({ name, bizName, serviceName, profName, date, time, price, deposit, mp_url_deposit, mp_url_full }) {
+  const hasMP = mp_url_deposit || mp_url_full;
+  const resto = (price || 0) - (deposit || 0);
+
+  const paySection = hasMP ? `
+    <div style="margin-top:20px">
+      <p style="font-weight:600;margin:0 0 12px;color:#333">Opciones de pago:</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${mp_url_deposit && deposit ? `<div style="margin-bottom:8px">${btnMP(mp_url_deposit, `Pagar seña ${fmtPeso(deposit)}`)}</div>` : ''}
+        ${mp_url_full && price ? `<div style="margin-bottom:8px">${btnMP(mp_url_full, `Pagar total ${fmtPeso(price)}`)}</div>` : ''}
+      </div>
+      ${deposit && resto > 0 ? `<p style="font-size:.82rem;color:#888;margin:8px 0 0">Si pagás la seña, el saldo restante de ${fmtPeso(resto)} se abona el día del turno.</p>` : ''}
+    </div>` : '';
+
   return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
 <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
   <div style="background:#2d6a4f;padding:24px;text-align:center">
@@ -55,10 +74,44 @@ function confirmacionHTML({ name, bizName, serviceName, profName, date, time, bo
         ${profName ? `<tr><td style="padding:5px 0;color:#777;font-size:.88rem">Profesional</td><td style="padding:5px 0;font-weight:600">${profName}</td></tr>` : ''}
         <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Fecha</td><td style="padding:5px 0;font-weight:600">${date}</td></tr>
         <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Hora</td><td style="padding:5px 0;font-weight:600">${time}</td></tr>
-        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Nº de reserva</td><td style="padding:5px 0;font-weight:600">#${bookingId}</td></tr>
+        ${price ? `<tr><td style="padding:5px 0;color:#777;font-size:.88rem">Precio total</td><td style="padding:5px 0;font-weight:600">${fmtPeso(price)}</td></tr>` : ''}
+        ${deposit ? `<tr><td style="padding:5px 0;color:#777;font-size:.88rem">Seña</td><td style="padding:5px 0;font-weight:600">${fmtPeso(deposit)}</td></tr>` : ''}
       </table>
     </div>
-    <p style="font-size:.85rem;color:#999;margin:0">Si necesitás cancelar, escribinos con anticipación.</p>
+    ${paySection}
+    <p style="font-size:.85rem;color:#999;margin:${hasMP ? '16px' : '0'} 0 0">Si necesitás cancelar, escribinos con anticipación.</p>
+  </div>
+  <div style="background:#f9f9f9;padding:14px;text-align:center;font-size:.8rem;color:#bbb">${bizName}</div>
+</div></body></html>`;
+}
+
+function pagoConfirmadoHTML({ name, bizName, serviceName, date, time, amountPaid, payType, totalPrice, mp_url_full }) {
+  const resto = totalPrice - amountPaid;
+  const esSena = payType === 'deposit';
+
+  return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
+<div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
+  <div style="background:#1a5c38;padding:24px;text-align:center">
+    <h1 style="color:#fff;margin:0;font-size:22px">💳 Pago recibido</h1>
+  </div>
+  <div style="padding:24px">
+    <p style="margin:0 0 12px">Hola <strong>${name}</strong>,</p>
+    <p style="margin:0 0 20px;color:#555">Recibimos tu pago para <strong>${bizName}</strong>.</p>
+    <div style="background:#f5faf7;border-left:4px solid #1a5c38;border-radius:4px;padding:16px;margin-bottom:20px">
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="padding:5px 0;color:#777;font-size:.88rem;width:40%">Servicio</td><td style="padding:5px 0;font-weight:600">${serviceName}</td></tr>
+        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Fecha</td><td style="padding:5px 0;font-weight:600">${date}</td></tr>
+        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Hora</td><td style="padding:5px 0;font-weight:600">${time}</td></tr>
+        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">${esSena ? 'Seña abonada' : 'Total abonado'}</td><td style="padding:5px 0;font-weight:600;color:#1a5c38">${fmtPeso(amountPaid)}</td></tr>
+        ${esSena && resto > 0 ? `<tr><td style="padding:5px 0;color:#777;font-size:.88rem">Saldo restante</td><td style="padding:5px 0;font-weight:600;color:#e07b00">${fmtPeso(resto)}</td></tr>` : ''}
+      </table>
+    </div>
+    ${esSena && resto > 0 && mp_url_full ? `
+    <div style="text-align:center;margin-bottom:20px">
+      <p style="color:#555;margin:0 0 12px">¿Querés pagar el saldo ahora?</p>
+      ${btnMP(mp_url_full, `Pagar saldo restante ${fmtPeso(resto)}`)}
+    </div>` : ''}
+    <p style="font-size:.85rem;color:#999;margin:0">¡Gracias! Te esperamos el ${date} a las ${time}.</p>
   </div>
   <div style="background:#f9f9f9;padding:14px;text-align:center;font-size:.8rem;color:#bbb">${bizName}</div>
 </div></body></html>`;
@@ -188,8 +241,19 @@ async function sendConfirmation(toEmail, data, settings) {
   console.log(`[email] Enviando confirmación a ${toEmail}`);
   return sendMail({
     to: toEmail,
-    subject: `✅ Reserva confirmada en ${bizName} — #${data.bookingId}`,
+    subject: `✅ Reserva confirmada en ${bizName} — ${data.serviceName}`,
     html: confirmacionHTML({ ...data, bizName }),
+  }, settings);
+}
+
+async function sendPaymentConfirmation(toEmail, data, settings) {
+  const bizName = settings?.business_name || 'Mi Negocio';
+  const tipo = data.payType === 'full' ? 'total' : 'seña';
+  console.log(`[email] Enviando confirmación de pago (${tipo}) a ${toEmail}`);
+  return sendMail({
+    to: toEmail,
+    subject: `💳 Pago recibido — ${bizName}`,
+    html: pagoConfirmadoHTML({ ...data, bizName }),
   }, settings);
 }
 
@@ -281,6 +345,7 @@ function getStatus(settings) {
 module.exports = {
   sendMail,
   sendConfirmation,
+  sendPaymentConfirmation,
   sendOwnerNotification,
   sendReminder,
   sendWeeklySummary,
