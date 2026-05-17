@@ -428,12 +428,12 @@
         <label>Nombre completo *</label>
         <input type="text" id="f-name" placeholder="Nombre y apellido" required autocomplete="name">
       </div>
-      <div class="form-group">
-        <label>Teléfono *</label>
+      <div class="form-group" id="fg-phone">
+        <label id="lbl-phone">Teléfono *</label>
         <input type="tel" id="f-phone" placeholder="Ej: 099 123 456" required>
       </div>
-      <div class="form-group">
-        <label>Email</label>
+      <div class="form-group" id="fg-email">
+        <label id="lbl-email">Email</label>
         <input type="email" id="f-email" placeholder="tucorreo@email.com">
       </div>
       <div class="form-group">
@@ -556,6 +556,9 @@ async function init() {
   document.getElementById('biz-name').textContent = biz.name;
   document.getElementById('biz-desc').textContent = biz.description || '';
   document.title = `Reservar turno · ${biz.name}`;
+
+  // Configurar campos de contacto según canal de notificaciones
+  configureContactFields(biz.notification_channel || 'email');
 
   state.googleClientId = cfg.google_client_id;
   if (me.client) state.clientUser = me.client;
@@ -962,6 +965,41 @@ function renderSummary() {
     ${rows.map(([k,v]) => `<div class="summary-row"><span>${k}</span><span>${v}</span></div>`).join('')}`;
 }
 
+function configureContactFields(channel) {
+  const fgPhone = document.getElementById('fg-phone');
+  const fgEmail = document.getElementById('fg-email');
+  const inPhone = document.getElementById('f-phone');
+  const inEmail = document.getElementById('f-email');
+  const lblPhone = document.getElementById('lbl-phone');
+  const lblEmail = document.getElementById('lbl-email');
+  const parent  = fgPhone.parentNode;
+
+  if (channel === 'email') {
+    // Email primero, obligatorio. Teléfono después, opcional.
+    parent.insertBefore(fgEmail, fgPhone);
+    inEmail.required = true;
+    inPhone.required = false;
+    lblEmail.textContent = 'Email *';
+    lblPhone.textContent = 'Teléfono';
+  } else if (channel === 'whatsapp') {
+    // Teléfono primero, obligatorio. Email después, opcional.
+    parent.insertBefore(fgPhone, fgEmail);
+    inPhone.required = true;
+    inEmail.required = false;
+    lblPhone.textContent = 'Teléfono *';
+    lblEmail.textContent = 'Email';
+  } else {
+    // Ambos: teléfono primero, los dos obligatorios.
+    parent.insertBefore(fgPhone, fgEmail);
+    inPhone.required = true;
+    inEmail.required = true;
+    lblPhone.textContent = 'Teléfono *';
+    lblEmail.textContent = 'Email *';
+  }
+  // Guardar el canal para usarlo en la validación
+  window._notifChannel = channel;
+}
+
 async function submitBooking() {
   const name      = document.getElementById('f-name').value.trim();
   const phone     = document.getElementById('f-phone').value.trim();
@@ -969,8 +1007,20 @@ async function submitBooking() {
   const instagram = document.getElementById('f-instagram').value.trim();
   const notes     = document.getElementById('f-notes').value.trim();
   const errorEl   = document.getElementById('form-error');
-  if (!name || !phone) {
-    errorEl.textContent = 'Por favor completá nombre y teléfono.';
+
+  const channel = window._notifChannel || 'email';
+  const needPhone = channel === 'whatsapp' || channel === 'both';
+  const needEmail = channel === 'email'    || channel === 'both';
+  if (!name || (needPhone && !phone) || (needEmail && !email)) {
+    if (!name) {
+      errorEl.textContent = 'Por favor completá tu nombre.';
+    } else if (needEmail && !email && needPhone && !phone) {
+      errorEl.textContent = 'Por favor completá email y teléfono.';
+    } else if (needEmail && !email) {
+      errorEl.textContent = 'Por favor completá tu email.';
+    } else {
+      errorEl.textContent = 'Por favor completá tu teléfono.';
+    }
     errorEl.classList.add('show');
     return;
   }

@@ -80,7 +80,12 @@ app.get('/api/config', (req, res) => {
 
 app.get('/api/business', (req, res) => {
   const s = db.getSettings();
-  res.json({ name: s.business_name, description: s.business_description, address: s.business_address });
+  res.json({
+    name: s.business_name,
+    description: s.business_description,
+    address: s.business_address,
+    notification_channel: s.notification_channel || 'email',
+  });
 });
 
 app.get('/api/services', (req, res) => {
