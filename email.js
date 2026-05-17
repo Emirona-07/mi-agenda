@@ -1,8 +1,16 @@
 'use strict';
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-/* ─── Transporter ─────────────────────────────────────────────────── */
+/* ─── Providers ───────────────────────────────────────────────────── */
 
+// Resend (preferido en Railway — usa HTTPS, no SMTP)
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY || '';
+  return key ? new Resend(key) : null;
+}
+
+// SMTP fallback (nodemailer)
 function buildTransporter(settings) {
   const host = settings?.email_host || '';
   const port = parseInt(settings?.email_port || '587');
@@ -10,7 +18,6 @@ function buildTransporter(settings) {
   const pass = settings?.email_pass || process.env.GMAIL_APP_PASSWORD || '';
   if (!user || !pass) return null;
   if (!host || host === 'smtp.gmail.com') {
-    // Puerto 465 (SSL) — más compatible con hosting cloud que 587
     return nodemailer.createTransport({
       host: 'smtp.gmail.com', port: 465, secure: true, auth: { user, pass },
     });
@@ -20,6 +27,13 @@ function buildTransporter(settings) {
 
 function fromAddress(settings) {
   const name = settings?.business_name || 'Mi Negocio';
+  // Resend requiere dominio verificado; si no hay, usa su dirección de onboarding
+  const resendKey = process.env.RESEND_API_KEY || '';
+  const resendFrom = process.env.RESEND_FROM || '';
+  if (resendKey) {
+    const addr = resendFrom || `onboarding@resend.dev`;
+    return `${name} <${addr}>`;
+  }
   const addr = settings?.email_from || settings?.email_user || process.env.GMAIL_USER || '';
   return addr ? `${name} <${addr}>` : name;
 }
@@ -134,18 +148,35 @@ function weeklySummaryHTML({ bizName, bookings, weekLabel }) {
 /* ─── Generic send helper ─────────────────────────────────────────── */
 
 async function sendMail({ to, subject, html }, settings) {
+  if (!to) return { ok: false, reason: 'sin_destinatario' };
+  const from = fromAddress(settings);
+
+  // — Resend (HTTPS, funciona en Railway) —
+  const resend = getResendClient();
+  if (resend) {
+    try {
+      const { error } = await resend.emails.send({ from, to, subject, html });
+      if (error) throw new Error(error.message || JSON.stringify(error));
+      console.log(`[email/resend] ✓ Enviado a ${to}: ${subject}`);
+      return { ok: true };
+    } catch (e) {
+      console.error(`[email/resend] Error enviando a ${to}:`, e.message);
+      return { ok: false, reason: e.message };
+    }
+  }
+
+  // — SMTP fallback (nodemailer) —
   const t = buildTransporter(settings);
   if (!t) {
-    console.error('[email] SMTP no configurado — falta email_user/email_pass en settings o GMAIL_USER/GMAIL_APP_PASSWORD en env');
-    return { ok: false, reason: 'smtp_no_configurado' };
+    console.error('[email] Sin configuración: seteá RESEND_API_KEY o credenciales SMTP');
+    return { ok: false, reason: 'sin_configuracion_email' };
   }
-  if (!to) return { ok: false, reason: 'sin_destinatario' };
   try {
-    await t.sendMail({ from: fromAddress(settings), to, subject, html });
-    console.log(`[email] ✓ Enviado a ${to}: ${subject}`);
+    await t.sendMail({ from, to, subject, html });
+    console.log(`[email/smtp] ✓ Enviado a ${to}: ${subject}`);
     return { ok: true };
   } catch (e) {
-    console.error(`[email] Error enviando a ${to}:`, e.message);
+    console.error(`[email/smtp] Error enviando a ${to}:`, e.message);
     return { ok: false, reason: e.message };
   }
 }
@@ -210,17 +241,38 @@ async function sendWeeklySummary(bookings, toEmail, settings) {
 /* ─── Admin helpers ───────────────────────────────────────────────── */
 
 async function testConnection(settings) {
+  // Probar Resend si está configurado
+  const resend = getResendClient();
+  if (resend) {
+    try {
+      // Resend no tiene verify() — enviamos a la dirección del owner como test
+      const to = settings?.owner_email || process.env.ADMIN_EMAIL || '';
+      if (!to) return { ok: false, reason: 'Configurá owner_email para probar Resend' };
+      const { error } = await resend.emails.send({
+        from: fromAddress(settings),
+        to,
+        subject: '✅ Test de conexión — Mi Piel',
+        html: '<p>La configuración de email funciona correctamente.</p>',
+      });
+      if (error) throw new Error(error.message || JSON.stringify(error));
+      return { ok: true, provider: 'resend' };
+    } catch (e) {
+      return { ok: false, reason: e.message };
+    }
+  }
+  // Fallback SMTP
   const t = buildTransporter(settings);
-  if (!t) return { ok: false, reason: 'Faltan datos SMTP (host/usuario/contraseña o variables GMAIL_USER / GMAIL_APP_PASSWORD)' };
+  if (!t) return { ok: false, reason: 'Seteá RESEND_API_KEY en Railway o credenciales SMTP' };
   try {
     await t.verify();
-    return { ok: true };
+    return { ok: true, provider: 'smtp' };
   } catch (e) {
     return { ok: false, reason: e.message };
   }
 }
 
 function getStatus(settings) {
+  if (process.env.RESEND_API_KEY) return 'configured';
   const user = settings?.email_user || process.env.GMAIL_USER || '';
   const pass = settings?.email_pass || process.env.GMAIL_APP_PASSWORD || '';
   return user && pass ? 'configured' : 'not_configured';

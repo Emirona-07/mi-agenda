@@ -3,9 +3,15 @@
   "version": "1.0.0",
   "description": "Agenda online con notificaciones por WhatsApp",
   "main": "server.js",
-  "engines": { "node": "20.x", "npm": "10.x" },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  },
   "packageManager": "npm@10.8.2",
-  "scripts": { "start": "node server.js", "dev": "nodemon server.js" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
     "dotenv": "^16.4.4",
@@ -14,7 +20,10 @@
     "mercadopago": "^2.0.15",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.9"
+    "nodemailer": "^6.9.9",
+    "resend": "^6.12.3"
   },
-  "devDependencies": { "nodemon": "^3.1.0" }
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
 }
