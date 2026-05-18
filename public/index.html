@@ -309,6 +309,59 @@
       margin-top: 1px;
     }
 
+    /* ── Payment method selector ────────────────────────── */
+    .pay-method-wrap {
+      margin-bottom: 16px;
+    }
+    .pay-method-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .pay-method-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .pay-method-btn {
+      padding: 13px 8px 11px;
+      border: 2px solid var(--border);
+      border-radius: var(--r);
+      background: var(--white);
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.18s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .pay-method-btn:hover { border-color: var(--p-mid); }
+    .pay-method-btn.active { border-color: var(--p); background: var(--p-light); }
+    .pay-method-icon { font-size: 1.25rem; line-height: 1; }
+    .pay-method-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .pay-method-btn.active .pay-method-name { color: var(--p); }
+    .pay-method-sub {
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .pay-method-btn.active .pay-method-sub { color: var(--p-mid); }
+    .pay-surcharge-note {
+      font-size: 0.73rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
     /* ── Calendar ───────────────────────────────────────── */
     .calendar-header {
       display: flex;
@@ -988,6 +1041,25 @@
       <div class="card-title">Tus datos</div>
       <div class="error-msg" id="form-error"></div>
       <div class="summary" id="booking-summary"><h3>Resumen</h3></div>
+
+      <!-- Selector de método de pago (solo si MP está configurado y el servicio tiene precio) -->
+      <div id="pay-method-wrap" class="pay-method-wrap" style="display:none">
+        <div class="pay-method-label">¿Cómo vas a pagar?</div>
+        <div class="pay-method-row">
+          <button class="pay-method-btn active" id="pm-cash" onclick="setPayMethod('cash')">
+            <span class="pay-method-icon">💵</span>
+            <span class="pay-method-name">Efectivo</span>
+            <span class="pay-method-sub">En el local</span>
+          </button>
+          <button class="pay-method-btn" id="pm-mp" onclick="setPayMethod('mp')">
+            <span class="pay-method-icon">💳</span>
+            <span class="pay-method-name">Mercado Pago</span>
+            <span class="pay-method-sub" id="pm-mp-sub">Online</span>
+          </button>
+        </div>
+        <div class="pay-surcharge-note" id="pay-surcharge-note" style="display:none"></div>
+      </div>
+
       <div class="form-group">
         <label>Nombre completo *</label>
         <input type="text" id="f-name" placeholder="Nombre y apellido" required autocomplete="name">
@@ -1120,6 +1192,9 @@ async function init() {
   document.getElementById('biz-name').textContent = biz.name;
   document.getElementById('biz-desc').textContent = biz.description || '';
   document.title = `Reservar turno · ${biz.name}`;
+
+  _mpSurcharge = biz.mp_surcharge || 0;
+  _mpActive    = !!biz.mp_active;
 
   // Configurar campos de contacto según canal de notificaciones
   configureContactFields(biz.notification_channel || 'email');
@@ -1356,6 +1431,9 @@ function svcCategory(name) {
 }
 
 let _activeCat = 'Todos';
+let _paymentMethod = 'cash';   // 'cash' | 'mp'
+let _mpSurcharge   = 0;        // % como número (ej. 5)
+let _mpActive      = false;    // true si MP_ACCESS_TOKEN está configurado
 
 function renderServices() {
   const list = document.getElementById('services-list');
@@ -1400,6 +1478,20 @@ function setCategory(cat) {
   renderServices();
 }
 
+function setPayMethod(method) {
+  _paymentMethod = method;
+  document.getElementById('pm-cash').classList.toggle('active', method === 'cash');
+  document.getElementById('pm-mp').classList.toggle('active', method === 'mp');
+  const note = document.getElementById('pay-surcharge-note');
+  if (method === 'mp' && _mpSurcharge > 0) {
+    note.textContent = `Los precios con Mercado Pago incluyen el ${_mpSurcharge}% de comisión de la plataforma.`;
+    note.style.display = 'block';
+  } else {
+    note.style.display = 'none';
+  }
+  renderSummary();
+}
+
 async function selectService(id) {
   state.selectedService = state.services.find(s => s.id === id);
   state.selectedProfessional = null;
@@ -1416,9 +1508,17 @@ function goStep(step) {
   updateProgress(step);
   if (step === 2) loadCalendar();
   if (step === 3) {
+    // Mostrar selector de método de pago si MP está activo y el servicio tiene precio
+    const hasMpPrice = _mpActive && state.selectedService && state.selectedService.price > 0;
+    document.getElementById('pay-method-wrap').style.display = hasMpPrice ? '' : 'none';
+    // Si MP no está activo, asegurar que siempre sea 'cash'
+    if (!hasMpPrice) _paymentMethod = 'cash';
+    // Actualizar label del recargo en el botón MP
+    if (_mpSurcharge > 0) {
+      document.getElementById('pm-mp-sub').textContent = `+${_mpSurcharge}% comisión`;
+    }
     renderSummary();
     if (state.clientUser) {
-      const parts = (state.clientUser.name || '').split(' ');
       if (!document.getElementById('f-name').value) document.getElementById('f-name').value = state.clientUser.name || '';
       if (!document.getElementById('f-email').value) document.getElementById('f-email').value = state.clientUser.email || '';
     }
@@ -1525,13 +1625,19 @@ function renderSummary() {
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const [y, mo, dy] = s.selectedDate.split('-');
   const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
+
+  // Aplicar recargo si el método de pago es MP
+  const surge = _paymentMethod === 'mp' ? (1 + _mpSurcharge / 100) : 1;
+  const displayPrice   = s.selectedService.price   > 0 ? Math.round(s.selectedService.price   * surge) : 0;
+  const displayDeposit = s.selectedService.deposit > 0 ? Math.round(s.selectedService.deposit * surge) : 0;
+
   const rows = [
     ['Servicio', s.selectedService.name],
     s.selectedProfessional ? ['Profesional', s.selectedProfessional.name] : null,
     ['Fecha', dateStr],
     ['Hora', s.selectedTime],
-    s.selectedService.price   > 0 ? ['Precio', `$${s.selectedService.price.toLocaleString()}`]   : null,
-    s.selectedService.deposit > 0 ? ['Seña',   `$${s.selectedService.deposit.toLocaleString()}`] : null,
+    displayPrice   > 0 ? ['Precio', `$${displayPrice.toLocaleString()}`]   : null,
+    displayDeposit > 0 ? ['Seña',   `$${displayDeposit.toLocaleString()}`] : null,
   ].filter(Boolean);
   document.getElementById('booking-summary').innerHTML = `
     <h3>Resumen</h3>
@@ -1608,6 +1714,7 @@ async function submitBooking() {
         service_id: state.selectedService.id,
         professional_id: state.selectedProfessional?.id,
         date: state.selectedDate, time: state.selectedTime,
+        payment_method: _paymentMethod,
         utm_source: state.utmSource }),
     });
     const data = await res.json();
@@ -1620,6 +1727,7 @@ async function submitBooking() {
     const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const [y, mo, dy] = state.selectedDate.split('-');
     const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
+    const payMethodLabel = data.payment_method === 'mp' ? 'Mercado Pago' : 'Efectivo';
     document.getElementById('confirm-summary').innerHTML = `
       <h3>Detalle</h3>
       <div class="summary-row"><span>Nº de reserva</span><span>#${data.booking_id}</span></div>
@@ -1628,7 +1736,9 @@ async function submitBooking() {
       <div class="summary-row"><span>Fecha</span><span>${dateStr}</span></div>
       <div class="summary-row"><span>Hora</span><span>${state.selectedTime}</span></div>
       <div class="summary-row"><span>Nombre</span><span>${name}</span></div>
-      ${state.selectedService.price > 0 ? `<div class="summary-row"><span>Precio</span><span>$${state.selectedService.price.toLocaleString()}</span></div>` : ''}
+      ${data.price > 0 ? `<div class="summary-row"><span>Precio</span><span>$${data.price.toLocaleString()}</span></div>` : ''}
+      ${data.deposit > 0 ? `<div class="summary-row"><span>Seña</span><span>$${data.deposit.toLocaleString()}</span></div>` : ''}
+      <div class="summary-row"><span>Forma de pago</span><span>${payMethodLabel}</span></div>
     `;
     if (data.whatsapp_url) document.getElementById('whatsapp-btn').href = data.whatsapp_url;
     else document.getElementById('whatsapp-btn').style.display = 'none';
@@ -1689,6 +1799,11 @@ function newBooking() {
   state.selectedDate = null; state.selectedTime = null;
   state.calYear = null; state.calMonth = null;
   _activeCat = 'Todos';
+  _paymentMethod = 'cash';
+  // Resetear botones del selector
+  document.getElementById('pm-cash').classList.add('active');
+  document.getElementById('pm-mp').classList.remove('active');
+  document.getElementById('pay-surcharge-note').style.display = 'none';
   ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('btn-to-2').disabled = true;
   goStep(1);

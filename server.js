@@ -86,6 +86,7 @@ app.get('/api/business', (req, res) => {
     address: s.business_address,
     notification_channel: s.notification_channel || 'email',
     mp_surcharge: parseFloat(s.mp_surcharge || '5'),
+    mp_active: !!mpClient,
   });
 });
 
@@ -115,8 +116,12 @@ app.get('/api/available-slots', (req, res) => {
 });
 
 app.post('/api/bookings', async (req, res) => {
-  const { name, phone, email, instagram, service_id, professional_id, date, time, notes } = req.body;
-  if (!name || !phone || !service_id || !date || !time)
+  const { name, phone, email, instagram, service_id, professional_id, date, time, notes, payment_method } = req.body;
+
+  const s = db.getSettings();
+  const channel = s.notification_channel || 'email';
+  const needPhone = channel === 'whatsapp' || channel === 'both';
+  if (!name || (needPhone && !phone) || !service_id || !date || !time)
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
 
   if (!db.isSlotAvailable(date, time, parseInt(service_id), professional_id ? parseInt(professional_id) : null))
@@ -126,24 +131,29 @@ app.post('/api/bookings', async (req, res) => {
   const service = db.getServiceById(parseInt(service_id));
   const professional = professional_id ? db.getProfessionalById(parseInt(professional_id)) : service.professionals[0] || null;
 
+  // Precios: aplicar recargo de MP si el cliente eligió pagar con MP
+  const payMethod = payment_method === 'mp' ? 'mp' : 'cash';
+  const mpSurchargePct = payMethod === 'mp' ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
+  const effectivePrice   = service.price   > 0 ? Math.round(service.price   * (1 + mpSurchargePct)) : 0;
+  const effectiveDeposit = service.deposit > 0 ? Math.round(service.deposit * (1 + mpSurchargePct)) : 0;
+
   const booking = db.createBooking({
     client_id: client.id,
     service_id: parseInt(service_id),
     professional_id: professional ? professional.id : null,
     date, time, notes,
-    total_price: service.price,
+    total_price: effectivePrice,
     deposit_paid: 0
   });
 
-  const s = db.getSettings();
   const profName = professional ? professional.name : '';
   const bizName = s.business_name || 'Mi Negocio';
 
-  // Crear preferencias de MP primero (necesitamos las URLs para el email)
+  // Crear preferencias de MP solo si el cliente eligió pagar con MP
   let mp_url_deposit = null;
   let mp_url_full = null;
 
-  if (mpClient && (service.deposit > 0 || service.price > 0)) {
+  if (payMethod === 'mp' && mpClient && (effectiveDeposit > 0 || effectivePrice > 0)) {
     const pref = new Preference(mpClient);
     const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
 
@@ -170,10 +180,9 @@ app.post('/api/bookings', async (req, res) => {
 
     try {
       const tasks = [];
-      if (service.deposit > 0) tasks.push(makePref(service.deposit, 'deposit', 'Seña').then(u => { mp_url_deposit = u; }));
-      if (service.price > 0)   tasks.push(makePref(service.price,   'full',    'Total').then(u => { mp_url_full = u; }));
+      if (effectiveDeposit > 0) tasks.push(makePref(effectiveDeposit, 'deposit', 'Seña').then(u => { mp_url_deposit = u; }));
+      if (effectivePrice   > 0) tasks.push(makePref(effectivePrice,   'full',    'Total').then(u => { mp_url_full = u; }));
       await Promise.all(tasks);
-      // Guardar URLs en DB para recuperarlas desde el webhook
       if (mp_url_deposit || mp_url_full) {
         db.updateBookingPayment(booking.id, { mp_url_deposit, mp_url_full });
       }
@@ -184,7 +193,6 @@ app.post('/api/bookings', async (req, res) => {
 
   // Notificaciones (con las URLs de MP ya disponibles)
   setImmediate(async () => {
-    const channel = s.notification_channel || 'email';
     const sendWA    = channel === 'whatsapp' || channel === 'both';
     const sendEmail = channel === 'email'    || channel === 'both';
     const fmtDate   = formatDate(date);
@@ -207,7 +215,7 @@ app.post('/api/bookings', async (req, res) => {
         await emailSvc.sendConfirmation(clientEmail, {
           name, serviceName: service.name, profName: profName || '',
           date: fmtDate, time,
-          price: service.price, deposit: service.deposit,
+          price: effectivePrice, deposit: effectiveDeposit,
           mp_url_deposit, mp_url_full,
         }, s);
       }
@@ -216,7 +224,7 @@ app.post('/api/bookings', async (req, res) => {
         await emailSvc.sendOwnerNotification(ownerEmail, {
           bookingId: String(booking.id), serviceName: service.name,
           clientName: name, phone, date: fmtDate, time,
-          price: service.price, deposit: service.deposit,
+          price: effectivePrice, deposit: effectiveDeposit,
         }, s);
       }
     }
@@ -225,8 +233,9 @@ app.post('/api/bookings', async (req, res) => {
   res.json({
     success: true,
     booking_id: booking.id,
-    deposit: service.deposit,
-    price: service.price,
+    deposit: effectiveDeposit,
+    price: effectivePrice,
+    payment_method: payMethod,
     message: 'Reserva creada exitosamente',
     mp_url_deposit,
     mp_url_full,
