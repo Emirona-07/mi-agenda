@@ -273,6 +273,72 @@
       margin-top: 4px;
     }
     .btn-qr-close:active { opacity: .8; }
+
+    /* Confirm modal */
+    #confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 0 24px;
+    }
+    #confirm-overlay.active { display: flex; }
+    .confirm-box {
+      background: white;
+      border-radius: 24px;
+      padding: 28px 20px 20px;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+    }
+    .confirm-icon { font-size: 2.4rem; line-height: 1; }
+    .confirm-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .confirm-sub {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: -4px;
+    }
+    .confirm-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .btn-confirm-ok {
+      width: 100%;
+      padding: 15px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .12s;
+    }
+    .btn-confirm-ok:active { opacity: .85; }
+    .btn-confirm-cancel {
+      width: 100%;
+      padding: 13px;
+      background: #f3f4f6;
+      color: var(--muted);
+      border: none;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-confirm-cancel:active { background: #e5e7eb; }
   </style>
 </head>
 <body>
@@ -300,6 +366,19 @@
   </button>
 
   <div id="status"></div>
+
+  <!-- Confirm modal -->
+  <div id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-icon" id="confirm-icon"></div>
+      <div class="confirm-title" id="confirm-title"></div>
+      <div class="confirm-sub" id="confirm-sub"></div>
+      <div class="confirm-actions">
+        <button class="btn-confirm-ok" id="confirm-ok">Confirmar</button>
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- QR Payment Overlay -->
   <div id="qr-overlay">
@@ -585,10 +664,24 @@
 
     // ─── Cobro manual ────────────────────────────────────────────────────────
 
-    async function markPaid(bookingId, method) {
-      const labels = { cash: 'efectivo', transfer: 'transferencia', qr: 'QR físico' };
-      if (!confirm(`¿Marcar como cobrado por ${labels[method]}?`)) return;
+    const METHOD_INFO = {
+      cash:     { icon: '💵', label: 'Efectivo',      sub: 'Marcar esta cita como pagada en efectivo' },
+      transfer: { icon: '🏦', label: 'Transferencia', sub: 'Marcar esta cita como pagada por transferencia' },
+      qr:       { icon: '📲', label: 'QR físico',     sub: 'Marcar esta cita como pagada con QR de MP' },
+    };
 
+    function markPaid(bookingId, method) {
+      const info = METHOD_INFO[method];
+      showConfirm({
+        icon: info.icon,
+        title: `Cobrado por ${info.label}`,
+        sub: info.sub,
+        okLabel: `Sí, marcar como cobrado`,
+        onOk: () => doMarkPaid(bookingId, method),
+      });
+    }
+
+    async function doMarkPaid(bookingId, method) {
       try {
         const res = await fetch(`/api/quick-photo/mark-paid?token=${encodeURIComponent(token)}`, {
           method: 'POST',
@@ -600,7 +693,7 @@
           const b = bookings.find(x => x.id === bookingId);
           if (b) b.payment_status = 'full';
           renderBookingInfo();
-          setStatus('ok', `✅ Cobrado por ${labels[method]}`);
+          setStatus('ok', `✅ Cobrado por ${METHOD_INFO[method].label}`);
         } else {
           setStatus('err', '❌ ' + (data.error || 'Error'));
         }
@@ -608,6 +701,35 @@
         setStatus('err', '❌ Sin conexión');
       }
     }
+
+    // ─── Custom confirm ───────────────────────────────────────────────────────
+
+    let _confirmCallback = null;
+
+    function showConfirm({ icon, title, sub, okLabel, onOk }) {
+      document.getElementById('confirm-icon').textContent  = icon;
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-sub').textContent   = sub;
+      document.getElementById('confirm-ok').textContent    = okLabel || 'Confirmar';
+      _confirmCallback = onOk;
+      document.getElementById('confirm-overlay').classList.add('active');
+    }
+
+    function closeConfirm() {
+      document.getElementById('confirm-overlay').classList.remove('active');
+      _confirmCallback = null;
+    }
+
+    document.getElementById('confirm-ok').addEventListener('click', () => {
+      const cb = _confirmCallback;
+      closeConfirm();
+      if (cb) cb();
+    });
+
+    // Cerrar al tocar el fondo
+    document.getElementById('confirm-overlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+    });
 
     // ─── Utils ────────────────────────────────────────────────────────────────
 
