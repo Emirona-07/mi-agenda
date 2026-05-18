@@ -4,6 +4,7 @@ const cron = require('node-cron');
 const emailSvc = require('./email');
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const express = require('express');
+const crypto = require('crypto');
 
 // Mercado Pago — se inicializa solo si MP_ACCESS_TOKEN está configurado
 const mpClient = process.env.MP_ACCESS_TOKEN
@@ -50,7 +51,7 @@ const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionSecret = process.env.SESSION_SECRET
   || process.env.ADMIN_PASSWORD
-  || require('crypto').randomBytes(32).toString('hex');
+  || crypto.randomBytes(32).toString('hex');
 const loginAttempts = new Map();
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 10;
@@ -72,7 +73,7 @@ const upload = multer({
     destination: (_req, _file, cb) => cb(null, uploadsDir),
     filename: (_req, file, cb) => {
       const ext = allowedImageTypes.get(file.mimetype);
-      const name = require('crypto').randomBytes(16).toString('hex');
+      const name = crypto.randomBytes(16).toString('hex');
       cb(null, `${Date.now()}-${name}${ext}`);
     },
   }),
@@ -148,6 +149,36 @@ function isValidEmail(email) {
 
 function sanitizeOptional(value, max = 1000) {
   return String(value || '').trim().slice(0, max);
+}
+
+function parseMercadoPagoSignature(signature = '') {
+  return signature.split(',').reduce((acc, part) => {
+    const [key, ...rest] = part.split('=');
+    if (!key || !rest.length) return acc;
+    acc[key.trim()] = rest.join('=').trim();
+    return acc;
+  }, {});
+}
+
+function safeCompareHex(a, b) {
+  if (!/^[a-f0-9]+$/i.test(a) || !/^[a-f0-9]+$/i.test(b) || a.length !== b.length || a.length % 2 !== 0) return false;
+  return crypto.timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex'));
+}
+
+function isMercadoPagoWebhookVerified(req) {
+  const secret = process.env.MP_WEBHOOK_SECRET || process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+  if (!secret) return true;
+
+  const { ts, v1 } = parseMercadoPagoSignature(req.get('x-signature') || '');
+  if (!ts || !v1) return false;
+
+  let manifest = '';
+  if (req.query['data.id']) manifest += `id:${req.query['data.id']};`;
+  if (req.get('x-request-id')) manifest += `request-id:${req.get('x-request-id')};`;
+  manifest += `ts:${ts};`;
+
+  const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
+  return safeCompareHex(expected, v1);
 }
 
 function adminSettings(settings) {
@@ -426,8 +457,14 @@ app.post('/api/bookings', async (req, res) => {
 app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   res.sendStatus(200); // siempre 200 a MP primero
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    if (body.type !== 'payment' || !body.data?.id) return;
+    const body = Buffer.isBuffer(req.body)
+      ? JSON.parse(req.body.toString('utf8'))
+      : typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    if (!isMercadoPagoWebhookVerified(req)) {
+      console.warn('MP webhook ignored: invalid signature');
+      return;
+    }
+    if (body?.type !== 'payment' || !body.data?.id) return;
     if (!mpClient) return;
     const payment = new Payment(mpClient);
     const payData = await payment.get({ id: body.data.id });
