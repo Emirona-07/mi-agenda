@@ -151,6 +151,26 @@ function sanitizeOptional(value, max = 1000) {
   return String(value || '').trim().slice(0, max);
 }
 
+function normalizeIdList(value) {
+  return Array.isArray(value)
+    ? [...new Set(value.map(v => parseInt(v, 10)).filter(Number.isInteger).filter(v => v > 0))]
+    : [];
+}
+
+function normalizeColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : '#2d6a4f';
+}
+
+function parseNonNegativeNumber(value) {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function parsePositiveInt(value, fallback) {
+  const parsed = parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function parseMercadoPagoSignature(signature = '') {
   return signature.split(',').reduce((acc, part) => {
     const [key, ...rest] = part.split('=');
@@ -652,11 +672,30 @@ app.delete('/api/admin/clients/:id', requireAuth, (req, res) => {
 app.get('/api/admin/services', requireAuth, (req, res) => res.json(db.getAllServices()));
 app.post('/api/admin/services', requireAuth, (req, res) => {
   const { name, duration, price, deposit, description, professional_ids } = req.body;
-  res.json(db.createService({ name, duration: parseInt(duration), price: parseFloat(price)||0, deposit: parseFloat(deposit)||0, description, professional_ids }));
+  const cleanName = sanitizeOptional(name, 120);
+  if (!cleanName) return res.status(400).json({ error: 'Nombre requerido' });
+  res.json(db.createService({
+    name: cleanName,
+    duration: parsePositiveInt(duration, 60),
+    price: parseNonNegativeNumber(price),
+    deposit: parseNonNegativeNumber(deposit),
+    description: sanitizeOptional(description, 1000),
+    professional_ids: normalizeIdList(professional_ids),
+  }));
 });
 app.put('/api/admin/services/:id', requireAuth, (req, res) => {
   const { name, duration, price, deposit, description, active, professional_ids } = req.body;
-  db.updateService(parseInt(req.params.id), { name, duration: parseInt(duration), price: parseFloat(price)||0, deposit: parseFloat(deposit)||0, description, active, professional_ids });
+  const cleanName = sanitizeOptional(name, 120);
+  if (!cleanName) return res.status(400).json({ error: 'Nombre requerido' });
+  db.updateService(parseInt(req.params.id), {
+    name: cleanName,
+    duration: parsePositiveInt(duration, 60),
+    price: parseNonNegativeNumber(price),
+    deposit: parseNonNegativeNumber(deposit),
+    description: sanitizeOptional(description, 1000),
+    active: !!active,
+    professional_ids: professional_ids === undefined ? undefined : normalizeIdList(professional_ids),
+  });
   res.json({ success: true });
 });
 app.delete('/api/admin/services/:id', requireAuth, (req, res) => {
@@ -682,9 +721,19 @@ app.delete('/api/admin/services/:id/photo', requireAuth, (req, res) => {
 
 // Professionals
 app.get('/api/admin/professionals', requireAuth, (req, res) => res.json(db.getProfessionals(false)));
-app.post('/api/admin/professionals', requireAuth, (req, res) => res.json(db.createProfessional(req.body)));
+app.post('/api/admin/professionals', requireAuth, (req, res) => {
+  const name = sanitizeOptional(req.body.name, 120);
+  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
+  res.json(db.createProfessional({ name, color: normalizeColor(req.body.color) }));
+});
 app.put('/api/admin/professionals/:id', requireAuth, (req, res) => {
-  db.updateProfessional(parseInt(req.params.id), req.body);
+  const name = sanitizeOptional(req.body.name, 120);
+  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
+  db.updateProfessional(parseInt(req.params.id), {
+    name,
+    color: normalizeColor(req.body.color),
+    active: !!req.body.active,
+  });
   res.json({ success: true });
 });
 app.delete('/api/admin/professionals/:id', requireAuth, (req, res) => {
