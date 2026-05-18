@@ -572,9 +572,28 @@ function findOrCreateClientByGoogle({ google_id, email, name, picture }) {
 }
 
 function mergeClients(targetId, sourceId) {
+  const target = db.prepare('SELECT * FROM clients WHERE id=?').get(targetId);
+  const source = db.prepare('SELECT * FROM clients WHERE id=?').get(sourceId);
+  if (!target || !source) return;
+
   // Reasigna todas las reservas del cliente origen al destino
   db.prepare('UPDATE bookings SET client_id=? WHERE client_id=?').run(targetId, sourceId);
-  // Elimina el cliente origen (sin sus reservas, ya reasignadas)
+
+  // Completa datos faltantes en el destino con los del origen
+  const updates = {};
+  if (!target.google_id    && source.google_id)    updates.google_id = source.google_id;
+  if (!target.google_picture && source.google_picture) updates.google_picture = source.google_picture;
+  if (!target.email        && source.email)        updates.email = source.email;
+  if (!target.phone || target.phone.startsWith('g_'))
+    if (source.phone && !source.phone.startsWith('g_')) updates.phone = source.phone;
+  if (!target.instagram    && source.instagram)    updates.instagram = source.instagram;
+
+  if (Object.keys(updates).length) {
+    const sets = Object.keys(updates).map(k => `${k}=?`).join(', ');
+    db.prepare(`UPDATE clients SET ${sets} WHERE id=?`).run(...Object.values(updates), targetId);
+  }
+
+  // Elimina el origen
   db.prepare('DELETE FROM clients WHERE id=?').run(sourceId);
 }
 

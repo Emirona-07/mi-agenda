@@ -10,7 +10,6 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest-quickphoto.json">
   <title>Turno · Mi Piel</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -234,9 +233,11 @@
       color: #1a3a8f;
       letter-spacing: -.02em;
     }
-    #qr-canvas {
+    #qr-img {
       border-radius: 12px;
       display: block;
+      width: 256px;
+      height: 256px;
     }
     .qr-hint {
       font-size: 0.82rem;
@@ -385,7 +386,7 @@
     <div class="qr-box">
       <div class="qr-title" id="qr-service-label"></div>
       <div class="qr-amount" id="qr-amount-label"></div>
-      <canvas id="qr-canvas" width="256" height="256"></canvas>
+      <img id="qr-img" src="" alt="QR de pago">
       <div class="qr-hint">Apuntá la cámara al QR para pagar</div>
       <div class="qr-waiting" id="qr-waiting"><span class="spinner">⏳</span> Esperando pago…</div>
       <div class="qr-success" id="qr-success">✅ ¡Pagado!</div>
@@ -581,9 +582,7 @@
       document.getElementById('qr-amount-label').textContent = '';
       document.getElementById('qr-waiting').style.display = 'block';
       document.getElementById('qr-success').classList.remove('active');
-      const canvas = document.getElementById('qr-canvas');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      document.getElementById('qr-img').src = '';
       overlay.classList.add('active');
 
       try {
@@ -617,16 +616,7 @@
 
         // Mostrar monto y QR
         document.getElementById('qr-amount-label').textContent = `$${data.amount.toLocaleString('es')}`;
-        try {
-          await QRCode.toCanvas(canvas, data.init_point, {
-            width: 256, margin: 2,
-            color: { dark: '#000000', light: '#ffffff' },
-          });
-        } catch(qrErr) {
-          overlay.classList.remove('active');
-          setStatus('err', '❌ Error generando QR: ' + qrErr.message);
-          return;
-        }
+        document.getElementById('qr-img').src = data.qr_data_url;
 
         // Empezar polling
         startPolling(bookingId);

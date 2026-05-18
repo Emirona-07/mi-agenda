@@ -1,4 +1,5 @@
 require('dotenv').config();
+const QRCodeGen = require('qrcode');
 const multer = require('multer');
 const cron = require('node-cron');
 const emailSvc = require('./email');
@@ -1127,7 +1128,8 @@ app.post('/api/quick-photo/charge', async (req, res) => {
       return res.status(500).json({ error: 'MP no devolvió URL de pago' });
     }
 
-    res.json({ init_point, preference_id: r.id, amount: remainingAmount });
+    const qr_data_url = await QRCodeGen.toDataURL(init_point, { width: 280, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
+    res.json({ init_point, preference_id: r.id, amount: remainingAmount, qr_data_url });
   } catch (err) {
     console.error('Error in /api/quick-photo/charge:', err);
     res.status(500).json({ error: err.message || 'Error al crear preferencia de pago' });
