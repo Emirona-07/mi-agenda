@@ -693,7 +693,7 @@ async function initApp() {
 }
 
 function populateProfSelects() {
-  const opts = professionals.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  const opts = professionals.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
   ['agenda-prof-filter', 'citas-prof', 'hours-prof-select'].forEach(id => {
     const el = $(id);
     if (!el) return;
@@ -853,7 +853,7 @@ async function loadMetrics({ year, month } = {}) {
         const pct = Math.round((s.bookings / maxB) * 100);
         return `<div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;font-size:0.87rem;margin-bottom:4px">
-            <span>${i+1}. ${s.name}</span>
+            <span>${i+1}. ${escapeHtml(s.name)}</span>
             <span style="color:var(--muted)">${s.bookings} cita${s.bookings!==1?'s':''} · ${cur}${s.revenue.toLocaleString()}</span>
           </div>
           <div style="background:#e8e8e8;border-radius:99px;height:6px">
@@ -1287,12 +1287,12 @@ async function loadRevenue() {
 
   const services = data.by_service || [];
   $('rev-by-service').innerHTML = services.length
-    ? services.map(s => `<div class="detail-row"><span>${s.name}</span><span><strong>${cur}${Number(s.revenue).toLocaleString()}</strong> <span class="text-muted">(${s.bookings})</span></span></div>`).join('')
+    ? services.map(s => `<div class="detail-row"><span>${escapeHtml(s.name)}</span><span><strong>${cur}${Number(s.revenue).toLocaleString()}</strong> <span class="text-muted">(${s.bookings})</span></span></div>`).join('')
     : '<p class="text-muted" style="padding:12px">Sin datos</p>';
 
   const profs = data.by_professional || [];
   $('rev-by-prof').innerHTML = profs.length
-    ? `<div class="table-wrap"><table><thead><tr><th>Profesional</th><th>Citas</th><th>Ingresos</th></tr></thead><tbody>${profs.map(p => `<tr><td>${p.name}</td><td>${p.bookings}</td><td style="font-weight:700;color:var(--green)">${cur}${Number(p.revenue).toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`
+    ? `<div class="table-wrap"><table><thead><tr><th>Profesional</th><th>Citas</th><th>Ingresos</th></tr></thead><tbody>${profs.map(p => `<tr><td>${escapeHtml(p.name)}</td><td>${p.bookings}</td><td style="font-weight:700;color:var(--green)">${cur}${Number(p.revenue).toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`
     : '<p class="text-muted" style="padding:12px">Sin datos</p>';
 }
 
@@ -1330,7 +1330,7 @@ function openServiceModal(id = null) {
 
   $('svc-profs-checkboxes').innerHTML = professionals.filter(p => p.active).map(p =>
     `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.88rem">
-      <input type="checkbox" value="${p.id}" style="accent-color:var(--green)"> ${p.name}
+      <input type="checkbox" value="${p.id}" style="accent-color:var(--green)"> ${escapeHtml(p.name)}
     </label>`).join('');
 
   if (id) {
@@ -1585,7 +1585,7 @@ async function deleteReview(id) {
 }
 
 function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ─── HELPERS ──────────────────────────────────────────
