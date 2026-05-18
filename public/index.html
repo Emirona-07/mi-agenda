@@ -1402,6 +1402,21 @@
         <label>Notas adicionales</label>
         <textarea id="f-notes" placeholder="¿Algo que debamos saber?"></textarea>
       </div>
+
+      <!-- Gift card -->
+      <div style="margin-top:4px">
+        <button type="button" onclick="toggleGiftCard()" style="background:none;border:none;cursor:pointer;font-size:0.82rem;color:var(--p);font-weight:600;padding:0;font-family:inherit">
+          🎁 ¿Tenés una gift card?
+        </button>
+        <div id="gc-wrap" style="display:none;margin-top:10px">
+          <div style="display:flex;gap:8px">
+            <input type="text" id="f-gc-code" placeholder="XXXX-XXXX" style="flex:1;text-transform:uppercase;letter-spacing:0.05em"
+              oninput="this.value=this.value.toUpperCase()">
+            <button type="button" onclick="applyGiftCard()" class="btn btn-secondary" style="flex:0 0 auto;width:auto;padding:0 16px;font-size:0.85rem">Aplicar</button>
+          </div>
+          <div id="gc-msg" style="margin-top:8px;font-size:0.83rem"></div>
+        </div>
+      </div>
     </div>
     <div class="nav-btns">
       <button class="btn btn-secondary" onclick="goStep(2)" style="flex:0 0 auto;width:auto">← Volver</button>
@@ -1793,6 +1808,8 @@ let _paymentMethod = 'cash';   // 'cash' | 'mp'
 let _mpSurcharge   = 0;        // % como número (ej. 5)
 let _mpActive      = false;    // true si MP_ACCESS_TOKEN está configurado
 let _bankAccount   = '';       // datos de cuenta bancaria para transferencia
+let _gcCode        = null;     // código de gift card validado
+let _gcDiscount    = 0;        // monto de descuento de gift card
 
 function renderServices() {
   const list = document.getElementById('services-list');
@@ -1865,6 +1882,39 @@ function showServiceDesc(id, event) {
 function closeServiceDesc() {
   document.getElementById('svc-desc-overlay').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+function toggleGiftCard() {
+  const wrap = document.getElementById('gc-wrap');
+  wrap.style.display = wrap.style.display === 'none' ? '' : 'none';
+}
+
+async function applyGiftCard() {
+  const code = document.getElementById('f-gc-code').value.trim().toUpperCase();
+  const msg  = document.getElementById('gc-msg');
+  if (!code) return;
+  msg.textContent = 'Verificando...'; msg.style.color = 'var(--muted)';
+  try {
+    const res = await fetch('/api/gift-cards/check', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (res.ok && data.valid) {
+      _gcCode = code;
+      _gcDiscount = data.balance;
+      msg.innerHTML = `✅ Gift card válida — <strong>$${data.balance.toLocaleString()} de saldo</strong>`;
+      msg.style.color = 'var(--p)';
+      renderSummary();
+    } else {
+      _gcCode = null; _gcDiscount = 0;
+      msg.textContent = data.error || 'Código inválido';
+      msg.style.color = '#c0392b';
+      renderSummary();
+    }
+  } catch(e) {
+    msg.textContent = 'Error de conexión.'; msg.style.color = '#c0392b';
+  }
 }
 
 function setPayMethod(method) {
@@ -2101,13 +2151,18 @@ function renderSummary() {
   const displayPrice   = s.selectedService.price   > 0 ? Math.round(s.selectedService.price   * surge) : 0;
   const displayDeposit = s.selectedService.deposit > 0 ? Math.round(s.selectedService.deposit * surge) : 0;
 
+  const gcApplied = _gcCode && _gcDiscount > 0;
+  const finalDisplay = gcApplied ? Math.max(0, displayPrice - _gcDiscount) : displayPrice;
+
   const rows = [
     ['Servicio', s.selectedService.name],
     s.selectedProfessional ? ['Profesional', s.selectedProfessional.name] : null,
     ['Fecha', dateStr],
     ['Hora', s.selectedTime],
-    displayPrice   > 0 ? ['Precio', `$${displayPrice.toLocaleString()}`]   : null,
-    displayDeposit > 0 ? ['Seña',   `$${displayDeposit.toLocaleString()}`] : null,
+    displayPrice > 0 && gcApplied ? ['Precio original', `<s style="color:var(--muted)">$${displayPrice.toLocaleString()}</s>`] : (displayPrice > 0 ? ['Precio', `$${displayPrice.toLocaleString()}`] : null),
+    gcApplied ? ['🎁 Gift card', `<span style="color:var(--p)">-$${Math.min(_gcDiscount,displayPrice).toLocaleString()}</span>`] : null,
+    gcApplied && displayPrice > 0 ? ['Total', `<strong>$${finalDisplay.toLocaleString()}</strong>`] : null,
+    displayDeposit > 0 && !gcApplied ? ['Seña', `$${displayDeposit.toLocaleString()}`] : null,
   ].filter(Boolean);
   document.getElementById('booking-summary').innerHTML = `
     <h3>Resumen</h3>
@@ -2185,6 +2240,7 @@ async function submitBooking() {
         professional_id: state.selectedProfessional?.id,
         date: state.selectedDate, time: state.selectedTime,
         payment_method: _paymentMethod,
+        gift_card_code: _gcCode || undefined,
         utm_source: state.utmSource }),
     });
     const data = await res.json();
@@ -2273,13 +2329,16 @@ function newBooking() {
   state.selectedDate = null; state.selectedTime = null;
   state.calYear = null; state.calMonth = null;
   _activeCat = 'Todos';
-  _paymentMethod = 'cash';
+  _paymentMethod = 'cash'; _gcCode = null; _gcDiscount = 0;
   // Resetear botones del selector
   document.getElementById('pm-cash').classList.add('active');
   document.getElementById('pm-transfer').classList.remove('active');
   document.getElementById('pm-mp').classList.remove('active');
   document.getElementById('transfer-info').style.display = 'none';
   document.getElementById('pay-surcharge-note').style.display = 'none';
+  document.getElementById('gc-wrap').style.display = 'none';
+  document.getElementById('f-gc-code').value = '';
+  document.getElementById('gc-msg').textContent = '';
   ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
   // Restaurar sección Sobre mí, reseñas y ocultar sticky/home
   document.querySelector('.about-section').style.display = '';

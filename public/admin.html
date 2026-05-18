@@ -190,6 +190,7 @@
       <button class="nav-item" onclick="showPage('horarios')"><span class="icon">🕐</span> Horarios</button>
       <button class="nav-item" onclick="showPage('profesionales')"><span class="icon">👩‍💼</span> Profesionales</button>
       <button class="nav-item" onclick="showPage('reseñas')"><span class="icon">⭐</span> Reseñas</button>
+      <button class="nav-item" onclick="showPage('gift-cards')"><span class="icon">🎁</span> Gift Cards</button>
       <button class="nav-item" onclick="showPage('config')"><span class="icon">⚙️</span> Configuración</button>
     </div>
     <div class="sidebar-footer">
@@ -212,6 +213,22 @@
           <div class="card-header"><h3>⏳ Próximas citas</h3></div>
           <div id="upcoming-list"></div>
         </div>
+      </div>
+
+      <!-- MÉTRICAS -->
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card">
+          <div class="card-header"><h3>📈 Ingresos últimos 12 meses</h3></div>
+          <div id="metrics-chart" style="min-height:120px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>📊 Este mes</h3></div>
+          <div id="metrics-kpi"></div>
+        </div>
+      </div>
+      <div class="card mt-2">
+        <div class="card-header"><h3>🏆 Servicios más reservados (este mes)</h3></div>
+        <div id="metrics-services"></div>
       </div>
     </div>
 
@@ -359,6 +376,45 @@
           <thead><tr><th>Nombre</th><th>Color</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody id="profs-tbody"></tbody>
         </table></div>
+      </div>
+    </div>
+
+    <!-- GIFT CARDS -->
+    <div class="page" id="page-gift-cards">
+      <div class="page-title">Gift Cards</div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <h3>🎁 Crear gift card manual</h3>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div class="form-group" style="margin:0;flex:0 0 auto">
+            <label class="form-label">Monto ($)</label>
+            <input type="number" class="form-control" id="gc-new-amount" placeholder="1000" min="1" style="width:110px">
+          </div>
+          <div class="form-group" style="margin:0;flex:1;min-width:140px">
+            <label class="form-label">Nombre del comprador</label>
+            <input type="text" class="form-control" id="gc-new-purchaser" placeholder="Nombre">
+          </div>
+          <div class="form-group" style="margin:0;flex:1;min-width:180px">
+            <label class="form-label">Email (opcional, recibe el código)</label>
+            <input type="email" class="form-control" id="gc-new-email" placeholder="email@ejemplo.com">
+          </div>
+          <div class="form-group" style="margin:0;flex:1;min-width:140px">
+            <label class="form-label">Para quién (opcional)</label>
+            <input type="text" class="form-control" id="gc-new-recipient" placeholder="Destinatario">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createGiftCardAdmin()" style="flex:0 0 auto;margin-bottom:1px">+ Crear</button>
+        </div>
+        <p id="gc-create-msg" style="margin-top:10px;font-size:0.85rem;color:var(--green);display:none"></p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Todas las gift cards</h3>
+          <span id="gc-count" style="font-size:0.82rem;color:var(--muted)"></span>
+        </div>
+        <div id="gc-table-wrap">
+          <div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>
+        </div>
       </div>
     </div>
 
@@ -604,7 +660,7 @@ function showPage(name) {
   $(`page-${name}`).classList.add('active');
   document.querySelector(`[onclick="showPage('${name}')"]`).classList.add('active');
 
-  const loaders = { dashboard: loadDashboard, agenda: loadAgenda, citas: loadCitas, clientes: loadClients, facturacion: loadRevenue, servicios: loadServices, profesionales: loadProfessionals, 'reseñas': loadReviews, config: loadConfig };
+  const loaders = { dashboard: loadDashboard, agenda: loadAgenda, citas: loadCitas, clientes: loadClients, facturacion: loadRevenue, servicios: loadServices, profesionales: loadProfessionals, 'reseñas': loadReviews, 'gift-cards': loadGiftCards, config: loadConfig };
   if (loaders[name]) loaders[name]();
 }
 
@@ -645,6 +701,131 @@ async function loadDashboard() {
         <div style="font-size:0.8rem;color:var(--muted)">${b.professional_name || ''}</div>
       </div>`).join('')
     : '<div class="empty-state"><div class="emoji">✨</div><p>No hay citas próximas</p></div>';
+
+  // Métricas
+  loadMetrics();
+}
+
+async function loadMetrics() {
+  let m;
+  try { m = await api('/api/admin/metrics'); } catch(e) { return; }
+  const cur = settings.currency || '$';
+
+  // Gráfico de barras (SVG inline)
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const maxRev = Math.max(...m.monthly.map(r => r.revenue), 1);
+  const barW = 100 / Math.max(m.monthly.length, 1);
+  const bars = m.monthly.map((r, i) => {
+    const h = Math.max((r.revenue / maxRev) * 100, 2);
+    const mo = parseInt(r.month) - 1;
+    return `<g>
+      <rect x="${i * barW + 0.5}%" y="${100 - h}%" width="${barW - 1}%" height="${h}%"
+        fill="var(--green)" rx="3" opacity="0.85">
+        <title>${months[mo]} — ${cur}${r.revenue.toLocaleString()} (${r.bookings} citas)</title>
+      </rect>
+      <text x="${i * barW + barW/2}%" y="100%" dy="-2" text-anchor="middle"
+        font-size="9" fill="var(--muted)">${months[mo]}</text>
+    </g>`;
+  }).join('');
+  $('metrics-chart').innerHTML = m.monthly.length
+    ? `<svg viewBox="0 0 100 70" preserveAspectRatio="none" style="width:100%;height:130px;display:block;overflow:visible">${bars}</svg>`
+    : '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem">Sin datos aún</div>';
+
+  // KPIs del mes
+  $('metrics-kpi').innerHTML = [
+    { icon: '❌', label: 'Cancelaciones', val: `${m.cancelRate}%` },
+    { icon: '🆕', label: 'Clientes nuevos', val: m.newClients },
+    { icon: '💵', label: 'Ticket promedio', val: m.avgTicket > 0 ? `${cur}${m.avgTicket.toLocaleString()}` : '—' },
+  ].map(k => `
+    <div class="detail-row">
+      <span style="font-size:0.88rem;color:var(--muted)">${k.icon} ${k.label}</span>
+      <span style="font-weight:700;font-size:0.95rem">${k.val}</span>
+    </div>`).join('');
+
+  // Top servicios
+  $('metrics-services').innerHTML = m.topServices.length
+    ? m.topServices.map((s, i) => {
+        const maxB = m.topServices[0].bookings;
+        const pct = Math.round((s.bookings / maxB) * 100);
+        return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:0.87rem;margin-bottom:4px">
+            <span>${i+1}. ${s.name}</span>
+            <span style="color:var(--muted)">${s.bookings} cita${s.bookings!==1?'s':''} · ${cur}${s.revenue.toLocaleString()}</span>
+          </div>
+          <div style="background:#e8e8e8;border-radius:99px;height:6px">
+            <div style="background:var(--green);height:6px;border-radius:99px;width:${pct}%;transition:width 0.4s"></div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div style="padding:16px;color:var(--muted);font-size:0.85rem">Sin citas este mes</div>';
+}
+
+// ─── GIFT CARDS ───────────────────────────────────────
+async function loadGiftCards() {
+  const wrap = $('gc-table-wrap');
+  wrap.innerHTML = '<div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>';
+  let cards;
+  try { cards = await api('/api/admin/gift-cards'); } catch(e) { cards = []; }
+  if (!Array.isArray(cards) || cards.length === 0) {
+    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.9rem">No hay gift cards creadas todavía.</div>';
+    $('gc-count').textContent = '';
+    return;
+  }
+  $('gc-count').textContent = `${cards.length} total`;
+  const cur = settings.currency || '$';
+  const statusBadgeGc = s => ({
+    active: '<span class="badge badge-confirmed">Activa</span>',
+    used:   '<span class="badge badge-completed">Usada</span>',
+    cancelled: '<span class="badge badge-cancelled">Cancelada</span>',
+  }[s] || s);
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr><th>Código</th><th>Monto</th><th>Saldo</th><th>Comprador</th><th>Para</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
+    <tbody>${cards.map(gc => `<tr>
+      <td style="font-family:monospace;font-weight:700;letter-spacing:0.05em">${gc.code}</td>
+      <td>${cur}${gc.amount.toLocaleString()}</td>
+      <td style="color:${gc.balance>0?'var(--green)':'var(--muted)'}">${cur}${gc.balance.toLocaleString()}</td>
+      <td style="font-size:0.85rem">${gc.purchaser_name||'—'}</td>
+      <td style="font-size:0.85rem;color:var(--muted)">${gc.recipient_name||'—'}</td>
+      <td style="font-size:0.82rem;color:var(--muted)">${formatDateShort(gc.created_at?gc.created_at.slice(0,10):'')}</td>
+      <td>${statusBadgeGc(gc.status)}</td>
+      <td style="white-space:nowrap;display:flex;gap:6px">
+        ${gc.status==='active' ? `<button class="btn btn-sm btn-danger" onclick="cancelGc(${gc.id})">Cancelar</button>` : ''}
+        ${gc.status==='cancelled' ? `<button class="btn btn-sm btn-primary" onclick="activateGc(${gc.id})">Activar</button>` : ''}
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function createGiftCardAdmin() {
+  const amount = parseInt($('gc-new-amount').value);
+  if (!amount || amount < 1) { alert('Ingresá un monto válido'); return; }
+  const body = {
+    amount,
+    purchaser_name: $('gc-new-purchaser').value.trim(),
+    purchaser_email: $('gc-new-email').value.trim(),
+    recipient_name: $('gc-new-recipient').value.trim(),
+  };
+  const r = await api('/api/admin/gift-cards', { method: 'POST', body: JSON.stringify(body) });
+  if (r.code) {
+    const m = $('gc-create-msg');
+    m.textContent = `✅ Gift card creada: ${r.code}`;
+    m.style.display = 'block';
+    setTimeout(() => m.style.display = 'none', 4000);
+    $('gc-new-amount').value = ''; $('gc-new-purchaser').value = '';
+    $('gc-new-email').value = ''; $('gc-new-recipient').value = '';
+    loadGiftCards();
+  }
+}
+
+async function cancelGc(id) {
+  if (!confirm('¿Cancelar esta gift card?')) return;
+  await api(`/api/admin/gift-cards/${id}/cancel`, { method: 'PUT' });
+  loadGiftCards();
+}
+
+async function activateGc(id) {
+  await api(`/api/admin/gift-cards/${id}/activate`, { method: 'PUT' });
+  loadGiftCards();
 }
 
 // ─── AGENDA ───────────────────────────────────────────

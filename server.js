@@ -117,7 +117,7 @@ app.get('/api/available-slots', (req, res) => {
 });
 
 app.post('/api/bookings', async (req, res) => {
-  const { name, phone, email, instagram, service_id, professional_id, date, time, notes, payment_method } = req.body;
+  const { name, phone, email, instagram, service_id, professional_id, date, time, notes, payment_method, gift_card_code } = req.body;
 
   const s = db.getSettings();
   const channel = s.notification_channel || 'email';
@@ -138,17 +138,32 @@ app.post('/api/bookings', async (req, res) => {
   const effectivePrice   = service.price   > 0 ? Math.round(service.price   * (1 + mpSurchargePct)) : 0;
   const effectiveDeposit = service.deposit > 0 ? Math.round(service.deposit * (1 + mpSurchargePct)) : 0;
 
+  // Validar y aplicar gift card si se proporcionó
+  let gcDiscount = 0;
+  let validGcCode = null;
+  if (gift_card_code) {
+    const gc = db.getGiftCardByCode(gift_card_code);
+    if (gc && gc.status === 'active' && gc.balance > 0) {
+      gcDiscount = Math.min(gc.balance, effectivePrice);
+      validGcCode = gc.code;
+    }
+  }
+  const finalPrice = Math.max(0, effectivePrice - gcDiscount);
+
   const booking = db.createBooking({
     client_id: client.id,
     service_id: parseInt(service_id),
     professional_id: professional ? professional.id : null,
     date, time, notes,
-    total_price: effectivePrice,
+    total_price: finalPrice,
     deposit_paid: 0
   });
 
   const profName = professional ? professional.name : '';
   const bizName = s.business_name || 'Mi Negocio';
+
+  // Aplicar gift card después de crear el booking
+  if (validGcCode) db.useGiftCard(validGcCode, booking.id, gcDiscount);
 
   // Crear preferencias de MP solo si el cliente eligió pagar con MP
   let mp_url_deposit = null;
@@ -237,7 +252,9 @@ app.post('/api/bookings', async (req, res) => {
     success: true,
     booking_id: booking.id,
     deposit: effectiveDeposit,
-    price: effectivePrice,
+    price: finalPrice,
+    original_price: effectivePrice,
+    gift_card_discount: gcDiscount,
     payment_method: payMethod,
     message: 'Reserva creada exitosamente',
     mp_url_deposit,
@@ -598,7 +615,55 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
 
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/review', (req, res) => res.sendFile(path.join(__dirname, 'public', 'review.html')));
+app.get('/gift', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gift.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// ─── GIFT CARDS (público) ────────────────────────────────────────────────────
+app.post('/api/gift-cards/check', (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Falta código' });
+  const gc = db.getGiftCardByCode(code);
+  if (!gc || gc.status !== 'active' || gc.balance <= 0)
+    return res.status(404).json({ error: 'Código inválido o ya utilizado' });
+  res.json({ valid: true, balance: gc.balance, amount: gc.amount });
+});
+
+app.post('/api/gift-cards/purchase', async (req, res) => {
+  const { purchaser_name, purchaser_email, recipient_name, amount, note } = req.body;
+  if (!purchaser_name || !purchaser_email || !amount || amount < 100)
+    return res.status(400).json({ error: 'Faltan datos o monto inválido' });
+  const s = db.getSettings();
+  const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, note });
+  await emailSvc.sendGiftCard({
+    purchaser_name, purchaser_email, recipient_name,
+    code: gc.code, amount: gc.amount,
+    business_name: s.business_name || 'Mi Piel',
+  }, s).catch(()=>{});
+  res.json({ success: true, code: gc.code });
+});
+
+// ─── GIFT CARDS (admin) ───────────────────────────────────────────────────────
+app.get('/api/admin/gift-cards', requireAuth, (req, res) => res.json(db.getAllGiftCards()));
+app.post('/api/admin/gift-cards', requireAuth, async (req, res) => {
+  const { purchaser_name, purchaser_email, recipient_name, amount, note } = req.body;
+  if (!amount || amount < 1) return res.status(400).json({ error: 'Monto inválido' });
+  const s = db.getSettings();
+  const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, note });
+  if (purchaser_email) {
+    await emailSvc.sendGiftCard({ purchaser_name, purchaser_email, recipient_name,
+      code: gc.code, amount: gc.amount, business_name: s.business_name || 'Mi Piel' }, s).catch(()=>{});
+  }
+  res.json({ success: true, code: gc.code });
+});
+app.put('/api/admin/gift-cards/:id/cancel', requireAuth, (req, res) => {
+  db.cancelGiftCard(parseInt(req.params.id)); res.json({ success: true });
+});
+app.put('/api/admin/gift-cards/:id/activate', requireAuth, (req, res) => {
+  db.activateGiftCard(parseInt(req.params.id)); res.json({ success: true });
+});
+
+// ─── MÉTRICAS ─────────────────────────────────────────────────────────────────
+app.get('/api/admin/metrics', requireAuth, (req, res) => res.json(db.getMetrics()));
 
 // ─── CRON: recordatorio configurable (cada hora) ─────────────────────────────
 cron.schedule('0 * * * *', async () => {

@@ -741,6 +741,25 @@ db.exec(`
   );
 `);
 try { db.exec("ALTER TABLE bookings ADD COLUMN review_sent INTEGER DEFAULT 0"); } catch(_e) {}
+try { db.exec("ALTER TABLE bookings ADD COLUMN gift_card_code TEXT"); } catch(_e) {}
+try { db.exec("ALTER TABLE bookings ADD COLUMN gift_card_discount INTEGER DEFAULT 0"); } catch(_e) {}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gift_cards (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    code            TEXT UNIQUE NOT NULL,
+    amount          INTEGER NOT NULL,
+    balance         INTEGER NOT NULL,
+    purchaser_name  TEXT,
+    purchaser_email TEXT,
+    recipient_name  TEXT,
+    status          TEXT DEFAULT 'active',
+    booking_id      INTEGER,
+    created_at      TEXT DEFAULT (datetime('now')),
+    used_at         TEXT,
+    note            TEXT
+  );
+`);
 
 const _crypto = require('crypto');
 
@@ -796,6 +815,85 @@ function deleteReview(id) {
   db.prepare('DELETE FROM reviews WHERE id=?').run(id);
 }
 
+// ─── GIFT CARDS ───────────────────────────────────────────────────────────────
+function _gcCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const part = (n) => Array.from({length:n}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+  return `${part(4)}-${part(4)}`;
+}
+
+function createGiftCard({ amount, purchaser_name, purchaser_email, recipient_name, note }) {
+  const code = _gcCode();
+  db.prepare(`INSERT INTO gift_cards (code, amount, balance, purchaser_name, purchaser_email, recipient_name, note)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`).run(code, amount, amount, purchaser_name||'', purchaser_email||'', recipient_name||'', note||'');
+  return db.prepare('SELECT * FROM gift_cards WHERE code=?').get(code);
+}
+
+function getGiftCardByCode(code) {
+  return db.prepare('SELECT * FROM gift_cards WHERE code=?').get((code||'').toUpperCase().trim());
+}
+
+function useGiftCard(code, booking_id, amount_used) {
+  const gc = getGiftCardByCode(code);
+  if (!gc || gc.status !== 'active' || gc.balance <= 0) return null;
+  const used = Math.min(amount_used, gc.balance);
+  const newBalance = gc.balance - used;
+  db.prepare(`UPDATE gift_cards SET balance=?, booking_id=?,
+              status=CASE WHEN ?=0 THEN 'used' ELSE 'active' END,
+              used_at=CASE WHEN ?=0 THEN datetime('now') ELSE used_at END
+              WHERE code=?`).run(newBalance, booking_id, newBalance, newBalance, gc.code);
+  return used;
+}
+
+function getAllGiftCards() {
+  return db.prepare('SELECT * FROM gift_cards ORDER BY created_at DESC').all();
+}
+
+function cancelGiftCard(id) {
+  db.prepare("UPDATE gift_cards SET status='cancelled' WHERE id=?").run(id);
+}
+
+function activateGiftCard(id) {
+  db.prepare("UPDATE gift_cards SET status='active' WHERE id=?").run(id);
+}
+
+// ─── MÉTRICAS ─────────────────────────────────────────────────────────────────
+function getMetrics() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const ym = `${y}-${String(m).padStart(2,'0')}`;
+
+  const monthly = db.prepare(`
+    SELECT strftime('%m',date) as month, strftime('%Y',date) as year,
+           COUNT(*) as bookings, COALESCE(SUM(total_price),0) as revenue
+    FROM bookings WHERE date >= date('now','-11 months') AND status!='cancelled'
+    GROUP BY strftime('%Y-%m',date) ORDER BY date ASC
+  `).all();
+
+  const topServices = db.prepare(`
+    SELECT s.name, COUNT(*) as bookings, COALESCE(SUM(b.total_price),0) as revenue
+    FROM bookings b JOIN services s ON b.service_id=s.id
+    WHERE b.date LIKE ? AND b.status!='cancelled'
+    GROUP BY s.id ORDER BY bookings DESC LIMIT 5
+  `).all(`${ym}-%`);
+
+  const cancelRate = (() => {
+    const total = db.prepare(`SELECT COUNT(*) as c FROM bookings WHERE date LIKE ?`).get(`${ym}-%`).c;
+    const cancelled = db.prepare(`SELECT COUNT(*) as c FROM bookings WHERE date LIKE ? AND status='cancelled'`).get(`${ym}-%`).c;
+    return total > 0 ? Math.round((cancelled/total)*100) : 0;
+  })();
+
+  const newClients = db.prepare(`SELECT COUNT(*) as c FROM clients WHERE created_at LIKE ?`).get(`${ym}-%`).c;
+
+  const avgTicket = (() => {
+    const r = db.prepare(`SELECT AVG(total_price) as avg FROM bookings WHERE date LIKE ? AND status!='cancelled' AND total_price>0`).get(`${ym}-%`);
+    return Math.round(r?.avg || 0);
+  })();
+
+  return { monthly, topServices, cancelRate, newClients, avgTicket };
+}
+
 module.exports = {
   getSettings, updateSettings,
   getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional, purgeProfessional,
@@ -813,6 +911,8 @@ module.exports = {
   getBookingsNeedingReview, markReviewSent, createReviewToken,
   getReviewByToken, submitReview,
   getApprovedReviews, getAllReviews, approveReview, deleteReview,
+  createGiftCard, getGiftCardByCode, useGiftCard, getAllGiftCards, cancelGiftCard, activateGiftCard,
+  getMetrics,
   createSessionStore,
 };
 

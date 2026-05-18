@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gift Card — Mi Piel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #f5f5f5; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; padding: 24px 16px; -webkit-font-smoothing: antialiased; }
+    .card { background: white; border-radius: 16px; max-width: 500px; width: 100%;
+      overflow: hidden; border: 1px solid #e8e8e8; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { background: #2d6a4f; padding: 28px 32px; text-align: center; }
+    .header h1 { color: white; font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+    .header p { color: rgba(255,255,255,0.75); font-size: 0.83rem; }
+    .body { padding: 32px; }
+    .section-label { font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 10px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #555; margin-bottom: 6px; }
+    input, textarea { width: 100%; padding: 11px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+      font-size: 1rem; font-family: inherit; outline: none; transition: border-color 0.2s; color: #111; }
+    input:focus, textarea:focus { border-color: #2d6a4f; }
+    input::placeholder, textarea::placeholder { color: #bbb; }
+
+    /* Amounts */
+    .amounts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .amt-btn { padding: 9px 18px; border: 2px solid #e0e0e0; border-radius: 8px; background: white;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; color: #555; transition: all 0.15s; font-family: inherit; }
+    .amt-btn:hover { border-color: #2d6a4f; color: #2d6a4f; }
+    .amt-btn.active { border-color: #2d6a4f; background: #f0faf4; color: #2d6a4f; }
+    .custom-wrap { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; }
+    .custom-wrap input { max-width: 160px; }
+    .custom-wrap span { font-size: 0.85rem; color: #888; }
+
+    /* Transfer info */
+    .transfer-box { background: #f0f7f3; border: 1.5px solid #40916c; border-radius: 10px;
+      padding: 14px 16px; font-size: 0.86rem; line-height: 1.7; color: #1b4332;
+      margin-bottom: 18px; display: none; }
+    .transfer-box strong { color: #2d6a4f; }
+
+    /* Button */
+    .btn { width: 100%; padding: 14px; background: #2d6a4f; color: white; border: none;
+      border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: background 0.15s; }
+    .btn:hover { background: #1b4332; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .error-msg { background: #fff5f5; color: #c0392b; border-radius: 8px;
+      padding: 10px 14px; font-size: 0.85rem; margin-bottom: 14px; display: none; }
+    .error-msg.show { display: block; }
+
+    /* Success */
+    .state { text-align: center; padding: 8px 0; }
+    .state-icon { font-size: 3rem; margin-bottom: 14px; }
+    .state h2 { font-size: 1.15rem; font-weight: 700; color: #111; margin-bottom: 8px; }
+    .state p { font-size: 0.88rem; color: #666; line-height: 1.6; }
+    .code-box { margin: 20px auto; background: #f0faf4; border: 2px dashed #2d6a4f;
+      border-radius: 12px; padding: 20px; text-align: center; max-width: 300px; }
+    .code-label { font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 8px; }
+    .code-val { font-size: 1.8rem; font-weight: 800; color: #2d6a4f; letter-spacing: 0.12em; font-family: monospace; }
+    .code-amount { margin-top: 10px; font-size: 1.1rem; font-weight: 700; color: #111; }
+
+    .divider { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+    a.back { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
+      color: #2d6a4f; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1 id="biz-name">Mi Piel</h1>
+    <p>🎁 Regalá una experiencia de bienestar</p>
+  </div>
+  <div class="body">
+
+    <div id="state-form">
+      <p style="font-size:0.88rem;color:#666;line-height:1.6;margin-bottom:24px">
+        Comprá una gift card y enviala a quien quieras. El código se puede usar al reservar cualquier turno online.
+      </p>
+
+      <div class="section-label">Monto</div>
+      <div class="amounts" id="amounts-row">
+        <button class="amt-btn" data-val="500" onclick="setAmt(500)">$500</button>
+        <button class="amt-btn" data-val="1000" onclick="setAmt(1000)">$1.000</button>
+        <button class="amt-btn" data-val="1500" onclick="setAmt(1500)">$1.500</button>
+        <button class="amt-btn" data-val="2000" onclick="setAmt(2000)">$2.000</button>
+        <button class="amt-btn" data-val="3000" onclick="setAmt(3000)">$3.000</button>
+      </div>
+      <div class="custom-wrap">
+        <input type="number" id="custom-amount" placeholder="Otro monto" min="100" oninput="setCustomAmt(this.value)">
+        <span>pesos uruguayos</span>
+      </div>
+
+      <hr class="divider">
+      <div class="section-label">Tus datos</div>
+      <div class="form-group">
+        <label>Tu nombre *</label>
+        <input type="text" id="g-purchaser-name" placeholder="Nombre y apellido">
+      </div>
+      <div class="form-group">
+        <label>Tu email * <span style="font-weight:400;color:#999">(te enviamos el código aquí)</span></label>
+        <input type="email" id="g-purchaser-email" placeholder="tucorreo@email.com">
+      </div>
+      <div class="form-group">
+        <label>Para quién es <span style="font-weight:400;color:#999">(opcional)</span></label>
+        <input type="text" id="g-recipient-name" placeholder="Nombre del destinatario">
+      </div>
+
+      <hr class="divider">
+      <div class="section-label">Pago</div>
+      <p style="font-size:0.85rem;color:#666;margin-bottom:12px">
+        El pago es por transferencia bancaria. Una vez acreditado, el código queda activo automáticamente.
+      </p>
+      <div class="transfer-box" id="transfer-box"></div>
+      <p style="font-size:0.78rem;color:#999;margin-bottom:18px" id="transfer-note" style="display:none"></p>
+
+      <div class="error-msg" id="g-error"></div>
+      <button class="btn" id="g-btn" onclick="submitGift()">Comprar gift card 🎁</button>
+      <p style="font-size:0.75rem;color:#999;text-align:center;margin-top:10px">
+        Recibirás el código en tu email al confirmar el pago.
+      </p>
+    </div>
+
+    <div id="state-success" class="state" style="display:none">
+      <div class="state-icon">🎁</div>
+      <h2>¡Gift card creada!</h2>
+      <p>Te enviamos el código a tu email. Guardalo para usarlo al reservar.</p>
+      <div class="code-box">
+        <div class="code-label">Tu código</div>
+        <div class="code-val" id="success-code"></div>
+        <div class="code-amount" id="success-amount"></div>
+      </div>
+      <p style="font-size:0.83rem;color:#666;margin-top:12px">
+        Ingresá este código en el paso de pago al hacer tu reserva en <span id="success-biz"></span>.
+      </p>
+      <br>
+      <a class="back" href="/">← Ir a reservar</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let _amount = 0;
+  let _bankAccount = '';
+  let _bizName = 'Mi Piel';
+
+  async function init() {
+    const biz = await fetch('/api/business').then(r => r.json());
+    _bizName = biz.name || 'Mi Piel';
+    _bankAccount = biz.bank_account || '';
+    document.getElementById('biz-name').textContent = _bizName;
+    document.getElementById('success-biz').textContent = _bizName;
+    document.title = `Gift Card — ${_bizName}`;
+    if (_bankAccount) {
+      const box = document.getElementById('transfer-box');
+      box.innerHTML = `<strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g,'<br>')}`;
+      box.style.display = 'block';
+    }
+  }
+
+  function setAmt(val) {
+    _amount = val;
+    document.getElementById('custom-amount').value = '';
+    document.querySelectorAll('.amt-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === val));
+  }
+
+  function setCustomAmt(val) {
+    _amount = parseInt(val) || 0;
+    document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('active'));
+  }
+
+  async function submitGift() {
+    const name  = document.getElementById('g-purchaser-name').value.trim();
+    const email = document.getElementById('g-purchaser-email').value.trim();
+    const recip = document.getElementById('g-recipient-name').value.trim();
+    const errEl = document.getElementById('g-error');
+    if (!name || !email) { errEl.textContent = 'Completá tu nombre y email.'; errEl.classList.add('show'); return; }
+    if (!_amount || _amount < 100) { errEl.textContent = 'Elegí un monto (mínimo $100).'; errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+    const btn = document.getElementById('g-btn');
+    btn.disabled = true; btn.textContent = 'Procesando...';
+    try {
+      const res = await fetch('/api/gift-cards/purchase', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaser_name: name, purchaser_email: email,
+          recipient_name: recip, amount: _amount }),
+      });
+      const data = await res.json();
+      if (res.ok && data.code) {
+        document.getElementById('state-form').style.display = 'none';
+        document.getElementById('state-success').style.display = '';
+        document.getElementById('success-code').textContent = data.code;
+        document.getElementById('success-amount').textContent = `$${_amount.toLocaleString('es-UY')}`;
+      } else {
+        errEl.textContent = data.error || 'Error al procesar. Intentá de nuevo.';
+        errEl.classList.add('show');
+        btn.disabled = false; btn.textContent = 'Comprar gift card 🎁';
+      }
+    } catch(e) {
+      errEl.textContent = 'Error de conexión. Intentá de nuevo.';
+      errEl.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Comprar gift card 🎁';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
