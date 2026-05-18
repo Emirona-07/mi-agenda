@@ -510,7 +510,8 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
       }
 
       // ── Booking payment ──────────────────────────────────────────────────────
-      const [bookingIdStr, payType = 'deposit'] = extRef.split(':');
+      const [bookingIdStr, rawPayType = 'deposit'] = extRef.split(':');
+      const payType = ['deposit', 'full'].includes(rawPayType) ? rawPayType : 'deposit';
       const bookingId = parseInt(bookingIdStr);
       if (!isNaN(bookingId)) {
         const newPaymentStatus = payType === 'full' ? 'full' : 'deposit';

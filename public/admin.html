@@ -667,7 +667,7 @@ async function doLogin() {
   const pass = $('login-pass').value;
   const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
   const data = await res.json();
-  if (data.success) { $('login-screen').style.display = 'none'; $('app').style.display = 'block'; initApp(); }
+  if (data.success) { $('login-screen').style.display = 'none'; $('app').style.display = 'block'; initApp(); setTimeout(initPush, 800); }
   else { $('login-error').textContent = data.error; $('login-error').style.display = 'block'; }
 }
 async function doLogout() {
@@ -699,6 +699,8 @@ function populateProfSelects() {
     if (!el) return;
     const first = el.options[0].outerHTML;
     el.innerHTML = first + opts;
+    // Si hay un solo profesional, seleccionarlo por defecto
+    if (professionals.length === 1) el.value = professionals[0].id;
   });
 }
 
@@ -708,7 +710,7 @@ function showPage(name) {
   $(`page-${name}`).classList.add('active');
   document.querySelector(`[onclick="showPage('${name}')"]`).classList.add('active');
 
-  const loaders = { dashboard: loadDashboard, agenda: loadAgenda, citas: loadCitas, clientes: loadClients, facturacion: loadRevenue, servicios: loadServices, profesionales: loadProfessionals, 'reseñas': loadReviews, 'gift-cards': loadGiftCards, config: loadConfig };
+  const loaders = { dashboard: loadDashboard, agenda: loadAgenda, citas: loadCitas, clientes: loadClients, facturacion: loadRevenue, servicios: loadServices, profesionales: loadProfessionals, horarios: loadHours, 'reseñas': loadReviews, 'gift-cards': loadGiftCards, config: loadConfig };
   if (loaders[name]) loaders[name]();
 }
 

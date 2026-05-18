@@ -2300,6 +2300,20 @@ async function submitGiftCardInline() {
 }
 
 function gcDone() {
+  // Reset all form state before leaving
+  _gcAmt = 0;
+  _gcPayMethod = 'transfer';
+  document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('gc-custom-amt').value = '';
+  ['gc-purchaser-name','gc-purchaser-email','gc-recipient-name','gc-recipient-email'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('gc-recipient-check').checked = false;
+  document.getElementById('gc-recipient-email-wrap').style.display = 'none';
+  document.getElementById('gc-inline-error').style.display = 'none';
+  const btn = document.getElementById('gc-submit-btn');
+  btn.disabled = false; btn.textContent = 'Comprar gift card 🎁'; btn.style.background = '';
+
   document.getElementById('section-gift').style.display = 'none';
   document.getElementById('progress-bar').style.display = '';
   goStep(1);

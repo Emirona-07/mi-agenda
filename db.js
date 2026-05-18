@@ -987,7 +987,7 @@ module.exports = {
   getActiveServices, getAllServices, getServiceById, createService, updateService, deleteService, updateServicePhoto,
   getBusinessHours, updateBusinessHours,
   getAvailableSlots, getAvailableDates, isSlotAvailable,
-  findClientByPhone, upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
+  upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
   createBooking, createBookingAtomic, getBookings, getBookingById, updateBooking, cancelBooking,
   getDashboardStats, getRevenue,
   findOrCreateClientByGoogle, cancelClientBooking,
