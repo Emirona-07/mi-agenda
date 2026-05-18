@@ -899,10 +899,138 @@ app.post('/api/whatsapp/webhook', express.json(), (req, res) => {
 });
 
 // ─── QUICK PHOTO — para el Shortcut de iOS de Maru ───────────────────────────
+
+function getOrCreateQuickPhotoToken() {
+  const s = db.getSettings();
+  if (s.quick_photo_token) return s.quick_photo_token;
+  const token = crypto.randomBytes(24).toString('hex');
+  db.updateSettings({ quick_photo_token: token });
+  return token;
+}
+
+// Descarga el Atajo de iOS pre-configurado
+app.get('/api/admin/shortcuts/quick-photo', requireAuth, (req, res) => {
+  const token = getOrCreateQuickPhotoToken();
+  const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+  const url = `${publicUrl}/api/quick-photo?token=${token}`;
+
+  const PHOTO_UUID = 'A0B1C2D3-E4F5-4A6B-8C7D-9E0F1A2B3C4D';
+  const REQ_UUID   = 'B1C2D3E4-F5A6-4B7C-9D8E-0F1A2B3C4D5E';
+  const ORC = '￼'; // Unicode Object Replacement Character
+
+  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>WFWorkflowMinimumClientVersion</key><integer>900</integer>
+  <key>WFWorkflowMinimumClientVersionString</key><string>900</string>
+  <key>WFWorkflowClientVersion</key><string>1282.16</string>
+  <key>WFWorkflowName</key><string>Quick Photo Mi Piel</string>
+  <key>WFWorkflowHasShortcutInputVariables</key><false/>
+  <key>WFWorkflowImportQuestions</key><array/>
+  <key>WFWorkflowTypes</key><array/>
+  <key>WFWorkflowInputContentItemClasses</key>
+  <array>
+    <string>WFImageContentItem</string>
+    <string>WFPhotoMediaContentItem</string>
+  </array>
+  <key>WFWorkflowIcon</key>
+  <dict>
+    <key>WFWorkflowIconStartColor</key><integer>946986751</integer>
+    <key>WFWorkflowIconGlyphNumber</key><integer>59512</integer>
+  </dict>
+  <key>WFWorkflowActions</key>
+  <array>
+    <dict>
+      <key>WFWorkflowActionIdentifier</key><string>is.workflow.actions.takephoto</string>
+      <key>WFWorkflowActionParameters</key>
+      <dict>
+        <key>UUID</key><string>${PHOTO_UUID}</string>
+        <key>WFPhotoCount</key><integer>1</integer>
+        <key>WFCameraCaptureShowPreview</key><true/>
+      </dict>
+    </dict>
+    <dict>
+      <key>WFWorkflowActionIdentifier</key><string>is.workflow.actions.downloadurl</string>
+      <key>WFWorkflowActionParameters</key>
+      <dict>
+        <key>UUID</key><string>${REQ_UUID}</string>
+        <key>WFHTTPMethod</key><string>POST</string>
+        <key>WFURL</key><string>${url}</string>
+        <key>WFHTTPBodyType</key><string>Form</string>
+        <key>WFFormValues</key>
+        <dict>
+          <key>Value</key>
+          <dict>
+            <key>WFDictionaryFieldValueItems</key>
+            <array>
+              <dict>
+                <key>WFItemType</key><integer>0</integer>
+                <key>WFKey</key>
+                <dict>
+                  <key>Value</key><dict><key>string</key><string>photo</string></dict>
+                  <key>WFSerializationType</key><string>WFTextTokenString</string>
+                </dict>
+                <key>WFValue</key>
+                <dict>
+                  <key>Value</key>
+                  <dict>
+                    <key>attachmentsByRange</key>
+                    <dict>
+                      <key>{0, 1}</key>
+                      <dict>
+                        <key>OutputName</key><string>Photo</string>
+                        <key>OutputUUID</key><string>${PHOTO_UUID}</string>
+                        <key>Type</key><string>ActionOutput</string>
+                      </dict>
+                    </dict>
+                    <key>string</key><string>${ORC}</string>
+                  </dict>
+                  <key>WFSerializationType</key><string>WFTextTokenString</string>
+                </dict>
+              </dict>
+            </array>
+          </dict>
+          <key>WFSerializationType</key><string>WFDictionaryFieldValue</string>
+        </dict>
+      </dict>
+    </dict>
+    <dict>
+      <key>WFWorkflowActionIdentifier</key><string>is.workflow.actions.showresult</string>
+      <key>WFWorkflowActionParameters</key>
+      <dict>
+        <key>Text</key>
+        <dict>
+          <key>Value</key>
+          <dict>
+            <key>attachmentsByRange</key>
+            <dict>
+              <key>{0, 1}</key>
+              <dict>
+                <key>OutputName</key><string>Result</string>
+                <key>OutputUUID</key><string>${REQ_UUID}</string>
+                <key>Type</key><string>ActionOutput</string>
+              </dict>
+            </dict>
+            <key>string</key><string>${ORC}</string>
+          </dict>
+          <key>WFSerializationType</key><string>WFTextTokenString</string>
+        </dict>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>`;
+
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', 'attachment; filename="quick-photo-mipiel.shortcut"');
+  res.send(Buffer.from(plist, 'utf8'));
+});
+
 // Recibe una foto, la adjunta a la cita en progreso del día
 app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
   const token = req.headers['x-quick-token'] || req.query.token || '';
-  const expected = process.env.QUICK_PHOTO_TOKEN || '';
+  const expected = process.env.QUICK_PHOTO_TOKEN || db.getSettings().quick_photo_token || '';
   if (!expected) return res.status(503).json({ error: 'Quick photo no configurado' });
   if (token !== expected) return res.status(401).json({ error: 'Token inválido' });
   if (!req.file) return res.status(400).json({ error: 'No se recibió foto' });
