@@ -1275,9 +1275,6 @@
       <div class="card-title">¿Qué servicio querés?</div>
       <div id="services-list"><div class="loading">Cargando servicios...</div></div>
     </div>
-    <div class="nav-btns" style="margin-top:16px">
-      <button class="btn btn-primary" id="btn-to-2" disabled onclick="goStep(2)">Continuar →</button>
-    </div>
   </div>
 
   <!-- Step 2: Date & Time -->
@@ -1306,8 +1303,7 @@
     </div>
 
     <div class="nav-btns">
-      <button class="btn btn-secondary" onclick="goStep(1)">← Volver</button>
-      <button class="btn btn-primary" id="btn-to-3" disabled onclick="goStep(3)">Continuar →</button>
+      <button class="btn btn-secondary" onclick="goStep(1)" style="flex:0 0 auto;width:auto">← Volver</button>
     </div>
   </div>
 
@@ -1358,8 +1354,7 @@
       </div>
     </div>
     <div class="nav-btns">
-      <button class="btn btn-secondary" onclick="goStep(2)">← Volver</button>
-      <button class="btn btn-primary" id="btn-confirm" onclick="submitBooking()">Confirmar reserva</button>
+      <button class="btn btn-secondary" onclick="goStep(2)" style="flex:0 0 auto;width:auto">← Volver</button>
     </div>
   </div>
 
@@ -1798,6 +1793,46 @@ function setPayMethod(method) {
   renderSummary();
 }
 
+function updateStickyCta(step) {
+  const cta     = document.getElementById('sticky-cta');
+  const nameEl  = document.getElementById('sticky-cta-name');
+  const priceEl = document.getElementById('sticky-cta-price');
+  const btnEl   = document.getElementById('sticky-cta-btn');
+  const mos     = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+  if (step === 1) {
+    if (!state.selectedService) { cta.classList.remove('show'); return; }
+    nameEl.textContent  = state.selectedService.name.replace(/\p{Emoji}/gu, '').trim();
+    priceEl.textContent = state.selectedService.price > 0 ? `$${state.selectedService.price.toLocaleString()}` : '';
+    btnEl.textContent   = 'Continuar →';
+    btnEl.onclick       = () => goStep(2);
+    btnEl.disabled      = false;
+    cta.classList.add('show');
+
+  } else if (step === 2) {
+    if (!state.selectedDate || !state.selectedTime) { cta.classList.remove('show'); return; }
+    const [,mo,dy] = state.selectedDate.split('-');
+    nameEl.textContent  = `${parseInt(dy)} de ${mos[parseInt(mo)-1]} · ${state.selectedTime}`;
+    priceEl.textContent = state.selectedService ? state.selectedService.name.replace(/\p{Emoji}/gu, '').trim() : '';
+    btnEl.textContent   = 'Continuar →';
+    btnEl.onclick       = () => goStep(3);
+    btnEl.disabled      = false;
+    cta.classList.add('show');
+
+  } else if (step === 3) {
+    const [,mo,dy] = state.selectedDate.split('-');
+    nameEl.textContent  = state.selectedService ? state.selectedService.name.replace(/\p{Emoji}/gu, '').trim() : '';
+    priceEl.textContent = `${parseInt(dy)} de ${mos[parseInt(mo)-1]} · ${state.selectedTime}`;
+    btnEl.textContent   = 'Confirmar →';
+    btnEl.onclick       = () => submitBooking();
+    btnEl.disabled      = false;
+    cta.classList.add('show');
+
+  } else {
+    cta.classList.remove('show');
+  }
+}
+
 async function selectService(id) {
   state.selectedService = state.services.find(s => s.id === id);
   state.selectedProfessional = null;
@@ -1812,19 +1847,14 @@ async function selectService(id) {
     if (check) check.style.display = isSelected ? 'flex' : 'none';
   });
 
-  // Sticky CTA
-  const svc = state.selectedService;
-  document.getElementById('sticky-cta-name').textContent = svc.name.replace(/\p{Emoji}/gu, '').trim();
-  document.getElementById('sticky-cta-price').textContent = svc.price > 0 ? `$${svc.price.toLocaleString()}` : '';
-  document.getElementById('sticky-cta').classList.add('show');
+  // Sticky CTA paso 1
+  updateStickyCta(1);
 
   // Ocultar "Sobre mí" — aprovechar espacio
   document.querySelector('.about-section').style.display = 'none';
 
   // Mostrar botón home
   document.getElementById('btn-home').classList.add('show');
-
-  document.getElementById('btn-to-2').disabled = false;
 }
 
 function goStep(step) {
@@ -1832,9 +1862,9 @@ function goStep(step) {
   document.getElementById(`step-${step}`).classList.add('active');
   document.getElementById('progress-bar').style.display = '';
   updateProgress(step);
-  // Ocultar sticky CTA en todos los pasos excepto step 1
-  document.getElementById('sticky-cta').classList.toggle('show', step === 1 && !!state.selectedService);
-  // Botón home: visible en todos los pasos
+  // Sticky CTA: actualizar contenido y visibilidad según paso
+  updateStickyCta(step);
+  // Botón home: visible en todos los pasos excepto inicio sin selección
   document.getElementById('btn-home').classList.toggle('show', step > 1 || !!state.selectedService);
   if (step === 2) loadCalendar();
   if (step === 3) {
@@ -1927,7 +1957,7 @@ function changeMonth(dir) {
 async function selectDate(dateStr) {
   state.selectedDate = dateStr;
   state.selectedTime = null;
-  document.getElementById('btn-to-3').disabled = true;
+  updateStickyCta(2); // oculta CTA hasta que también se elija horario
   renderCalendar();
   const card = document.getElementById('slots-card');
   const list  = document.getElementById('slots-list');
@@ -1947,7 +1977,7 @@ async function selectDate(dateStr) {
 function selectTime(time) {
   state.selectedTime = time;
   document.querySelectorAll('.slot-btn').forEach(b => b.classList.toggle('selected', b.textContent.trim() === time));
-  document.getElementById('btn-to-3').disabled = false;
+  updateStickyCta(2);
 }
 
 function renderSummary() {
@@ -2034,7 +2064,7 @@ async function submitBooking() {
     return;
   }
   errorEl.classList.remove('show');
-  const btn = document.getElementById('btn-confirm');
+  const btn = document.getElementById('sticky-cta-btn');
   btn.disabled = true; btn.textContent = 'Reservando...';
   try {
     const res = await fetch('/api/bookings', {
@@ -2051,7 +2081,7 @@ async function submitBooking() {
     if (!res.ok) {
       errorEl.textContent = data.error || 'Error al crear la reserva. Intentá de nuevo.';
       errorEl.classList.add('show');
-      btn.disabled = false; btn.textContent = 'Confirmar reserva';
+      btn.disabled = false; btn.textContent = 'Confirmar →';
       return;
     }
     const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -2135,7 +2165,6 @@ function newBooking() {
   document.getElementById('pm-mp').classList.remove('active');
   document.getElementById('pay-surcharge-note').style.display = 'none';
   ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('btn-to-2').disabled = true;
   // Restaurar sección Sobre mí y ocultar sticky/home
   document.querySelector('.about-section').style.display = '';
   document.getElementById('sticky-cta').classList.remove('show');
@@ -2158,7 +2187,7 @@ init();
       <div class="sticky-cta-name" id="sticky-cta-name"></div>
       <div class="sticky-cta-price" id="sticky-cta-price"></div>
     </div>
-    <button class="sticky-cta-btn" onclick="goStep(2)">Continuar →</button>
+    <button class="sticky-cta-btn" id="sticky-cta-btn">Continuar →</button>
   </div>
 </div>
 
