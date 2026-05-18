@@ -260,12 +260,25 @@
       const ps = b.payment_status || 'none';
       const price = b.total_price || 0;
       let payBadge = '';
-      if (ps === 'full')    payBadge = `<span class="badge badge-paid">✅ Pagado completo</span>`;
+      if (ps === 'full')         payBadge = `<span class="badge badge-paid">✅ Pagado completo</span>`;
       else if (ps === 'deposit') payBadge = `<span class="badge badge-deposit">💰 Seña pagada</span>`;
-      else                  payBadge = `<span class="badge badge-unpaid">⏳ Sin pago</span>`;
+      else                       payBadge = `<span class="badge badge-unpaid">⏳ Sin pago</span>`;
 
       const priceBadge = price > 0
         ? `<span class="badge badge-price">$${price.toLocaleString('es')}</span>` : '';
+
+      // Método de pago inferido
+      let methodBadge = '';
+      if (b.mp_url_deposit || b.mp_url_full) {
+        methodBadge = `<span class="badge" style="background:#e8f0ff;color:#1a3a8f">💳 Mercado Pago</span>`;
+      }
+
+      // Gift card
+      let gcBadge = '';
+      if (b.gift_card_code) {
+        const disc = b.gift_card_discount > 0 ? ` -$${b.gift_card_discount.toLocaleString('es')}` : '';
+        gcBadge = `<span class="badge" style="background:#f3e8ff;color:#5b21b6">🎁 Gift card${disc}</span>`;
+      }
 
       // Day label
       const today = new Date().toISOString().slice(0,10);
@@ -282,6 +295,8 @@
         <div class="payment-badges">
           ${payBadge}
           ${priceBadge}
+          ${methodBadge}
+          ${gcBadge}
         </div>`;
     }
 
