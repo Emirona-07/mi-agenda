@@ -46,13 +46,21 @@
     header {
       background: var(--white);
       color: var(--text);
-      padding: 24px 20px 20px;
+      padding: 20px 20px 18px;
       text-align: center;
       position: relative;
       border-bottom: 1px solid var(--border);
     }
+    .header-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      margin: 0 auto 10px;
+    }
     header h1 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
       letter-spacing: -0.03em;
       color: var(--text);
@@ -1361,6 +1369,7 @@
 
 <header>
   <button class="btn-home" id="btn-home" onclick="newBooking()">← Inicio</button>
+  <img src="/logo.png" alt="Mi Piel" class="header-logo" id="biz-logo">
   <h1 id="biz-name">Cargando...</h1>
   <p id="biz-desc"></p>
   <div class="header-account" id="header-account"></div>
