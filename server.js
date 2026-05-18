@@ -643,6 +643,30 @@ app.get('/api/admin/bookings/:id', requireAuth, (req, res) => {
   if (!b) return res.status(404).json({ error: 'No encontrado' });
   res.json(b);
 });
+app.post('/api/admin/bookings', requireAuth, (req, res) => {
+  const { date, time, service_id, professional_id, status } = req.body;
+  const client_name = sanitizeOptional(req.body.client_name, 120);
+  const client_phone = sanitizeOptional(req.body.client_phone, 40);
+  const client_email = sanitizeOptional(req.body.client_email, 160);
+  const notes = sanitizeOptional(req.body.notes, 1000);
+  const total_price = parseNonNegativeNumber(req.body.total_price);
+  if (!date || !time || !service_id || !client_name)
+    return res.status(400).json({ error: 'Faltan campos: date, time, service_id, client_name' });
+  const service = db.getServiceById(parseInt(service_id));
+  if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
+  const client = db.upsertClient({ name: client_name, phone: client_phone, email: client_email });
+  const professional = professional_id ? db.getProfessionalById(parseInt(professional_id)) : service.professionals[0] || null;
+  const booking = db.createBooking({
+    client_id: client.id,
+    service_id: parseInt(service_id),
+    professional_id: professional ? professional.id : null,
+    date, time, notes,
+    total_price: total_price || service.price || 0,
+    deposit_paid: 0,
+    status: ['confirmed','cancelled','completed','pending'].includes(status) ? status : 'confirmed',
+  });
+  res.json({ success: true, booking_id: booking.id });
+});
 app.put('/api/admin/bookings/:id', requireAuth, (req, res) => {
   db.updateBooking(parseInt(req.params.id), req.body);
   res.json({ success: true });
