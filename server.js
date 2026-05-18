@@ -640,7 +640,6 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/review', (req, res) => res.sendFile(path.join(__dirname, 'public', 'review.html')));
 app.get('/gift', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gift.html')));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ─── GIFT CARDS (público) ────────────────────────────────────────────────────
 app.post('/api/gift-cards/check', (req, res) => {
@@ -815,6 +814,9 @@ app.delete('/api/admin/reviews/:id', requireAuth, (req, res) => {
   db.deleteReview(parseInt(req.params.id));
   res.json({ success: true });
 });
+
+// Wildcard: siempre al final, después de todas las rutas API
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => {
   console.log(`\n✅ Agenda corriendo en http://localhost:${PORT}`);
