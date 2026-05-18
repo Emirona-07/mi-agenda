@@ -309,6 +309,87 @@
       margin-top: 1px;
     }
 
+    /* ── Service info button & modal ───────────────────── */
+    .svc-info-btn {
+      position: absolute;
+      bottom: 7px; left: 7px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.32);
+      backdrop-filter: blur(4px);
+      border: none;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2;
+      transition: background 0.15s;
+      font-family: inherit;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .svc-info-btn:hover { background: rgba(45,106,79,0.8); }
+    /* Bottom sheet */
+    .svc-desc-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 400;
+      backdrop-filter: blur(2px);
+    }
+    .svc-desc-overlay.open { display: flex; }
+    .svc-desc-sheet {
+      background: var(--white);
+      border-radius: 20px 20px 0 0;
+      padding: 0 0 env(safe-area-inset-bottom, 20px);
+      width: 100%; max-width: 620px;
+      max-height: 80vh; overflow-y: auto;
+      animation: sheetUp 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .svc-desc-drag {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: var(--border-dark); margin: 12px auto 0;
+    }
+    .svc-desc-inner { padding: 16px 22px 32px; }
+    .svc-desc-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 12px;
+      margin-bottom: 12px;
+    }
+    .svc-desc-title {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; line-height: 1.3;
+    }
+    .svc-desc-close {
+      background: var(--border); border: none; border-radius: 50%;
+      width: 28px; height: 28px; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; color: var(--muted); transition: background 0.15s;
+    }
+    .svc-desc-close:hover { background: var(--border-dark); }
+    .svc-desc-tags {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .svc-desc-tag {
+      font-size: 0.72rem; font-weight: 600;
+      background: var(--p-light); color: var(--p);
+      border-radius: var(--r-pill); padding: 4px 11px;
+    }
+    .svc-desc-body {
+      font-size: 0.85rem; color: #444; line-height: 1.65;
+      white-space: pre-line;
+    }
+    @media (min-width: 600px) {
+      .svc-desc-overlay { align-items: center; padding: 20px; }
+      .svc-desc-sheet { border-radius: 16px; max-height: 70vh; }
+      .svc-desc-drag { display: none; }
+    }
+
     /* ── Payment method selector ────────────────────────── */
     .pay-method-wrap {
       margin-bottom: 16px;
@@ -1474,11 +1555,15 @@ function renderServices() {
         const photoHtml = s.photo
           ? `<img src="${s.photo}" alt="${s.name}" loading="lazy">`
           : `<div class="svc-photo-placeholder">${leafSvg}</div>`;
+        const infoBtnHtml = s.description
+          ? `<button class="svc-info-btn" onclick="showServiceDesc(${s.id}, event)" title="Ver descripción">i</button>`
+          : '';
         return `
         <button class="svc-card${sel ? ' selected' : ''}" onclick="selectService(${s.id})">
           <div class="svc-photo-wrap">
             ${photoHtml}
             <div class="svc-check">${checkSvg}</div>
+            ${infoBtnHtml}
           </div>
           <div class="svc-info">
             <div class="svc-name">${s.name}</div>
@@ -1493,6 +1578,26 @@ function renderServices() {
 function setCategory(cat) {
   _activeCat = cat;
   renderServices();
+}
+
+function showServiceDesc(id, event) {
+  event.stopPropagation();
+  const s = state.services.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('svc-desc-title').textContent = s.name.replace(/[🔪💉🖊️💆🏻‍♀️🧖🏻‍♀️🧏🏻‍♀️🏹🏆✨💎🌸🫧☃️🤸🏼🧜🏻‍♀️🧜🍓🌕💌📝🍑🎁💅🦵]/gu, '').trim();
+  const tags = [];
+  if (s.duration) tags.push(`⏱ ${s.duration} min`);
+  if (s.price > 0) tags.push(`$${s.price.toLocaleString()}`);
+  if (s.deposit > 0) tags.push(`Seña $${s.deposit.toLocaleString()}`);
+  document.getElementById('svc-desc-tags').innerHTML = tags.map(t => `<span class="svc-desc-tag">${t}</span>`).join('');
+  document.getElementById('svc-desc-body').textContent = s.description || '';
+  document.getElementById('svc-desc-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeServiceDesc() {
+  document.getElementById('svc-desc-overlay').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function setPayMethod(method) {
@@ -1833,5 +1938,20 @@ if ('serviceWorker' in navigator) {
 
 init();
 </script>
+
+<!-- Service description bottom sheet -->
+<div class="svc-desc-overlay" id="svc-desc-overlay" onclick="closeServiceDesc()">
+  <div class="svc-desc-sheet" onclick="event.stopPropagation()">
+    <div class="svc-desc-drag"></div>
+    <div class="svc-desc-inner">
+      <div class="svc-desc-header">
+        <div class="svc-desc-title" id="svc-desc-title"></div>
+        <button class="svc-desc-close" onclick="closeServiceDesc()">✕</button>
+      </div>
+      <div class="svc-desc-tags" id="svc-desc-tags"></div>
+      <div class="svc-desc-body" id="svc-desc-body"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
