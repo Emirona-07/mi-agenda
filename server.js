@@ -1078,32 +1078,31 @@ app.get('/api/quick-photo/bookings', (req, res) => {
 });
 
 app.post('/api/quick-photo/charge', async (req, res) => {
-  const token = req.query.token || '';
-  const expected = getOrCreateQuickPhotoToken();
-  if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
-
-  const { booking_id } = req.body;
-  const booking = db.getBookingById(booking_id);
-  if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
-
-  if (booking.payment_status === 'full') return res.json({ already_paid: true });
-
-  if (!mpClient) return res.status(503).json({ error: 'Mercado Pago no configurado' });
-
-  let remainingAmount;
-  if (booking.payment_status === 'deposit') {
-    remainingAmount = Math.max(0, booking.total_price - booking.deposit_paid);
-  } else {
-    remainingAmount = booking.total_price;
-  }
-
-  if (remainingAmount <= 0) return res.json({ already_paid: true });
-
-  const bizName = (db.getSettings().business_name || '');
-  const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
-  const isTest = (process.env.MP_ACCESS_TOKEN || '').includes('-TEST-') || process.env.MP_SANDBOX === 'true';
-
   try {
+    const token = req.query.token || '';
+    const expected = getOrCreateQuickPhotoToken();
+    if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
+
+    const bookingId = parseInt(req.body && req.body.booking_id);
+    if (!bookingId) return res.status(400).json({ error: 'booking_id inválido' });
+
+    const booking = db.getBookingById(bookingId);
+    if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
+
+    if (booking.payment_status === 'full') return res.json({ already_paid: true });
+
+    if (!mpClient) return res.status(503).json({ error: 'Mercado Pago no configurado' });
+
+    const remainingAmount = booking.payment_status === 'deposit'
+      ? Math.max(0, booking.total_price - (booking.deposit_paid || 0))
+      : (booking.total_price || 0);
+
+    if (remainingAmount <= 0) return res.json({ already_paid: true });
+
+    const bizName = (db.getSettings().business_name || 'Mi Piel');
+    const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+    const isTest = (process.env.MP_ACCESS_TOKEN || '').includes('-TEST-') || process.env.MP_SANDBOX === 'true';
+
     const pref = new Preference(mpClient);
     const r = await pref.create({
       body: {
@@ -1113,22 +1112,25 @@ app.post('/api/quick-photo/charge', async (req, res) => {
           description: `Reserva #${booking.id}`,
           quantity: 1,
           unit_price: remainingAmount,
-          currency_id: 'UYU'
+          currency_id: 'UYU',
         }],
         external_reference: `${booking.id}:full`,
         notification_url: `${publicUrl}/api/payments/webhook`,
         statement_descriptor: bizName.slice(0, 22),
-        metadata: { booking_id: booking.id, pay_type: 'full' }
+        metadata: { booking_id: booking.id, pay_type: 'full' },
       }
     });
-    res.json({
-      init_point: isTest ? r.sandbox_init_point : r.init_point,
-      preference_id: r.id,
-      amount: remainingAmount
-    });
+
+    const init_point = isTest ? r.sandbox_init_point : r.init_point;
+    if (!init_point) {
+      console.error('MP preference created but no init_point:', JSON.stringify(r));
+      return res.status(500).json({ error: 'MP no devolvió URL de pago' });
+    }
+
+    res.json({ init_point, preference_id: r.id, amount: remainingAmount });
   } catch (err) {
-    console.error('Error creating MP preference:', err);
-    res.status(500).json({ error: 'Error al crear preferencia de pago' });
+    console.error('Error in /api/quick-photo/charge:', err);
+    res.status(500).json({ error: err.message || 'Error al crear preferencia de pago' });
   }
 });
 

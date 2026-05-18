@@ -592,36 +592,48 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking_id: bookingId }),
         });
-        const data = await res.json();
+
+        let data;
+        try { data = await res.json(); } catch(_) { data = {}; }
 
         if (!res.ok) {
           overlay.classList.remove('active');
-          setStatus('err', '❌ ' + (data.error || 'Error al generar QR'));
+          setStatus('err', '❌ ' + (data.error || `Error ${res.status}`));
           return;
         }
 
         if (data.already_paid) {
           overlay.classList.remove('active');
-          // Recargar bookings para reflejar estado
           await loadBookings();
           setStatus('ok', '✅ Ya estaba pagado');
           return;
         }
 
+        if (!data.init_point) {
+          overlay.classList.remove('active');
+          setStatus('err', '❌ No se recibió URL de pago');
+          return;
+        }
+
         // Mostrar monto y QR
         document.getElementById('qr-amount-label').textContent = `$${data.amount.toLocaleString('es')}`;
-        await QRCode.toCanvas(canvas, data.init_point, {
-          width: 256,
-          margin: 2,
-          color: { dark: '#000000', light: '#ffffff' },
-        });
+        try {
+          await QRCode.toCanvas(canvas, data.init_point, {
+            width: 256, margin: 2,
+            color: { dark: '#000000', light: '#ffffff' },
+          });
+        } catch(qrErr) {
+          overlay.classList.remove('active');
+          setStatus('err', '❌ Error generando QR: ' + qrErr.message);
+          return;
+        }
 
         // Empezar polling
         startPolling(bookingId);
 
       } catch(e) {
         overlay.classList.remove('active');
-        setStatus('err', '❌ Sin conexión');
+        setStatus('err', '❌ ' + (e.message || 'Error de red'));
       }
     }
 
