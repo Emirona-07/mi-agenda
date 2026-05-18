@@ -401,6 +401,39 @@ function createBooking({ client_id, service_id, professional_id, date, time, not
   return db.prepare('SELECT * FROM bookings WHERE id=?').get(r.lastInsertRowid);
 }
 
+const createBookingAtomic = db.transaction(({ booking, gift_card_code, effective_price }) => {
+  if (!isSlotAvailable(booking.date, booking.time, booking.service_id, booking.professional_id)) {
+    return { error: 'slot_unavailable' };
+  }
+
+  let gcDiscount = 0;
+  let validGcCode = null;
+  if (gift_card_code) {
+    const gc = getGiftCardByCode(gift_card_code);
+    if (gc && gc.status === 'active' && gc.balance > 0) {
+      gcDiscount = Math.min(gc.balance, effective_price);
+      validGcCode = gc.code;
+    }
+  }
+
+  const finalPrice = Math.max(0, effective_price - gcDiscount);
+  const created = createBooking({ ...booking, total_price: finalPrice });
+
+  if (validGcCode && gcDiscount > 0) {
+    const used = useGiftCard(validGcCode, created.id, gcDiscount);
+    if (!used) throw new Error('gift_card_unavailable');
+    db.prepare('UPDATE bookings SET gift_card_code=?, gift_card_discount=? WHERE id=?')
+      .run(validGcCode, used, created.id);
+  }
+
+  return {
+    booking: created,
+    final_price: finalPrice,
+    gift_card_discount: gcDiscount,
+    original_price: effective_price,
+  };
+});
+
 function getBookings({ date, status, client_id, from, to, professional_id, page = 1, limit = 100 }) {
   const offset = (page - 1) * limit;
   const conds = []; const params = [];
@@ -840,17 +873,17 @@ function getGiftCardByCode(code) {
   return db.prepare('SELECT * FROM gift_cards WHERE code=?').get((code||'').toUpperCase().trim());
 }
 
-function useGiftCard(code, booking_id, amount_used) {
+const useGiftCard = db.transaction((code, booking_id, amount_used) => {
   const gc = getGiftCardByCode(code);
   if (!gc || gc.status !== 'active' || gc.balance <= 0) return null;
   const used = Math.min(amount_used, gc.balance);
   const newBalance = gc.balance - used;
-  db.prepare(`UPDATE gift_cards SET balance=?, booking_id=?,
+  const result = db.prepare(`UPDATE gift_cards SET balance=?, booking_id=?,
               status=CASE WHEN ?=0 THEN 'used' ELSE 'active' END,
               used_at=CASE WHEN ?=0 THEN datetime('now') ELSE used_at END
-              WHERE code=?`).run(newBalance, booking_id, newBalance, newBalance, gc.code);
-  return used;
-}
+              WHERE code=? AND status='active' AND balance=?`).run(newBalance, booking_id, newBalance, newBalance, gc.code, gc.balance);
+  return result.changes > 0 ? used : null;
+});
 
 function getAllGiftCards() {
   return db.prepare('SELECT * FROM gift_cards ORDER BY created_at DESC').all();
@@ -919,7 +952,7 @@ module.exports = {
   getBusinessHours, updateBusinessHours,
   getAvailableSlots, getAvailableDates, isSlotAvailable,
   findClientByPhone, upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
-  createBooking, getBookings, getBookingById, updateBooking, cancelBooking,
+  createBooking, createBookingAtomic, getBookings, getBookingById, updateBooking, cancelBooking,
   getDashboardStats, getRevenue,
   findOrCreateClientByGoogle, cancelClientBooking,
   addBookingPhoto, getBookingPhotos, deleteBookingPhoto, updateBookingAdmin,
@@ -932,5 +965,4 @@ module.exports = {
   getMetrics,
   createSessionStore,
 };
-
 

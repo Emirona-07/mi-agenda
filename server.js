@@ -117,6 +117,18 @@ function pickSettings(body) {
   return Object.fromEntries(Object.entries(body || {}).filter(([key]) => allowed.has(key)));
 }
 
+async function sendGiftCardEmail(gc, settings) {
+  if (!gc?.purchaser_email) return { ok: false, reason: 'sin_destinatario' };
+  return emailSvc.sendGiftCard({
+    purchaser_name: gc.purchaser_name,
+    purchaser_email: gc.purchaser_email,
+    recipient_name: gc.recipient_name,
+    code: gc.code,
+    amount: gc.amount,
+    business_name: settings.business_name || 'Mi Piel',
+  }, settings);
+}
+
 async function verifyGoogleToken(credential) {
   try {
     const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
@@ -193,9 +205,6 @@ app.post('/api/bookings', async (req, res) => {
   const service = db.getServiceById(parseInt(service_id));
   if (!service || !service.active) return res.status(404).json({ error: 'Servicio no disponible' });
 
-  if (!db.isSlotAvailable(date, time, parseInt(service_id), professional_id ? parseInt(professional_id) : null))
-    return res.status(409).json({ error: 'El horario ya no está disponible. Por favor elegí otro.' });
-
   const client = db.upsertClient({ name, phone, email, instagram });
   const professional = professional_id ? db.getProfessionalById(parseInt(professional_id)) : service.professionals[0] || null;
 
@@ -205,32 +214,35 @@ app.post('/api/bookings', async (req, res) => {
   const effectivePrice   = service.price   > 0 ? Math.round(service.price   * (1 + mpSurchargePct)) : 0;
   const effectiveDeposit = service.deposit > 0 ? Math.round(service.deposit * (1 + mpSurchargePct)) : 0;
 
-  // Validar y aplicar gift card si se proporcionó
-  let gcDiscount = 0;
-  let validGcCode = null;
-  if (gift_card_code) {
-    const gc = db.getGiftCardByCode(gift_card_code);
-    if (gc && gc.status === 'active' && gc.balance > 0) {
-      gcDiscount = Math.min(gc.balance, effectivePrice);
-      validGcCode = gc.code;
+  let atomicResult;
+  try {
+    atomicResult = db.createBookingAtomic({
+      booking: {
+        client_id: client.id,
+        service_id: parseInt(service_id),
+        professional_id: professional ? professional.id : null,
+        date, time, notes,
+        deposit_paid: 0,
+      },
+      gift_card_code,
+      effective_price: effectivePrice,
+    });
+  } catch (err) {
+    if (err.message === 'gift_card_unavailable') {
+      return res.status(409).json({ error: 'La gift card ya no tiene saldo disponible.' });
     }
+    console.error('Create booking error:', err.message);
+    return res.status(500).json({ error: 'No pudimos crear la reserva. Intentá de nuevo.' });
   }
-  const finalPrice = Math.max(0, effectivePrice - gcDiscount);
-
-  const booking = db.createBooking({
-    client_id: client.id,
-    service_id: parseInt(service_id),
-    professional_id: professional ? professional.id : null,
-    date, time, notes,
-    total_price: finalPrice,
-    deposit_paid: 0
-  });
+  if (atomicResult.error === 'slot_unavailable') {
+    return res.status(409).json({ error: 'El horario ya no está disponible. Por favor elegí otro.' });
+  }
+  const booking = atomicResult.booking;
+  const finalPrice = atomicResult.final_price;
+  const gcDiscount = atomicResult.gift_card_discount;
 
   const profName = professional ? professional.name : '';
   const bizName = s.business_name || 'Mi Negocio';
-
-  // Aplicar gift card después de crear el booking
-  if (validGcCode) db.useGiftCard(validGcCode, booking.id, gcDiscount);
 
   // Crear preferencias de MP solo si el cliente eligió pagar con MP
   let mp_url_deposit = null;
@@ -353,13 +365,7 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
           const gc = db.getGiftCardById(gcId);
           if (gc) {
             const s = db.getSettings();
-            await emailSvc.sendGiftCard({
-              purchaser_name: gc.purchaser_name,
-              purchaser_email: gc.purchaser_email,
-              recipient_name: gc.recipient_name,
-              code: gc.code, amount: gc.amount,
-              business_name: s.business_name || 'Mi Piel',
-            }, s).catch(() => {});
+            await sendGiftCardEmail(gc, s).catch(() => {});
             console.log(`Gift card activada: #${gcId} código ${gc.code}`);
           }
         }
@@ -743,8 +749,8 @@ app.post('/api/gift-cards/purchase', async (req, res) => {
   const s = db.getSettings();
   const mpSurchargePct = (payment_method === 'mp') ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
   const finalAmount = Math.round(parseInt(amount) * (1 + mpSurchargePct));
-  // Gift card se crea con status 'pending' si paga con MP, 'active' si es transferencia
-  const status = (payment_method === 'mp' && mpClient) ? 'pending' : 'active';
+  // Queda pendiente hasta confirmación de MP o activación manual de transferencia.
+  const status = 'pending';
   const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, note, status });
 
   if (payment_method === 'mp' && mpClient) {
@@ -770,17 +776,11 @@ app.post('/api/gift-cards/purchase', async (req, res) => {
       return res.json({ success: true, mp_url, code: gc.code });
     } catch(mpErr) {
       console.error('MP gift card error:', mpErr.message);
-      // Fallback: activar igual y enviar email
-      db.activateGiftCard(gc.id);
+      return res.status(502).json({ error: 'No pudimos iniciar el pago con Mercado Pago. Probá de nuevo o elegí transferencia.' });
     }
   }
 
-  await emailSvc.sendGiftCard({
-    purchaser_name, purchaser_email, recipient_name,
-    code: gc.code, amount: gc.amount,
-    business_name: s.business_name || 'Mi Piel',
-  }, s).catch(()=>{});
-  res.json({ success: true, code: gc.code });
+  res.json({ success: true, pending: true });
 });
 
 // ─── GIFT CARDS (admin) ───────────────────────────────────────────────────────
@@ -800,7 +800,11 @@ app.put('/api/admin/gift-cards/:id/cancel', requireAuth, (req, res) => {
   db.cancelGiftCard(parseInt(req.params.id)); res.json({ success: true });
 });
 app.put('/api/admin/gift-cards/:id/activate', requireAuth, (req, res) => {
-  db.activateGiftCard(parseInt(req.params.id)); res.json({ success: true });
+  const id = parseInt(req.params.id);
+  db.activateGiftCard(id);
+  const gc = db.getGiftCardById(id);
+  if (gc) sendGiftCardEmail(gc, db.getSettings()).catch(() => {});
+  res.json({ success: true });
 });
 
 // ─── MÉTRICAS ─────────────────────────────────────────────────────────────────
@@ -916,4 +920,3 @@ app.listen(PORT, () => {
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   configurala desde ADMIN_PASSWORD o el panel\n`);
 });
-

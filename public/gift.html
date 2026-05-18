@@ -337,9 +337,17 @@
         return;
       }
       // Transferencia → mostrar código en pantalla
-      if (data.code) {
+      if (data.pending) {
         document.getElementById('state-form').style.display = 'none';
         document.getElementById('state-success').style.display = '';
+        document.getElementById('success-title').textContent = 'Solicitud recibida';
+        document.getElementById('success-msg').textContent = 'Cuando confirmemos la transferencia, activaremos la gift card y te enviaremos el código por email.';
+        document.querySelector('.code-box').style.display = 'none';
+        document.getElementById('pending-note').style.display = '';
+      } else if (data.code) {
+        document.getElementById('state-form').style.display = 'none';
+        document.getElementById('state-success').style.display = '';
+        document.querySelector('.code-box').style.display = '';
         document.getElementById('success-code').textContent = data.code;
         document.getElementById('success-amount').textContent = `$${_amount.toLocaleString('es-UY')}`;
       } else {

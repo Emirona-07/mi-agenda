@@ -780,6 +780,7 @@ async function loadGiftCards() {
   $('gc-count').textContent = `${cards.length} total`;
   const cur = settings.currency || '$';
   const statusBadgeGc = s => ({
+    pending: '<span class="badge badge-pending">Pendiente</span>',
     active: '<span class="badge badge-confirmed">Activa</span>',
     used:   '<span class="badge badge-completed">Usada</span>',
     cancelled: '<span class="badge badge-cancelled">Cancelada</span>',
@@ -796,7 +797,7 @@ async function loadGiftCards() {
       <td>${statusBadgeGc(gc.status)}</td>
       <td style="white-space:nowrap;display:flex;gap:6px">
         ${gc.status==='active' ? `<button class="btn btn-sm btn-danger" onclick="cancelGc(${gc.id})">Cancelar</button>` : ''}
-        ${gc.status==='cancelled' ? `<button class="btn btn-sm btn-primary" onclick="activateGc(${gc.id})">Activar</button>` : ''}
+        ${['pending','cancelled'].includes(gc.status) ? `<button class="btn btn-sm btn-primary" onclick="activateGc(${gc.id})">Activar</button>` : ''}
       </td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -830,6 +831,7 @@ async function cancelGc(id) {
 }
 
 async function activateGc(id) {
+  if (!confirm('¿Activar esta gift card y enviar el código por email si hay destinatario?')) return;
   await api(`/api/admin/gift-cards/${id}/activate`, { method: 'PUT' });
   loadGiftCards();
 }
