@@ -3,7 +3,7 @@
   "short_name": "Mi Piel Admin",
   "description": "Panel de administración Mi Piel",
   "start_url": "/admin",
-  "scope": "/admin",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f5f5f5",
   "theme_color": "#2d6a4f",
