@@ -774,7 +774,7 @@ app.post('/api/whatsapp/webhook', express.json(), (req, res) => {
 // Recibe una foto, la adjunta a la cita en progreso del día
 app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
   const token = req.headers['x-quick-token'] || req.query.token || '';
-  const expected = process.env.QUICK_PHOTO_TOKEN || process.env.ADMIN_PASSWORD || '';
+  const expected = process.env.QUICK_PHOTO_TOKEN || '';
   if (!expected) return res.status(503).json({ error: 'Quick photo no configurado' });
   if (token !== expected) return res.status(401).json({ error: 'Token inválido' });
   if (!req.file) return res.status(400).json({ error: 'No se recibió foto' });
