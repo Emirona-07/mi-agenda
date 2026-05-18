@@ -1495,7 +1495,7 @@
 <!-- Gift Card inline section -->
 <div class="container" id="section-gift" style="display:none">
 
-  <div class="section active" id="gc-form-wrap">
+  <div id="gc-form-wrap">
     <div style="margin-bottom:12px">
       <button onclick="exitGiftCard()" style="background:none;border:none;cursor:pointer;font-size:0.87rem;color:var(--muted);font-family:inherit;padding:0;display:flex;align-items:center;gap:4px">
         ← Volver a servicios
@@ -2138,8 +2138,8 @@ function goGiftCard(presetAmount) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('progress-bar').style.display = 'none';
   document.getElementById('sticky-cta')?.classList.remove('show');
-  document.getElementById('section-gift').style.display = '';
-  document.getElementById('gc-form-wrap').style.display = '';
+  document.getElementById('section-gift').style.display = 'block';
+  document.getElementById('gc-form-wrap').style.display = 'block';
   document.getElementById('gc-success-wrap').style.display = 'none';
 
   // Pre-llenar monto si el servicio tiene precio
