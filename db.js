@@ -533,8 +533,10 @@ function cancelClientBooking(bookingId, clientId) {
   const b = db.prepare('SELECT * FROM bookings WHERE id=? AND client_id=?').get(bookingId, clientId);
   if (!b) return { error: 'no_encontrado' };
   if (b.status === 'cancelled') return { error: 'ya_cancelado' };
-  const today = new Date().toISOString().split('T')[0];
-  if (b.date < today) return { error: 'turno_pasado' };
+  const appointmentDt = new Date(`${b.date}T${b.time}:00`);
+  const hoursUntil = (appointmentDt - new Date()) / (1000 * 60 * 60);
+  if (hoursUntil < 0)  return { error: 'turno_pasado' };
+  if (hoursUntil < 24) return { error: 'muy_pronto' };
   db.prepare("UPDATE bookings SET status='cancelled' WHERE id=?").run(bookingId);
   return { success: true };
 }

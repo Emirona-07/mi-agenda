@@ -1611,15 +1611,22 @@ function bookingCardHtml(b, fmtDate, canCancel) {
   const statusLabel = isCancelled ? 'Cancelado' : 'Confirmado';
   const statusClass = isCancelled ? 'cancelled' : 'confirmed';
   const cardClass   = isCancelled ? 'cancelled-card' : (canCancel ? 'upcoming' : '');
-  const cancelArea  = canCancel && !isCancelled ? `
-    <div class="cancel-area">
+  // Verificar si faltan menos de 24h
+  const hoursUntil  = (new Date(`${b.date}T${b.time}:00`) - new Date()) / 36e5;
+  const tooLate     = hoursUntil < 24;
+  let cancelArea = '';
+  if (canCancel && !isCancelled) {
+    cancelArea = tooLate
+      ? `<div class="cancel-area"><span style="font-size:0.78rem;color:var(--muted)">⚠️ No se puede cancelar con menos de 24 hs de anticipación</span></div>`
+      : `<div class="cancel-area">
       <button class="btn-cancel" onclick="initCancel(${b.id}, this)">Cancelar turno</button>
       <div class="confirm-cancel" id="confirm-${b.id}">
         ¿Confirmar cancelación?
         <button class="btn-yes-cancel" onclick="confirmCancel(${b.id})">Sí, cancelar</button>
         <button class="btn-no-cancel"  onclick="abortCancel(${b.id}, this)">No</button>
       </div>
-    </div>` : '';
+    </div>`;
+  }
   const photosBtn = `<div class="cancel-area" style="margin-top:8px">
     <button class="btn-cancel" style="color:var(--p);border-color:var(--p-light)" onclick="loadBookingPhotos(${b.id}, this)">📷 Ver fotos</button>
     <div id="photos-${b.id}" style="margin-top:8px;display:none"></div>
@@ -1674,8 +1681,9 @@ async function confirmCancel(id) {
     const res  = await fetch(`/api/client/my-bookings/${id}/cancel`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error === 'turno_pasado' ? 'No podés cancelar un turno pasado.' :
-            data.error === 'ya_cancelado' ? 'Este turno ya está cancelado.' : 'Error al cancelar.');
+      alert(data.error === 'turno_pasado'  ? 'No podés cancelar un turno pasado.' :
+            data.error === 'ya_cancelado' ? 'Este turno ya está cancelado.' :
+            data.error === 'muy_pronto'   ? 'No podés cancelar con menos de 24 hs de anticipación.' : 'Error al cancelar.');
       return;
     }
     const bookings = await fetch('/api/client/my-bookings').then(r => r.json());
