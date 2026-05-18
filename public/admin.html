@@ -1692,6 +1692,16 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneApp() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+}
+
 async function initPush() {
   const badge  = $('push-status-badge');
   const btn    = $('push-toggle-btn');
@@ -1699,7 +1709,24 @@ async function initPush() {
   if (!badge) return;
 
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    badge.textContent = '⚠️ No compatible con este navegador';
+    badge.textContent = isIOSDevice() ? '📲 Requiere app instalada' : '⚠️ No compatible con este navegador';
+    if (msg) {
+      msg.textContent = isIOSDevice()
+        ? 'En iPhone las notificaciones solo funcionan abriendo Mi Piel desde el icono de la pantalla de inicio. Si Chrome no te deja crearlo, abrilo en Safari y usá Compartir → Agregar a pantalla de inicio.'
+        : 'Este navegador no soporta notificaciones web push.';
+      msg.style.color = 'var(--muted)';
+      msg.style.display = 'block';
+    }
+    return;
+  }
+
+  if (isIOSDevice() && !isStandaloneApp()) {
+    badge.textContent = '📲 Abrí desde el icono instalado';
+    if (msg) {
+      msg.textContent = 'En iPhone abrí Mi Piel desde la pantalla de inicio para activar notificaciones. En una pestaña normal puede aparecer como no compatible.';
+      msg.style.color = 'var(--muted)';
+      msg.style.display = 'block';
+    }
     return;
   }
 
