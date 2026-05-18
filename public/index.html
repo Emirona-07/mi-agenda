@@ -1952,7 +1952,7 @@ function renderServices() {
       ${visible.map(s => {
         const sel = state.selectedService?.id === s.id;
         const photoHtml = s.photo
-          ? `<img src="${s.photo}" alt="${s.name}" loading="lazy">`
+          ? `<img src="${escapeHtml(s.photo)}" alt="${escapeHtml(s.name)}" loading="eager" decoding="async">`
           : `<div class="svc-photo-placeholder">${leafSvg}</div>`;
         const infoBtnHtml = s.description
           ? `<div class="svc-info-btn" role="button" tabindex="0" onclick="showServiceDesc(${s.id}, event)" title="Ver descripción">i</div>`
