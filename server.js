@@ -21,6 +21,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 const sessionSecret = process.env.SESSION_SECRET
   || process.env.ADMIN_PASSWORD
   || require('crypto').randomBytes(32).toString('hex');
+const loginAttempts = new Map();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 10;
 
 app.set('trust proxy', 1);
 
@@ -75,6 +78,32 @@ app.use(session({
 function requireAuth(req, res, next) {
   if (req.session.authenticated) return next();
   res.status(401).json({ error: 'No autorizado' });
+}
+
+function loginKey(req) {
+  return req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+}
+
+function isLoginLimited(req) {
+  const key = loginKey(req);
+  const entry = loginAttempts.get(key);
+  if (!entry) return false;
+  if (Date.now() - entry.firstAt > LOGIN_WINDOW_MS) {
+    loginAttempts.delete(key);
+    return false;
+  }
+  return entry.count >= LOGIN_MAX_ATTEMPTS;
+}
+
+function recordFailedLogin(req) {
+  const key = loginKey(req);
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || now - entry.firstAt > LOGIN_WINDOW_MS) {
+    loginAttempts.set(key, { count: 1, firstAt: now });
+    return;
+  }
+  entry.count += 1;
 }
 
 function formatDate(d) {
@@ -454,15 +483,20 @@ app.post('/api/client/logout', (req, res) => {
 // ═══════════════════════════════════════════════════════
 
 app.post('/api/admin/login', (req, res) => {
+  if (isLoginLimited(req)) {
+    return res.status(429).json({ error: 'Demasiados intentos. Probá de nuevo en unos minutos.' });
+  }
   const { password } = req.body;
   const s = db.getSettings();
   const stored = s.admin_password || process.env.ADMIN_PASSWORD || '';
   if (!password || !verifyPassword(password, stored)) {
+    recordFailedLogin(req);
     return res.status(401).json({ error: 'Contraseña incorrecta' });
   }
   if (!isPasswordHash(stored)) {
     db.updateSettings({ admin_password: hashPassword(password) });
   }
+  loginAttempts.delete(loginKey(req));
   req.session.authenticated = true;
   res.json({ success: true });
 });
@@ -661,7 +695,8 @@ app.get('/api/whatsapp/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
-  const expected = process.env.WHATSAPP_WEBHOOK_TOKEN || 'mipiel_whatsapp_2026';
+  const expected = process.env.WHATSAPP_WEBHOOK_TOKEN || '';
+  if (!expected) return res.sendStatus(403);
   if (mode === 'subscribe' && token === expected) {
     console.log('WhatsApp webhook verificado');
     return res.status(200).send(challenge);
@@ -691,7 +726,8 @@ app.post('/api/whatsapp/webhook', express.json(), (req, res) => {
 // Recibe una foto, la adjunta a la cita en progreso del día
 app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
   const token = req.headers['x-quick-token'] || req.query.token || '';
-  const expected = process.env.QUICK_PHOTO_TOKEN || process.env.ADMIN_PASSWORD || 'admin123';
+  const expected = process.env.QUICK_PHOTO_TOKEN || process.env.ADMIN_PASSWORD || '';
+  if (!expected) return res.status(503).json({ error: 'Quick photo no configurado' });
   if (token !== expected) return res.status(401).json({ error: 'Token inválido' });
   if (!req.file) return res.status(400).json({ error: 'No se recibió foto' });
 
