@@ -1040,27 +1040,14 @@ app.get('/api/quick-photo/bookings', (req, res) => {
   if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
 
   const now = new Date();
-  // Últimos 2 días + hoy + mañana
-  const dates = [];
-  for (let d = -2; d <= 1; d++) {
-    const dt = new Date(now);
-    dt.setDate(dt.getDate() + d);
-    dates.push(localDateString(dt));
-  }
+  const from = localDateString(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2));
+  const to   = localDateString(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
 
-  const placeholders = dates.map(() => '?').join(',');
-  const bookings = db.prepare(`
-    SELECT b.id, b.date, b.time, b.status, b.payment_status, b.total_price, b.deposit_paid,
-           c.name as client_name, s.name as service_name
-    FROM bookings b
-    JOIN clients c ON b.client_id = c.id
-    JOIN services s ON b.service_id = s.id
-    WHERE b.date IN (${placeholders}) AND b.status != 'cancelled'
-    ORDER BY b.date ASC, b.time ASC
-  `).all(...dates);
+  const { bookings } = db.getBookings({ from, to, limit: 200 });
+  const active = (bookings || []).filter(b => b.status !== 'cancelled');
 
   const current = db.getCurrentBooking();
-  res.json({ bookings, current_id: current ? current.id : null });
+  res.json({ bookings: active, current_id: current ? current.id : null });
 });
 
 // Recibe una foto, la adjunta a la cita en progreso del día
