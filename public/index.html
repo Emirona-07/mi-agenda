@@ -126,7 +126,7 @@
     .container {
       max-width: 520px;
       margin: 0 auto;
-      padding: 28px 16px 72px;
+      padding: 28px 16px 100px;
     }
 
     /* ── Progress ───────────────────────────────────────── */
@@ -1571,6 +1571,10 @@ async function showMyBookings() {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('section-bookings').classList.add('active');
   document.getElementById('progress-bar').style.display = 'none';
+  // Esconder "Sobre mí" y sticky CTA, mostrar ← Inicio
+  document.querySelector('.about-section').style.display = 'none';
+  document.getElementById('sticky-cta').classList.remove('show');
+  document.getElementById('btn-home').classList.add('show');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const u = state.clientUser;
@@ -1818,6 +1822,11 @@ function updateStickyCta(step) {
     btnEl.onclick       = () => goStep(3);
     btnEl.disabled      = false;
     cta.classList.add('show');
+    // Scroll suave para que la CTA no tape los slots seleccionados
+    setTimeout(() => {
+      const selectedSlot = document.querySelector('.slot-btn.selected');
+      if (selectedSlot) selectedSlot.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 320);
 
   } else if (step === 3) {
     const [,mo,dy] = state.selectedDate.split('-');
@@ -1866,6 +1875,12 @@ function goStep(step) {
   updateStickyCta(step);
   // Botón home: visible en todos los pasos excepto inicio sin selección
   document.getElementById('btn-home').classList.toggle('show', step > 1 || !!state.selectedService);
+  // "Sobre mí": solo en paso 1 sin servicio seleccionado
+  if (step === 1 && !state.selectedService) {
+    document.querySelector('.about-section').style.display = '';
+  } else if (step !== 1) {
+    document.querySelector('.about-section').style.display = 'none';
+  }
   if (step === 2) loadCalendar();
   if (step === 3) {
     // Mostrar selector de método de pago si MP está activo y el servicio tiene precio
