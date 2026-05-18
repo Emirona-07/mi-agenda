@@ -6,89 +6,274 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Quick Photo">
-  <title>Quick Photo</title>
+  <meta name="theme-color" content="#2d6a4f">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="manifest" href="/manifest-quickphoto.json">
+  <title>Quick Photo · Mi Piel</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #2d6a4f;
+      --green-bg: #f0faf4;
+      --muted: #6b8c7a;
+      --border: #e0ece6;
+      --text: #1a3d2b;
+      --danger: #c0392b;
+      --yellow-bg: #fffbeb;
+      --yellow: #b45309;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f0faf4;
+      background: var(--green-bg);
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      gap: 20px;
+      padding: 20px 16px 32px;
+      gap: 14px;
+      color: var(--text);
     }
-    .logo { font-size: 2.5rem; }
-    h1 { font-size: 1.3rem; color: #1a3d2b; font-weight: 700; text-align: center; }
-    p { font-size: 0.9rem; color: #5a7a6a; text-align: center; line-height: 1.5; }
 
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 4px;
+    }
+    header .logo { font-size: 1.6rem; }
+    header h1 { font-size: 1.1rem; font-weight: 800; color: var(--green); }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* Booking info */
+    .booking-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .booking-service {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .booking-time {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .payment-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .badge-paid    { background: #d4edda; color: #155724; }
+    .badge-deposit { background: #fff3cd; color: #856404; }
+    .badge-unpaid  { background: #f8d7da; color: #721c24; }
+    .badge-price   { background: #e8f4fd; color: #0c5460; }
+
+    /* Selector */
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: white;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232d6a4f' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    select:focus { outline: none; border-color: var(--green); }
+
+    /* Photo button */
     .btn-photo {
       width: 100%;
-      max-width: 320px;
       padding: 18px;
-      background: #2d6a4f;
+      background: var(--green);
       color: white;
       border: none;
       border-radius: 16px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      letter-spacing: 0.01em;
+      transition: opacity .15s, transform .1s;
     }
-    .btn-photo:active { opacity: 0.85; transform: scale(0.98); }
+    .btn-photo:active { opacity: .85; transform: scale(.98); }
     .btn-photo:disabled { background: #9ab5a9; cursor: not-allowed; transform: none; }
 
+    /* Status */
     #status {
-      width: 100%;
-      max-width: 320px;
-      padding: 14px 18px;
+      padding: 13px 16px;
       border-radius: 12px;
       font-size: 0.92rem;
       font-weight: 600;
       text-align: center;
       display: none;
     }
-    #status.ok  { background: #d4edda; color: #155724; display: block; }
-    #status.err { background: #f8d7da; color: #721c24; display: block; }
+    #status.ok      { background: #d4edda; color: #155724; display: block; }
+    #status.err     { background: #f8d7da; color: #721c24; display: block; }
     #status.loading { background: #fff3cd; color: #856404; display: block; }
 
-    #result-detail {
-      width: 100%; max-width: 320px;
-      font-size: 0.82rem; color: #5a7a6a;
-      text-align: center; display: none;
+    .no-booking {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 8px 0;
     }
 
-    /* Hidden file input */
     #file-input { display: none; }
+
+    .spinner { display: inline-block; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div class="logo">📸</div>
-  <h1>Quick Photo<br>Mi Piel</h1>
-  <p>Sacá la foto del resultado y se adjunta automáticamente a la cita en curso.</p>
+
+  <header>
+    <span class="logo">📸</span>
+    <h1>Quick Photo · Mi Piel</h1>
+  </header>
+
+  <!-- Current booking info -->
+  <div class="card" id="booking-card">
+    <div class="card-label">Cita seleccionada</div>
+    <div id="booking-info"><span class="spinner">⏳</span> Cargando…</div>
+  </div>
+
+  <!-- Booking selector -->
+  <div class="card" id="selector-card" style="display:none">
+    <div class="card-label">Cambiar cita</div>
+    <select id="booking-select" onchange="selectBooking(this.value)"></select>
+  </div>
 
   <input type="file" id="file-input" accept="image/*" capture="camera">
-  <button class="btn-photo" id="btn" onclick="takePicture()">
+  <button class="btn-photo" id="btn-photo" onclick="takePicture()" disabled>
     <span>📷</span> Sacar foto
   </button>
 
   <div id="status"></div>
-  <div id="result-detail"></div>
 
   <script>
-    // Token from URL query param
-    const token = new URLSearchParams(location.search).get('token') || '';
+    // Token: URL param tiene prioridad (primer acceso), luego localStorage (lanzamiento desde inicio)
+    const urlToken = new URLSearchParams(location.search).get('token') || '';
+    if (urlToken) localStorage.setItem('qp_token', urlToken);
+    const token = urlToken || localStorage.getItem('qp_token') || '';
+
+    let bookings = [];
+    let selectedId = null;
 
     if (!token) {
-      document.getElementById('status').textContent = 'Token inválido. Descargá el link desde el admin.';
-      document.getElementById('status').className = 'err';
-      document.getElementById('btn').disabled = true;
+      showErr('Token inválido. Pedile el link al admin.');
+    } else {
+      loadBookings();
+    }
+
+    async function loadBookings() {
+      try {
+        const res = await fetch(`/api/quick-photo/bookings?token=${encodeURIComponent(token)}`);
+        const data = await res.json();
+        if (!res.ok) { showErr(data.error || 'Error al cargar citas'); return; }
+
+        bookings = data.bookings || [];
+        selectedId = data.current_id || (bookings.length ? bookings[0].id : null);
+
+        renderSelector();
+        renderBookingInfo();
+
+        if (selectedId) document.getElementById('btn-photo').disabled = false;
+      } catch(e) {
+        showErr('Sin conexión');
+      }
+    }
+
+    function renderSelector() {
+      const sel = document.getElementById('booking-select');
+      const card = document.getElementById('selector-card');
+
+      if (!bookings.length) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      const today = new Date().toISOString().slice(0, 10);
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+      sel.innerHTML = bookings.map(b => {
+        const d = new Date(b.date + 'T12:00:00');
+        const dayLabel = b.date === today ? 'Hoy'
+          : b.date === tomorrow ? 'Mañana'
+          : d.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' });
+        return `<option value="${b.id}" ${b.id === selectedId ? 'selected' : ''}>
+          ${dayLabel} ${b.time} — ${b.client_name}
+        </option>`;
+      }).join('');
+    }
+
+    function selectBooking(id) {
+      selectedId = parseInt(id);
+      renderBookingInfo();
+      document.getElementById('btn-photo').disabled = !selectedId;
+    }
+
+    function renderBookingInfo() {
+      const el = document.getElementById('booking-info');
+      const b = bookings.find(x => x.id === selectedId);
+      if (!b) {
+        el.innerHTML = '<p class="no-booking">No hay cita seleccionada</p>';
+        return;
+      }
+
+      const ps = b.payment_status || 'none';
+      const price = b.total_price || 0;
+      let payBadge = '';
+      if (ps === 'full')    payBadge = `<span class="badge badge-paid">✅ Pagado completo</span>`;
+      else if (ps === 'deposit') payBadge = `<span class="badge badge-deposit">💰 Seña pagada</span>`;
+      else                  payBadge = `<span class="badge badge-unpaid">⏳ Sin pago</span>`;
+
+      const priceBadge = price > 0
+        ? `<span class="badge badge-price">$${price.toLocaleString('es')}</span>` : '';
+
+      // Day label
+      const today = new Date().toISOString().slice(0,10);
+      const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+      const d = new Date(b.date + 'T12:00:00');
+      const dayLabel = b.date === today ? 'Hoy'
+        : b.date === tomorrow ? 'Mañana'
+        : d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
+
+      el.innerHTML = `
+        <div class="booking-name">${esc(b.client_name)}</div>
+        <div class="booking-service">${esc(b.service_name)}</div>
+        <div class="booking-time">${dayLabel} · ${b.time}</div>
+        <div class="payment-badges">
+          ${payBadge}
+          ${priceBadge}
+        </div>`;
     }
 
     function takePicture() {
@@ -99,43 +284,47 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      const btn = document.getElementById('btn');
+      const btn = document.getElementById('btn-photo');
       const status = document.getElementById('status');
-      const detail = document.getElementById('result-detail');
 
       btn.disabled = true;
-      status.className = 'loading';
-      status.textContent = '⏳ Subiendo foto…';
-      detail.style.display = 'none';
+      setStatus('loading', '<span class="spinner">⏳</span> Subiendo foto…');
 
       try {
         const form = new FormData();
         form.append('photo', file);
+        if (selectedId) form.append('booking_id', selectedId);
 
         const res = await fetch(`/api/quick-photo?token=${encodeURIComponent(token)}`, {
-          method: 'POST',
-          body: form,
+          method: 'POST', body: form,
         });
         const data = await res.json();
 
         if (res.ok && data.ok) {
-          status.className = 'ok';
-          status.textContent = '✅ Foto guardada';
-          detail.textContent = `${data.client} · ${data.service} ${data.time}`;
-          detail.style.display = 'block';
+          setStatus('ok', `✅ Foto guardada — ${data.client} · ${data.service} ${data.time}`);
         } else {
-          status.className = 'err';
-          status.textContent = '❌ ' + (data.error || 'Error al subir');
+          setStatus('err', '❌ ' + (data.error || 'Error al subir'));
         }
-      } catch (err) {
-        status.className = 'err';
-        status.textContent = '❌ Sin conexión';
+      } catch(e) {
+        setStatus('err', '❌ Sin conexión');
       }
 
       btn.disabled = false;
-      // Reset input so same file can be re-selected
       e.target.value = '';
     });
+
+    function setStatus(cls, html) {
+      const el = document.getElementById('status');
+      el.className = cls;
+      el.innerHTML = html;
+    }
+    function showErr(msg) {
+      setStatus('err', '❌ ' + msg);
+      document.getElementById('btn-photo').disabled = true;
+    }
+    function esc(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
   </script>
 </body>
 </html>

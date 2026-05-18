@@ -1,0 +1,15 @@
+{
+  "name": "Quick Photo · Mi Piel",
+  "short_name": "Quick Photo",
+  "description": "Adjuntar foto a la cita en curso",
+  "start_url": "/quick-photo",
+  "scope": "/quick-photo",
+  "display": "standalone",
+  "background_color": "#f0faf4",
+  "theme_color": "#2d6a4f",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

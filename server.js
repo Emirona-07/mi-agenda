@@ -137,6 +137,10 @@ function recordFailedLogin(req) {
   entry.count += 1;
 }
 
+function localDateString(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
 function formatDate(d) {
   const [y, m, day] = d.split('-');
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -1029,6 +1033,36 @@ app.get('/api/admin/shortcuts/quick-photo', requireAuth, (req, res) => {
   res.send(Buffer.from(plist, 'utf8'));
 });
 
+// Lista de citas recientes para el selector del Quick Photo
+app.get('/api/quick-photo/bookings', (req, res) => {
+  const token = req.query.token || '';
+  const expected = getOrCreateQuickPhotoToken();
+  if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
+
+  const now = new Date();
+  // Últimos 2 días + hoy + mañana
+  const dates = [];
+  for (let d = -2; d <= 1; d++) {
+    const dt = new Date(now);
+    dt.setDate(dt.getDate() + d);
+    dates.push(localDateString(dt));
+  }
+
+  const placeholders = dates.map(() => '?').join(',');
+  const bookings = db.prepare(`
+    SELECT b.id, b.date, b.time, b.status, b.payment_status, b.total_price, b.deposit_paid,
+           c.name as client_name, s.name as service_name
+    FROM bookings b
+    JOIN clients c ON b.client_id = c.id
+    JOIN services s ON b.service_id = s.id
+    WHERE b.date IN (${placeholders}) AND b.status != 'cancelled'
+    ORDER BY b.date ASC, b.time ASC
+  `).all(...dates);
+
+  const current = db.getCurrentBooking();
+  res.json({ bookings, current_id: current ? current.id : null });
+});
+
 // Recibe una foto, la adjunta a la cita en progreso del día
 app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
   const token = req.headers['x-quick-token'] || req.query.token || '';
@@ -1037,12 +1071,18 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
   if (token !== expected) return res.status(401).json({ error: 'Token inválido' });
   if (!req.file) return res.status(400).json({ error: 'No se recibió foto' });
 
-  const booking = db.getCurrentBooking();
+  // Usar booking_id del body si se especificó, si no la cita en progreso
+  let booking = null;
+  const bodyBookingId = req.body.booking_id ? parseInt(req.body.booking_id) : null;
+  if (bodyBookingId) {
+    booking = db.getBookingById(bodyBookingId);
+  }
+  if (!booking) booking = db.getCurrentBooking();
+
   if (!booking) {
-    // Sin cita actual — guardamos la foto sin asociar e informamos
     return res.status(404).json({
       error: 'No hay cita en progreso ahora',
-      tip: 'La foto no fue guardada. Verificá el horario.'
+      tip: 'Seleccioná una cita manualmente.'
     });
   }
 
