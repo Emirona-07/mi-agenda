@@ -669,6 +669,23 @@
       display: block;
     }
 
+    /* ── Desktop: 4 columnas ────────────────────────────── */
+    @media (min-width: 768px) {
+      .container { max-width: 900px; }
+      .service-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+      /* Mantener form, calendario y confirmación centrados y a ancho cómodo */
+      #step-2 .card,
+      #step-3 .card,
+      #step-4 .card { max-width: 560px; margin-left: auto; margin-right: auto; }
+      #step-2 .nav-btns,
+      #step-3 .nav-btns { max-width: 560px; margin-left: auto; margin-right: auto; }
+    }
+    /* ── Tablet: 3 columnas ─────────────────────────────── */
+    @media (min-width: 540px) and (max-width: 767px) {
+      .container { max-width: 680px; }
+      .service-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    /* ── Mobile ─────────────────────────────────────────── */
     @media (max-width: 480px) {
       .slots-grid { grid-template-columns: repeat(3, 1fr); }
       .service-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
