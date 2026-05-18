@@ -5,62 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Mi Agenda</title>
   <link rel="manifest" href="/manifest-admin.json">
-  <meta name="theme-color" content="#2d6a4f">
+  <meta name="theme-color" content="#1a7a56">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mi Piel Admin">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --green: #2d6a4f; --green-light: #40916c; --green-bg: #d8f3dc; --accent: #52b788;
-      --text: #1b1b1b; --muted: #6c757d; --border: #e0e0e0; --bg: #f5f5f5; --white: #fff;
-      --shadow: 0 2px 8px rgba(0,0,0,0.07); --sidebar: 220px;
-      --danger: #e74c3c; --warning: #f39c12; --info: #3498db;
+      --p: #1a7a56;
+      --p-light: #eaf5f0;
+      --p-hover: #158a5e;
+      --text: #111827;
+      --text-2: #6b7280;
+      --text-3: #9ca3af;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --white: #ffffff;
+      --sidebar: 216px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --radius: 10px;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #3b82f6;
     }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
 
     /* LOGIN */
-    #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%); }
-    .login-box { background: white; border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    .login-box h1 { font-size: 1.5rem; color: var(--green); margin-bottom: 6px; }
-    .login-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
-    .login-error { background: #fff5f5; color: var(--danger); border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; margin-bottom: 14px; display:none; }
+    #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background: #f9fafb; }
+    .login-box { background: white; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 360px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid var(--border); }
+    .login-box h1 { font-size: 1.35rem; color: var(--text); margin-bottom: 4px; font-weight: 700; }
+    .login-box p { color: var(--text-2); font-size: 0.875rem; margin-bottom: 28px; }
+    .login-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 14px; display:none; }
 
     /* LAYOUT */
     #app { display:none; min-height:100vh; }
-    .sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar); height: 100vh; background: var(--green); color: white; display: flex; flex-direction: column; z-index: 100; overflow-y: auto; }
-    .sidebar-logo { padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.15); }
-    .sidebar-logo h2 { font-size: 1.1rem; font-weight: 700; }
-    .sidebar-logo p { font-size: 0.75rem; opacity: 0.7; margin-top: 2px; }
-    .sidebar-nav { flex: 1; padding: 12px 0; }
-    .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 18px; cursor: pointer; transition: background 0.15s; font-size: 0.9rem; border: none; background: none; color: white; width: 100%; text-align: left; }
-    .nav-item:hover { background: rgba(255,255,255,0.1); }
-    .nav-item.active { background: rgba(255,255,255,0.2); font-weight: 600; }
-    .nav-item .icon { font-size: 1.1rem; width: 20px; }
-    .sidebar-footer { padding: 16px 18px; border-top: 1px solid rgba(255,255,255,0.15); }
-    .logout-btn { background: rgba(255,255,255,0.15); border: none; color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; width: 100%; text-align: left; }
-    .logout-btn:hover { background: rgba(255,255,255,0.25); }
+    .sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar); height: 100vh; background: var(--white); color: var(--text); display: flex; flex-direction: column; z-index: 100; overflow-y: auto; border-right: 1px solid var(--border); }
+    .sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo h2 { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .sidebar-logo p { font-size: 0.72rem; color: var(--text-2); margin-top: 2px; }
+    .sidebar-nav { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; cursor: pointer; transition: background 0.12s, color 0.12s; font-size: 0.875rem; font-weight: 500; border: none; background: none; color: var(--text-2); width: 100%; text-align: left; border-radius: 7px; }
+    .nav-item:hover { background: var(--bg); color: var(--text); }
+    .nav-item.active { background: var(--p-light); color: var(--p); font-weight: 600; }
+    .nav-item .icon { font-size: 0; width: 16px; height: 16px; flex-shrink: 0; opacity: 0.7; display: flex; align-items: center; justify-content: center; }
+    .nav-item.active .icon { opacity: 1; }
+    .nav-section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); padding: 10px 10px 4px; }
+    .sidebar-footer { padding: 12px 8px; border-top: 1px solid var(--border); }
+    .logout-btn { display: flex; align-items: center; gap: 9px; background: none; border: none; color: var(--text-2); padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 0.875rem; font-weight: 500; width: 100%; text-align: left; transition: background 0.12s, color 0.12s; }
+    .logout-btn:hover { background: #fef2f2; color: #dc2626; }
 
-    .main { margin-left: var(--sidebar); padding: 24px; min-height: 100vh; }
+    .main { margin-left: var(--sidebar); padding: 28px 28px 40px; min-height: 100vh; background: var(--bg); }
     .page { display: none; }
     .page.active { display: block; }
-    .page-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; color: var(--green); }
+    .page-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 22px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 
     /* Cards */
-    .card { background: white; border-radius: 14px; padding: 20px; box-shadow: var(--shadow); }
+    .card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
     .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .card-header h3 { font-size: 1rem; font-weight: 700; }
+    .card-header h3 { font-size: 0.9rem; font-weight: 600; color: var(--text); }
 
     /* Stats grid */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
-    .stat-card { background: white; border-radius: 14px; padding: 18px; box-shadow: var(--shadow); border-left: 4px solid var(--green); }
-    .stat-card .label { font-size: 0.8rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-card .value { font-size: 1.8rem; font-weight: 800; color: var(--green); margin: 4px 0; }
-    .stat-card .sub { font-size: 0.8rem; color: var(--muted); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 22px; }
+    .stat-card { background: white; border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .stat-card .label { font-size: 0.72rem; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-card .value { font-size: 2rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; line-height: 1; }
+    .stat-card .sub { font-size: 0.78rem; color: var(--text-3); }
 
     /* Tables */
-    .table-wrap { overflow-x: auto; border-radius: 14px; -webkit-overflow-scrolling: touch; }
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); -webkit-overflow-scrolling: touch; border: 1px solid var(--border); }
     .table-wrap table { min-width: 760px; }
     .reviews-table-wrap table { table-layout: fixed; min-width: 0; }
     .reviews-table-wrap th:nth-child(1), .reviews-table-wrap td:nth-child(1) { width: 14%; }
@@ -73,134 +90,146 @@
     .cell-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .cell-wrap { overflow-wrap: anywhere; word-break: break-word; }
     table { width: 100%; border-collapse: collapse; background: white; }
-    th { padding: 12px 14px; text-align: left; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); white-space: nowrap; }
-    td { padding: 12px 14px; font-size: 0.88rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { padding: 10px 14px; text-align: left; font-size: 0.72rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--bg); }
+    td { padding: 11px 14px; font-size: 0.875rem; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text); }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f9f9f9; }
+    tr:hover td { background: #fafafa; }
 
     /* Badges */
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
-    .badge-confirmed { background: #d4edda; color: #155724; }
-    .badge-pending { background: #fff3cd; color: #856404; }
-    .badge-cancelled { background: #f8d7da; color: #721c24; }
-    .badge-completed { background: #d1ecf1; color: #0c5460; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+    .badge-confirmed { background: #dcfce7; color: #15803d; }
+    .badge-pending { background: #fef9c3; color: #854d0e; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; }
+    .badge-completed { background: #dbeafe; color: #1d4ed8; }
 
     /* Buttons */
-    .btn { padding: 9px 18px; border: none; border-radius: 9px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-    .btn-primary { background: var(--green); color: white; }
-    .btn-primary:hover { background: var(--green-light); }
+    .btn { padding: 8px 16px; border: none; border-radius: 7px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--p); color: white; }
+    .btn-primary:hover { background: var(--p-hover); }
     .btn-danger { background: var(--danger); color: white; }
-    .btn-danger:hover { background: #c0392b; }
-    .btn-outline { background: white; color: var(--green); border: 1.5px solid var(--green); }
-    .btn-outline:hover { background: var(--green-bg); }
-    .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
-    .btn-icon { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-size: 1rem; }
-    .btn-icon:hover { background: var(--bg); }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { background: var(--bg); border-color: #d1d5db; }
+    .btn-sm { padding: 5px 11px; font-size: 0.78rem; }
+    .btn-icon { background: none; border: none; cursor: pointer; padding: 5px 7px; border-radius: 6px; font-size: 0.9rem; color: var(--text-2); }
+    .btn-icon:hover { background: var(--bg); color: var(--text); }
 
     /* Filters */
-    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-    .filters input, .filters select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 1rem; background: white; font-family: inherit; outline: none; }
-    .filters input:focus, .filters select:focus { border-color: var(--green); }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .filters input, .filters select { padding: 7px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 0.875rem; background: white; font-family: inherit; outline: none; color: var(--text); }
+    .filters input:focus, .filters select:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(26,122,86,0.08); }
 
     /* Forms */
     .form-group { margin-bottom: 14px; }
-    .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
-    .form-control { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 1rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
-    .form-control:focus { border-color: var(--green); }
+    .form-label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+    .form-control { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 0.875rem; font-family: inherit; outline: none; transition: border-color 0.15s, box-shadow 0.15s; color: var(--text); background: white; }
+    .form-control:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(26,122,86,0.08); }
     textarea.form-control { min-height: 80px; resize: vertical; }
 
     /* Modal */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px); }
     .modal-overlay.open { display: flex; }
-    .modal { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    .modal h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--green); }
-    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .modal { background: white; border-radius: 14px; padding: 24px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid var(--border); }
+    .modal h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 18px; color: var(--text); }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
 
     /* Calendar weekly */
     .week-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
     .week-label { font-weight: 700; font-size: 0.95rem; }
-    .week-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: white; }
+    .week-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: white; }
     .week-cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); min-height: 48px; position: relative; }
     .week-cell:last-child { border-right: none; }
-    .week-header { background: var(--bg); padding: 8px 4px; text-align: center; font-size: 0.78rem; font-weight: 700; color: var(--muted); border-bottom: 2px solid var(--border); }
-    .week-header.today-col { color: var(--green); }
-    .week-time { padding: 4px 6px; font-size: 0.75rem; color: var(--muted); text-align: right; background: var(--bg); display: flex; align-items: flex-start; }
-    .booking-block { background: var(--green-bg); border-left: 3px solid var(--green); border-radius: 4px; padding: 3px 6px; font-size: 0.75rem; margin: 2px; cursor: pointer; }
-    .booking-block:hover { background: #b7e4c7; }
-    .booking-block .bb-time { font-weight: 700; color: var(--green); }
+    .week-header { background: var(--bg); padding: 8px 4px; text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--text-2); border-bottom: 1px solid var(--border); }
+    .week-header.today-col { color: var(--p); }
+    .week-time { padding: 4px 6px; font-size: 0.75rem; color: var(--text-2); text-align: right; background: var(--bg); display: flex; align-items: flex-start; }
+    .booking-block { background: var(--p-light); border-left: 2px solid var(--p); border-radius: 4px; padding: 3px 6px; font-size: 0.72rem; margin: 2px; cursor: pointer; }
+    .booking-block:hover { background: #d1ede3; }
+    .booking-block .bb-time { font-weight: 700; color: var(--p); }
     .booking-block .bb-name { color: var(--text); }
     .agenda-mobile-list { display: none; }
-    .agenda-day { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: white; }
-    .agenda-day + .agenda-day { margin-top: 10px; }
-    .agenda-day-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); color: var(--muted); font-weight: 800; font-size: 0.82rem; text-transform: uppercase; }
-    .agenda-day-head.today { background: var(--green-bg); color: var(--green); }
-    .agenda-event { display: grid; grid-template-columns: 56px 1fr; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--border); cursor: pointer; }
-    .agenda-event-time { font-weight: 800; color: var(--green); font-size: 0.86rem; }
-    .agenda-event-name { font-weight: 700; font-size: 0.9rem; }
-    .agenda-event-meta { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
-    .agenda-empty-day { padding: 10px 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; }
+    .agenda-day { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: white; }
+    .agenda-day + .agenda-day { margin-top: 8px; }
+    .agenda-day-head { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; background: var(--bg); color: var(--text-2); font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .agenda-day-head.today { background: var(--p-light); color: var(--p); }
+    .agenda-event { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--border); cursor: pointer; }
+    .agenda-event:hover { background: var(--bg); }
+    .agenda-event-time { font-weight: 700; color: var(--p); font-size: 0.82rem; }
+    .agenda-event-name { font-weight: 600; font-size: 0.875rem; color: var(--text); }
+    .agenda-event-meta { color: var(--text-2); font-size: 0.78rem; margin-top: 2px; }
+    .agenda-empty-day { padding: 10px 14px; border-top: 1px solid var(--border); color: var(--text-3); font-size: 0.82rem; }
 
     /* Schedule hours editor */
     .hours-grid { display: grid; gap: 10px; }
     .hour-row { display: grid; grid-template-columns: 80px 1fr 1fr 80px; gap: 10px; align-items: center; }
     .hour-row label { font-size: 0.85rem; font-weight: 600; }
     .toggle { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
-    .toggle input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--green); }
+    .toggle input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--p); }
 
     /* Revenue chart */
     .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding: 0 4px; }
     .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .bar { width: 100%; background: var(--green-bg); border-radius: 6px 6px 0 0; transition: height 0.5s; min-height: 4px; cursor: pointer; position: relative; }
-    .bar:hover { background: var(--accent); }
-    .bar-label { font-size: 0.7rem; color: var(--muted); }
-    .bar-val { font-size: 0.7rem; color: var(--green); font-weight: 700; }
+    .bar { width: 100%; background: var(--p-light); border-radius: 6px 6px 0 0; transition: height 0.5s; min-height: 4px; cursor: pointer; }
+    .bar:hover { background: #a7d9c4; }
+    .bar-label { font-size: 0.68rem; color: var(--text-3); }
+    .bar-val { font-size: 0.68rem; color: var(--p); font-weight: 700; }
 
     /* Misc */
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-    .empty-state .emoji { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-2); }
+    .empty-state .emoji { font-size: 2rem; margin-bottom: 10px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .text-muted { color: var(--muted); }
+    .text-muted { color: var(--text-2); }
     .text-right { text-align: right; }
     .mt-1 { margin-top: 8px; }
     .mt-2 { margin-top: 16px; }
-    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .detail-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
     .detail-row:last-child { border-bottom: none; }
-    .detail-row .key { color: var(--muted); }
-    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; background: var(--green-bg); color: var(--green); }
-    .whatsapp-link { color: #25d366; font-weight: 600; text-decoration: none; }
+    .detail-row .key { color: var(--text-2); font-weight: 500; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: var(--p-light); color: var(--p); }
+    .whatsapp-link { color: #16a34a; font-weight: 600; text-decoration: none; }
     .whatsapp-link:hover { text-decoration: underline; }
 
     @media (max-width: 768px) {
-      .sidebar { width: 100%; height: auto; max-height: none; position: sticky; top: 0; overflow: visible; }
-      .sidebar-logo { padding: 12px 16px 8px; }
-      .sidebar-logo h2 { font-size: 1rem; }
-      .sidebar-logo p { font-size: 0.7rem; }
-      .sidebar-nav { display: flex; overflow-x: auto; gap: 6px; padding: 8px 12px 10px; flex: none; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+      .sidebar {
+        width: 100%; height: auto; max-height: none; position: sticky; top: 0; overflow: visible;
+        border-right: none; border-bottom: 1px solid var(--border);
+        z-index: 50;
+      }
+      .sidebar-logo { padding: 10px 14px 8px; }
+      .sidebar-logo h2 { font-size: 0.95rem; }
+      .sidebar-logo p { display: none; }
+      .sidebar-nav {
+        flex-direction: row; overflow-x: auto; gap: 2px; padding: 6px 10px 8px;
+        scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      }
       .sidebar-nav::-webkit-scrollbar { display: none; }
-      .nav-item { flex: 0 0 auto; width: auto; border-radius: 999px; padding: 8px 12px; gap: 6px; font-size: 0.82rem; white-space: nowrap; }
-      .nav-item .icon { width: auto; font-size: 1rem; }
+      .nav-section-label { display: none; }
+      .nav-item {
+        flex: 0 0 auto; width: auto; border-radius: 6px;
+        padding: 6px 11px; gap: 5px; font-size: 0.8rem; white-space: nowrap;
+      }
+      .nav-item .icon { width: 14px; height: 14px; }
       .sidebar-footer { display: none; }
-      .main { margin-left: 0; padding: 16px; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .main { margin-left: 0; padding: 14px 14px 32px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
       .grid-2 { grid-template-columns: 1fr; }
       .hour-row { grid-template-columns: 70px 1fr 1fr 70px; }
-      .card { padding: 16px; border-radius: 12px; }
-      .card-header { align-items: flex-start; gap: 10px; }
+      .card { padding: 14px; }
+      .page-title { font-size: 1.1rem; margin-bottom: 16px; }
       .week-nav, .filters { align-items: stretch; }
       .agenda-week-table { display: none; }
       .agenda-mobile-list { display: block; }
       .reviews-table-wrap table, .reviews-table-wrap thead, .reviews-table-wrap tbody, .reviews-table-wrap tr, .reviews-table-wrap th, .reviews-table-wrap td { display: block; width: 100% !important; min-width: 0; }
       .reviews-table-wrap thead { display: none; }
-      .reviews-table-wrap tr { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: white; }
-      .reviews-table-wrap td { border: none; padding: 5px 0; }
-      .reviews-table-wrap td::before { content: attr(data-label); display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+      .reviews-table-wrap tr { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 8px; background: white; }
+      .reviews-table-wrap td { border: none; padding: 4px 0; }
+      .reviews-table-wrap td::before { content: attr(data-label); display: block; color: var(--text-3); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
       .reviews-table-wrap td[data-label="Acciones"] { display: flex; gap: 8px; flex-wrap: wrap; }
       .reviews-table-wrap td[data-label="Acciones"]::before { flex-basis: 100%; }
+      .stat-card .value { font-size: 1.6rem; }
     }
     @media (max-width: 430px) {
-      .stats-grid { gap: 10px; }
+      .stats-grid { gap: 8px; }
       .stat-card { padding: 14px; }
-      .stat-card .value { font-size: 1.55rem; }
     }
   </style>
 </head>
@@ -209,7 +238,7 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <h1>🗓 Mi Agenda</h1>
+    <h1>Mi Piel · Admin</h1>
     <p>Panel de administración</p>
     <div class="login-error" id="login-error"></div>
     <div class="form-group">
@@ -228,20 +257,56 @@
       <p>Panel de administración</p>
     </div>
     <div class="sidebar-nav">
-      <button class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Dashboard</button>
-      <button class="nav-item" onclick="showPage('agenda')"><span class="icon">📅</span> Agenda</button>
-      <button class="nav-item" onclick="showPage('citas')"><span class="icon">📋</span> Citas</button>
-      <button class="nav-item" onclick="showPage('clientes')"><span class="icon">👥</span> Clientes</button>
-      <button class="nav-item" onclick="showPage('facturacion')"><span class="icon">💰</span> Facturación</button>
-      <button class="nav-item" onclick="showPage('servicios')"><span class="icon">✂️</span> Servicios</button>
-      <button class="nav-item" onclick="showPage('horarios')"><span class="icon">🕐</span> Horarios</button>
-      <button class="nav-item" onclick="showPage('profesionales')"><span class="icon">👩‍💼</span> Profesionales</button>
-      <button class="nav-item" onclick="showPage('reseñas')"><span class="icon">⭐</span> Reseñas</button>
-      <button class="nav-item" onclick="showPage('gift-cards')"><span class="icon">🎁</span> Gift Cards</button>
-      <button class="nav-item" onclick="showPage('config')"><span class="icon">⚙️</span> Configuración</button>
+      <button class="nav-item active" onclick="showPage('dashboard')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('agenda')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        Agenda
+      </button>
+      <button class="nav-item" onclick="showPage('citas')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+        Citas
+      </button>
+      <button class="nav-item" onclick="showPage('clientes')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        Clientes
+      </button>
+      <button class="nav-item" onclick="showPage('facturacion')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        Facturación
+      </button>
+      <button class="nav-item" onclick="showPage('servicios')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+        Servicios
+      </button>
+      <button class="nav-item" onclick="showPage('horarios')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+        Horarios
+      </button>
+      <button class="nav-item" onclick="showPage('profesionales')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+        Profesionales
+      </button>
+      <button class="nav-item" onclick="showPage('reseñas')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        Reseñas
+      </button>
+      <button class="nav-item" onclick="showPage('gift-cards')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></span>
+        Gift Cards
+      </button>
+      <button class="nav-item" onclick="showPage('config')">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></span>
+        Configuración
+      </button>
     </div>
     <div class="sidebar-footer">
-      <button class="logout-btn" onclick="doLogout()">🚪 Cerrar sesión</button>
+      <button class="logout-btn" onclick="doLogout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
     </div>
   </nav>
 
@@ -253,11 +318,11 @@
       <div class="stats-grid" id="stats-grid"></div>
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><h3>📅 Agenda de hoy</h3></div>
+          <div class="card-header"><h3>Agenda de hoy</h3></div>
           <div id="today-schedule"></div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>⏳ Próximas citas</h3></div>
+          <div class="card-header"><h3>Próximas citas</h3></div>
           <div id="upcoming-list"></div>
         </div>
       </div>
@@ -265,12 +330,12 @@
       <!-- MÉTRICAS -->
       <div class="grid-2" style="margin-top:16px">
         <div class="card">
-          <div class="card-header"><h3>📈 Ingresos últimos 12 meses</h3></div>
+          <div class="card-header"><h3>Ingresos últimos 12 meses</h3></div>
           <div id="metrics-chart" style="min-height:120px"></div>
         </div>
         <div class="card">
           <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <h3 id="metrics-kpi-title">📊 Este mes</h3>
+            <h3 id="metrics-kpi-title">Este mes</h3>
             <div style="display:flex;gap:6px;align-items:center">
               <select id="metrics-month-sel-2" onchange="onMetricsMonthChange2()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:white;color:var(--text)">
                 <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
@@ -287,7 +352,7 @@
       </div>
       <div class="card mt-2">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <h3 id="metrics-services-title">🏆 Servicios más reservados</h3>
+          <h3 id="metrics-services-title">Servicios más reservados</h3>
           <div style="display:flex;gap:6px;align-items:center">
             <select id="metrics-month-sel" onchange="onMetricsMonthChange()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:white;color:var(--text)">
               <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
@@ -386,16 +451,16 @@
       <div class="stats-grid" id="rev-stats"></div>
       <div class="grid-2" style="margin-top:16px">
         <div class="card">
-          <div class="card-header"><h3>📈 Ingresos por día</h3></div>
+          <div class="card-header"><h3>Ingresos por día</h3></div>
           <div class="bar-chart" id="rev-chart"></div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>✂️ Por servicio</h3></div>
+          <div class="card-header"><h3>Por servicio</h3></div>
           <div id="rev-by-service"></div>
         </div>
       </div>
       <div class="card mt-2">
-        <div class="card-header"><h3>👩‍💼 Por profesional</h3></div>
+        <div class="card-header"><h3>Por profesional</h3></div>
         <div id="rev-by-prof"></div>
       </div>
     </div>
@@ -455,7 +520,7 @@
       <div class="page-title">Gift Cards</div>
       <div class="card" style="margin-bottom:16px">
         <div class="card-header">
-          <h3>🎁 Crear gift card manual</h3>
+          <h3>Crear gift card manual</h3>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
           <div class="form-group" style="margin:0;flex:0 0 auto">
@@ -481,10 +546,10 @@
       <div class="card">
         <div class="card-header">
           <h3>Todas las gift cards</h3>
-          <span id="gc-count" style="font-size:0.82rem;color:var(--muted)"></span>
+          <span id="gc-count" style="font-size:0.82rem;color:var(--text-2)"></span>
         </div>
         <div id="gc-table-wrap">
-          <div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>
+          <div class="loading-state" style="text-align:center;padding:24px;color:var(--text-2)">Cargando...</div>
         </div>
       </div>
     </div>
@@ -494,11 +559,11 @@
     <div class="page" id="page-reseñas">
       <div class="page-title">Reseñas</div>
       <div class="card">
-        <div class="card-header"><h3>⭐ Reseñas recibidas</h3>
-          <span id="reviews-count" style="font-size:0.82rem;color:var(--muted)"></span>
+        <div class="card-header"><h3>Reseñas recibidas</h3>
+          <span id="reviews-count" style="font-size:0.82rem;color:var(--text-2)"></span>
         </div>
         <div id="reviews-table-wrap" class="reviews-table-wrap">
-          <div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>
+          <div class="loading-state" style="text-align:center;padding:24px;color:var(--text-2)">Cargando...</div>
         </div>
       </div>
     </div>
@@ -521,7 +586,7 @@
             <input type="text" class="form-control" id="cfg-address">
           </div>
           <div class="form-group">
-            <label class="form-label">📱 Número WhatsApp dueña (con código de país, ej: 598912345678)</label>
+            <label class="form-label">Número WhatsApp dueña (con código de país, ej: 598912345678)</label>
             <input type="text" class="form-control" id="cfg-whatsapp" placeholder="598912345678">
           </div>
           <div class="form-group">
@@ -561,7 +626,7 @@
           <div class="form-group">
             <label class="form-label">🏦 Cuenta bancaria para transferencias</label>
             <textarea class="form-control" id="cfg-bank-account" placeholder="Ej: Banco República — Caja de ahorro — 12345678 — Mariana Recoba" style="min-height:70px;font-size:0.9rem"></textarea>
-            <small style="color:var(--muted);font-size:0.78rem">Se muestra al cliente cuando elige pagar por transferencia y se incluye en el email de confirmación.</small>
+            <small style="color:var(--text-2);font-size:0.78rem">Se muestra al cliente cuando elige pagar por transferencia y se incluye en el email de confirmación.</small>
           </div>
           <div class="form-group">
             <label class="form-label" style="font-weight:700;margin-bottom:10px">📧 Emails automáticos</label>
@@ -573,12 +638,12 @@
                 </label>
                 <div style="margin-top:8px;margin-left:28px;display:flex;align-items:center;gap:8px">
                   <input type="number" class="form-control" id="cfg-reminder-hours" placeholder="48" min="1" max="168" style="width:72px;padding:6px 8px;font-size:0.88rem">
-                  <span style="font-size:0.85rem;color:var(--muted)">horas antes</span>
+                  <span style="font-size:0.85rem;color:var(--text-2)">horas antes</span>
                 </div>
               </div>
               <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:400">
                 <input type="checkbox" id="cfg-reviews-enabled" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
-                ⭐ Solicitud de reseña (24 hs después del turno)
+                Solicitud de reseña (24 hs después del turno)
               </label>
             </div>
           </div>
@@ -589,16 +654,16 @@
       <!-- Canal de notificaciones -->
       <div class="card mt-2">
         <div class="card-header"><h3>🔔 Canal de notificaciones</h3></div>
-        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">Elegí cómo se envían los mensajes de confirmación al cliente y los avisos a la dueña al crearse una reserva.</p>
+        <p style="font-size:0.9rem;color:var(--text-2);margin-bottom:16px">Elegí cómo se envían los mensajes de confirmación al cliente y los avisos a la dueña al crearse una reserva.</p>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-email">
             <input type="radio" name="notification_channel" value="email" id="ch-email" onchange="updateChannelUI()"> 📧 Solo email
           </label>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-whatsapp">
-            <input type="radio" name="notification_channel" value="whatsapp" id="ch-whatsapp" onchange="updateChannelUI()"> 📱 Solo WhatsApp
+            <input type="radio" name="notification_channel" value="whatsapp" id="ch-whatsapp" onchange="updateChannelUI()"> Solo WhatsApp
           </label>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-both">
-            <input type="radio" name="notification_channel" value="both" id="ch-both" onchange="updateChannelUI()"> 📧📱 Ambos
+            <input type="radio" name="notification_channel" value="both" id="ch-both" onchange="updateChannelUI()"> Email + WhatsApp
           </label>
         </div>
         <button class="btn btn-primary" onclick="saveChannel()">Guardar canal</button>
@@ -608,28 +673,28 @@
       <!-- Notificaciones push -->
       <div class="card mt-2" id="push-card">
         <div class="card-header"><h3>🔔 Notificaciones en este dispositivo</h3></div>
-        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">
+        <p style="font-size:0.9rem;color:var(--text-2);margin-bottom:16px">
           Recibí una notificación instantánea en este celular o computadora cada vez que entre una reserva nueva, aunque el admin esté cerrado.
         </p>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div id="push-status-badge" style="font-size:0.85rem;padding:6px 14px;border-radius:99px;background:var(--border);color:var(--muted);font-weight:600">
+          <div id="push-status-badge" style="font-size:0.85rem;padding:6px 14px;border-radius:99px;background:var(--border);color:var(--text-2);font-weight:600">
             Cargando...
           </div>
           <button id="push-toggle-btn" onclick="togglePushSubscription()" class="btn btn-primary" style="display:none">
             Activar notificaciones
           </button>
         </div>
-        <p id="push-msg" style="font-size:0.82rem;color:var(--muted);margin-top:10px;display:none"></p>
+        <p id="push-msg" style="font-size:0.82rem;color:var(--text-2);margin-top:10px;display:none"></p>
       </div>
 
       <!-- Turno -->
       <div class="card mt-2">
         <div class="card-header"><h3>⚡ Turno</h3></div>
-        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">
+        <p style="font-size:0.9rem;color:var(--text-2);margin-bottom:16px">
           Una página que Maru guarda en el inicio del iPhone. Al tocarla, saca la foto y se adjunta a la cita en curso automáticamente.
         </p>
         <button class="btn btn-primary" onclick="copyQuickPhotoLink()" id="qp-btn">Copiar link</button>
-        <p style="font-size:0.8rem;color:var(--muted);margin-top:10px" id="qp-msg">
+        <p style="font-size:0.8rem;color:var(--text-2);margin-top:10px" id="qp-msg">
           Copiá el link y enviáselo a Maru por WhatsApp. Ella lo abre desde Safari y lo guarda en el inicio.
         </p>
       </div>
@@ -642,8 +707,8 @@
 <!-- MODAL: Booking detail -->
 <div class="modal-overlay" id="modal-booking" onclick="if(event.target===this)closeModal('modal-booking')">
   <div class="modal" style="position:relative">
-    <button onclick="closeModal('modal-booking')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
-    <h2 style="padding-right:32px">📋 Detalle de la cita</h2>
+    <button onclick="closeModal('modal-booking')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--text-2);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <h2 style="padding-right:32px">Detalle de la cita</h2>
     <div id="modal-booking-content"></div>
   </div>
 </div>
@@ -651,7 +716,7 @@
 <!-- MODAL: Client detail -->
 <div class="modal-overlay" id="modal-client" onclick="if(event.target===this)closeModal('modal-client')">
   <div class="modal" style="max-width:600px;position:relative">
-    <button onclick="closeModal('modal-client')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <button onclick="closeModal('modal-client')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--text-2);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
     <h2 style="padding-right:32px">👤 Detalle del cliente</h2>
     <div id="modal-client-content"></div>
   </div>
@@ -660,7 +725,7 @@
 <!-- MODAL: Service -->
 <div class="modal-overlay" id="modal-service" onclick="if(event.target===this)closeModal('modal-service')">
   <div class="modal" style="position:relative">
-    <button onclick="closeModal('modal-service')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <button onclick="closeModal('modal-service')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--text-2);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
     <h2 id="modal-service-title" style="padding-right:32px">Nuevo servicio</h2>
     <input type="hidden" id="svc-id">
     <div class="form-group"><label class="form-label">Nombre *</label><input type="text" class="form-control" id="svc-name"></div>
@@ -684,7 +749,7 @@
 <!-- MODAL: Professional -->
 <div class="modal-overlay" id="modal-prof" onclick="if(event.target===this)closeModal('modal-prof')">
   <div class="modal" style="position:relative">
-    <button onclick="closeModal('modal-prof')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <button onclick="closeModal('modal-prof')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--text-2);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
     <h2 id="modal-prof-title" style="padding-right:32px">Nuevo profesional</h2>
     <input type="hidden" id="prof-id">
     <div class="form-group"><label class="form-label">Nombre *</label><input type="text" class="form-control" id="prof-name"></div>
@@ -773,18 +838,18 @@ async function loadDashboard() {
   const cur = s.currency || '$';
 
   $('stats-grid').innerHTML = [
-    { label: 'Hoy', val: data.today.count, sub: `${cur}${(data.today.revenue||0).toLocaleString()}`, icon: '📅' },
-    { label: 'Esta semana', val: data.week.count, sub: `${cur}${(data.week.revenue||0).toLocaleString()}`, icon: '📆' },
-    { label: 'Este mes', val: data.month.count, sub: `${cur}${(data.month.revenue||0).toLocaleString()}`, icon: '📊' },
-    { label: 'Clientes', val: data.total_clients, sub: 'registrados', icon: '👥' },
-  ].map(s => `<div class="stat-card"><div class="label">${s.icon} ${s.label}</div><div class="value">${s.val}</div><div class="sub">${s.sub}</div></div>`).join('');
+    { label: 'Hoy', val: data.today.count, sub: `${cur}${(data.today.revenue||0).toLocaleString()}` },
+    { label: 'Esta semana', val: data.week.count, sub: `${cur}${(data.week.revenue||0).toLocaleString()}` },
+    { label: 'Este mes', val: data.month.count, sub: `${cur}${(data.month.revenue||0).toLocaleString()}` },
+    { label: 'Clientes', val: data.total_clients, sub: 'registrados' },
+  ].map(s => `<div class="stat-card"><div class="label">${s.label}</div><div class="value">${s.val}</div><div class="sub">${s.sub}</div></div>`).join('');
 
   $('today-schedule').innerHTML = data.today_schedule.length
     ? data.today_schedule.map(b => `
       <div class="detail-row" style="cursor:pointer" onclick="openBookingModal(${b.id})">
         <div>
           <div style="font-weight:700;font-size:0.9rem">${b.time} - ${escapeHtml(b.client_name)}</div>
-          <div style="font-size:0.8rem;color:var(--muted)">${escapeHtml(b.service_name)}${b.professional_name ? ' · ' + escapeHtml(b.professional_name) : ''}</div>
+          <div style="font-size:0.8rem;color:var(--text-2)">${escapeHtml(b.service_name)}${b.professional_name ? ' · ' + escapeHtml(b.professional_name) : ''}</div>
         </div>
         <div>${statusBadge(b.status)}</div>
       </div>`).join('')
@@ -795,9 +860,9 @@ async function loadDashboard() {
       <div class="detail-row" style="cursor:pointer" onclick="openBookingModal(${b.id})">
         <div>
           <div style="font-weight:700;font-size:0.9rem">${formatDateShort(b.date)} ${b.time}</div>
-          <div style="font-size:0.8rem;color:var(--muted)">${escapeHtml(b.client_name)} · ${escapeHtml(b.service_name)}</div>
+          <div style="font-size:0.8rem;color:var(--text-2)">${escapeHtml(b.client_name)} · ${escapeHtml(b.service_name)}</div>
         </div>
-        <div style="font-size:0.8rem;color:var(--muted)">${escapeHtml(b.professional_name || '')}</div>
+        <div style="font-size:0.8rem;color:var(--text-2)">${escapeHtml(b.professional_name || '')}</div>
       </div>`).join('')
     : '<div class="empty-state"><div class="emoji">✨</div><p>No hay citas próximas</p></div>';
 
@@ -855,7 +920,7 @@ async function loadMetrics({ year, month } = {}) {
   let met;
   try { met = await api(`/api/admin/metrics?year=${y}&month=${m}`); } catch(e) {
     ['metrics-chart','metrics-kpi','metrics-services'].forEach(id => {
-      const el = $(id); if(el) el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.82rem">No se pudieron cargar los datos.</div>';
+      const el = $(id); if(el) el.innerHTML = '<div style="padding:16px;color:var(--text-2);font-size:0.82rem">No se pudieron cargar los datos.</div>';
     });
     return;
   }
@@ -863,8 +928,8 @@ async function loadMetrics({ year, month } = {}) {
   const cur = settings.currency || '$';
 
   // Update dynamic titles
-  if ($('metrics-kpi-title'))      $('metrics-kpi-title').textContent      = `📊 ${isCurrentMonth ? 'Este mes' : label}`;
-  if ($('metrics-services-title')) $('metrics-services-title').textContent = `🏆 Servicios más reservados${isCurrentMonth ? ' (este mes)' : ' — ' + label}`;
+  if ($('metrics-kpi-title'))      $('metrics-kpi-title').textContent      = isCurrentMonth ? 'Este mes' : label;
+  if ($('metrics-services-title')) $('metrics-services-title').textContent = `Servicios más reservados${isCurrentMonth ? '' : ' — ' + label}`;
 
   // Bar chart (last 12 months — always current, not filtered by selector)
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -875,23 +940,23 @@ async function loadMetrics({ year, month } = {}) {
     return `<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px">
       <div title="${months[mo]} ${r.year} — ${cur}${r.revenue.toLocaleString()} (${r.bookings} citas)"
         style="height:120px;width:100%;display:flex;align-items:flex-end">
-        <div style="width:100%;height:${h}%;min-height:4px;background:var(--green);border-radius:5px 5px 0 0;opacity:0.85"></div>
+        <div style="width:100%;height:${h}%;min-height:4px;background:var(--p);border-radius:5px 5px 0 0;opacity:0.85"></div>
       </div>
-      <div style="font-size:0.7rem;color:var(--muted);line-height:1;white-space:nowrap">${months[mo]}</div>
+      <div style="font-size:0.7rem;color:var(--text-2);line-height:1;white-space:nowrap">${months[mo]}</div>
     </div>`;
   }).join('');
   $('metrics-chart').innerHTML = met.monthly.length
     ? `<div style="display:flex;align-items:flex-end;gap:6px;min-height:150px;padding:4px 2px 0">${bars}</div>`
-    : '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem">Sin datos aún</div>';
+    : '<div style="text-align:center;padding:24px;color:var(--text-2);font-size:0.85rem">Sin datos aún</div>';
 
   // KPIs
   $('metrics-kpi').innerHTML = [
-    { icon: '❌', label: 'Cancelaciones', val: `${met.cancelRate}%` },
-    { icon: '🆕', label: 'Clientes nuevos', val: met.newClients },
-    { icon: '💵', label: 'Ticket promedio', val: met.avgTicket > 0 ? `${cur}${met.avgTicket.toLocaleString()}` : '—' },
+    { label: 'Cancelaciones', val: `${met.cancelRate}%` },
+    { label: 'Clientes nuevos', val: met.newClients },
+    { label: 'Ticket promedio', val: met.avgTicket > 0 ? `${cur}${met.avgTicket.toLocaleString()}` : '—' },
   ].map(k => `
     <div class="detail-row">
-      <span style="font-size:0.88rem;color:var(--muted)">${k.icon} ${k.label}</span>
+      <span style="font-size:0.875rem;color:var(--text-2)">${k.label}</span>
       <span style="font-weight:700;font-size:0.95rem">${k.val}</span>
     </div>`).join('');
 
@@ -903,24 +968,24 @@ async function loadMetrics({ year, month } = {}) {
         return `<div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;font-size:0.87rem;margin-bottom:4px">
             <span>${i+1}. ${escapeHtml(s.name)}</span>
-            <span style="color:var(--muted)">${s.bookings} cita${s.bookings!==1?'s':''} · ${cur}${s.revenue.toLocaleString()}</span>
+            <span style="color:var(--text-2)">${s.bookings} cita${s.bookings!==1?'s':''} · ${cur}${s.revenue.toLocaleString()}</span>
           </div>
           <div style="background:#e8e8e8;border-radius:99px;height:6px">
             <div style="background:var(--green);height:6px;border-radius:99px;width:${pct}%;transition:width 0.4s"></div>
           </div>
         </div>`;
       }).join('')
-    : '<div style="padding:16px;color:var(--muted);font-size:0.85rem">Sin citas este mes</div>';
+    : '<div style="padding:16px;color:var(--text-2);font-size:0.85rem">Sin citas este mes</div>';
 }
 
 // ─── GIFT CARDS ───────────────────────────────────────
 async function loadGiftCards() {
   const wrap = $('gc-table-wrap');
-  wrap.innerHTML = '<div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>';
+  wrap.innerHTML = '<div class="loading-state" style="text-align:center;padding:24px;color:var(--text-2)">Cargando...</div>';
   let cards;
   try { cards = await api('/api/admin/gift-cards'); } catch(e) { cards = []; }
   if (!Array.isArray(cards) || cards.length === 0) {
-    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.9rem">No hay gift cards creadas todavía.</div>';
+    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-2);font-size:0.9rem">No hay gift cards creadas todavía.</div>';
     $('gc-count').textContent = '';
     return;
   }
@@ -939,8 +1004,8 @@ async function loadGiftCards() {
       <td>${cur}${gc.amount.toLocaleString()}</td>
       <td style="color:${gc.balance>0?'var(--green)':'var(--muted)'}">${cur}${gc.balance.toLocaleString()}</td>
       <td style="font-size:0.85rem">${escapeHtml(gc.purchaser_name||'—')}</td>
-      <td style="font-size:0.85rem;color:var(--muted)">${escapeHtml(gc.recipient_name||'—')}${gc.recipient_email ? '<br><span style="font-size:0.78rem">' + escapeHtml(gc.recipient_email) + '</span>' : ''}</td>
-      <td style="font-size:0.82rem;color:var(--muted)">${formatDateShort(gc.created_at?gc.created_at.slice(0,10):'')}</td>
+      <td style="font-size:0.85rem;color:var(--text-2)">${escapeHtml(gc.recipient_name||'—')}${gc.recipient_email ? '<br><span style="font-size:0.78rem">' + escapeHtml(gc.recipient_email) + '</span>' : ''}</td>
+      <td style="font-size:0.82rem;color:var(--text-2)">${formatDateShort(gc.created_at?gc.created_at.slice(0,10):'')}</td>
       <td>${statusBadgeGc(gc.status)}</td>
       <td style="white-space:nowrap;display:flex;gap:6px">
         ${gc.status==='active' ? `<button class="btn btn-sm btn-danger" onclick="cancelGc(${gc.id})">Cancelar</button>` : ''}
@@ -1016,7 +1081,7 @@ async function loadAgenda() {
   }
 
   let html = `<div class="agenda-week-table" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px">`;
-  html += `<tr><th style="padding:8px;font-size:0.78rem;color:var(--muted);text-align:left;width:55px;border-bottom:2px solid var(--border)">Hora</th>`;
+  html += `<tr><th style="padding:8px;font-size:0.78rem;color:var(--text-2);text-align:left;width:55px;border-bottom:2px solid var(--border)">Hora</th>`;
   days.forEach((d, i) => {
     const ds = dateKey(d);
     const isToday = ds === today;
@@ -1025,7 +1090,7 @@ async function loadAgenda() {
   html += '</tr>';
 
   times.forEach(time => {
-    html += `<tr><td style="padding:8px;font-size:0.78rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);vertical-align:top">${time}</td>`;
+    html += `<tr><td style="padding:8px;font-size:0.78rem;color:var(--text-2);font-weight:600;border-bottom:1px solid var(--border);vertical-align:top">${time}</td>`;
     days.forEach(d => {
       const ds = dateKey(d);
       const dayBookings = bookings.filter(b => b.date === ds && b.time === time);
@@ -1035,7 +1100,7 @@ async function loadAgenda() {
         const color = b.professional_color || '#2d6a4f';
         html += `<div class="booking-block" style="border-left-color:${color};cursor:pointer" onclick="openBookingModal(${b.id})">
           <div class="bb-name">${escapeHtml(b.client_name)}</div>
-          <div style="font-size:0.7rem;color:var(--muted)">${escapeHtml(b.service_name)}</div>
+          <div style="font-size:0.7rem;color:var(--text-2)">${escapeHtml(b.service_name)}</div>
         </div>`;
       });
       html += '</td>';
@@ -1097,12 +1162,12 @@ async function loadCitas() {
 
   $('citas-tbody').innerHTML = bookings.map(b => `
     <tr>
-      <td style="font-weight:700;color:var(--muted)">#${b.id}</td>
+      <td style="font-weight:700;color:var(--text-2)">#${b.id}</td>
       <td>${formatDateShort(b.date)}</td>
       <td><strong>${b.time}</strong></td>
       <td>
         <div style="font-weight:600">${escapeHtml(b.client_name)}</div>
-        <div style="font-size:0.78rem;color:var(--muted)">${escapeHtml(b.client_phone)}</div>
+        <div style="font-size:0.78rem;color:var(--text-2)">${escapeHtml(b.client_phone)}</div>
       </td>
       <td>${escapeHtml(b.service_name)}</td>
       <td>${escapeHtml(b.professional_name || '-')}</td>
@@ -1134,7 +1199,7 @@ async function openBookingModal(id) {
     ${professionals.length > 1 ? `<div class="detail-row"><span class="key">Profesional</span><span>${escapeHtml(b.professional_name || '-')}</span></div>` : ''}
     <div class="detail-row"><span class="key">Estado</span><span>${statusBadge(b.status)}</span></div>
     <div class="detail-row"><span class="key">Cliente</span><span><strong>${escapeHtml(b.client_name)}</strong></span></div>
-    ${b.client_phone ? `<div class="detail-row"><span class="key">Teléfono</span><span><a class="whatsapp-link" href="https://wa.me/${b.client_phone.replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(b.client_phone)}</a></span></div>` : ''}
+    ${b.client_phone ? `<div class="detail-row"><span class="key">Teléfono</span><span><a class="whatsapp-link" href="https://wa.me/${b.client_phone.replace(/\D/g,'')}" target="_blank">${escapeHtml(b.client_phone)}</a></span></div>` : ''}
     ${b.client_email ? `<div class="detail-row"><span class="key">Email</span><span>${escapeHtml(b.client_email)}</span></div>` : ''}
     ${b.client_instagram ? `<div class="detail-row"><span class="key">Instagram</span><span>@${escapeHtml(b.client_instagram.replace('@',''))}</span></div>` : ''}
     ${b.notes ? `<div class="detail-row"><span class="key">Notas cliente</span><span>${escapeHtml(b.notes)}</span></div>` : ''}
@@ -1154,7 +1219,7 @@ async function openBookingModal(id) {
 
     <!-- Pago -->
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
-      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:0.05em">PAGO ${b.total_price > 0 ? `· Total: ${cur}${b.total_price.toLocaleString()} · Seña: ${cur}${(b.deposit_paid||0).toLocaleString()}` : ''}</div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--text-2);margin-bottom:8px;letter-spacing:0.05em">PAGO ${b.total_price > 0 ? `· Total: ${cur}${b.total_price.toLocaleString()} · Seña: ${cur}${(b.deposit_paid||0).toLocaleString()}` : ''}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${['none','deposit','full'].map(v => `
           <button onclick="setPaymentStatus(${b.id},'${v}',this)"
@@ -1166,14 +1231,14 @@ async function openBookingModal(id) {
 
     <!-- Notas internas -->
     <div style="margin-top:14px">
-      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:0.05em">NOTAS INTERNAS</div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--text-2);margin-bottom:6px;letter-spacing:0.05em">NOTAS INTERNAS</div>
     <textarea id="admin-notes-${b.id}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;font-family:inherit;resize:vertical;min-height:70px;outline:none" placeholder="Notas para Maru (el cliente no las ve)..." onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(b.notes_admin || '')}</textarea>
       <button onclick="saveAdminNotes(${b.id})" style="margin-top:6px;padding:7px 14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.83rem;font-weight:700;cursor:pointer;font-family:inherit">Guardar nota</button>
     </div>
 
     <!-- Fotos -->
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:10px;letter-spacing:0.05em">FOTOS DE LA CITA</div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--text-2);margin-bottom:10px;letter-spacing:0.05em">FOTOS DE LA CITA</div>
       <div id="photos-container-${b.id}"></div>
       <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input type="file" id="photo-input-${b.id}" accept="image/*" style="display:none" onchange="uploadPhoto(${b.id})">
@@ -1225,15 +1290,15 @@ async function loadPhotos(bookingId) {
   if (!container) return;
   try {
     const photos = await api(`/api/admin/bookings/${bookingId}/photos`);
-    if (!Array.isArray(photos) || !photos.length) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--muted)">Sin fotos todavía</div>'; return; }
+    if (!Array.isArray(photos) || !photos.length) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--text-2)">Sin fotos todavía</div>'; return; }
     container.innerHTML = photos.map(p => `
       <div style="position:relative;display:inline-block;margin:4px">
       <img src="${escapeHtml(p.file_path)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;display:block" loading="lazy">
-      ${p.comment ? `<div style="font-size:0.73rem;color:var(--muted);max-width:80px;word-break:break-word">${escapeHtml(p.comment)}</div>` : ''}
+      ${p.comment ? `<div style="font-size:0.73rem;color:var(--text-2);max-width:80px;word-break:break-word">${escapeHtml(p.comment)}</div>` : ''}
         <button onclick="deletePhoto(${bookingId},${p.id},this.closest('div'))" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
       </div>
     `).join('');
-  } catch(e) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--muted)">Error al cargar fotos</div>'; }
+  } catch(e) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--text-2)">Error al cargar fotos</div>'; }
 }
 
 async function uploadPhoto(bookingId) {
@@ -1266,7 +1331,7 @@ async function loadClients(search = '') {
   $('clients-tbody').innerHTML = clients.map(c => `
     <tr>
       <td><strong>${escapeHtml(c.name)}</strong></td>
-      <td><a class="whatsapp-link" href="https://wa.me/${String(c.phone || '').replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(c.phone)}</a></td>
+      <td><a class="whatsapp-link" href="https://wa.me/${String(c.phone || '').replace(/\D/g,'')}" target="_blank">${escapeHtml(c.phone)}</a></td>
       <td>${escapeHtml(c.email || '-')}</td>
       <td>${c.instagram ? '@' + escapeHtml(c.instagram.replace('@','')) : '-'}</td>
       <td style="font-weight:700;text-align:center">${c.total_bookings}</td>
@@ -1291,7 +1356,7 @@ async function openClientModal(id) {
     <div class="grid-2" style="margin-bottom:16px">
       <div>
         <div class="detail-row"><span class="key">Nombre</span><span><strong>${escapeHtml(data.name)}</strong></span></div>
-        <div class="detail-row"><span class="key">Teléfono</span><span><a class="whatsapp-link" href="https://wa.me/${String(data.phone || '').replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(data.phone)}</a></span></div>
+        <div class="detail-row"><span class="key">Teléfono</span><span><a class="whatsapp-link" href="https://wa.me/${String(data.phone || '').replace(/\D/g,'')}" target="_blank">${escapeHtml(data.phone)}</a></span></div>
         <div class="detail-row"><span class="key">Email</span><span>${escapeHtml(data.email || '-')}</span></div>
         <div class="detail-row"><span class="key">Instagram</span><span>${data.instagram ? '@' + escapeHtml(data.instagram.replace('@','')) : '-'}</span></div>
       </div>
@@ -1300,14 +1365,14 @@ async function openClientModal(id) {
         <div class="detail-row"><span class="key">Total gastado</span><span style="color:var(--green);font-weight:700">${data.total_spent > 0 ? cur + Number(data.total_spent).toLocaleString() : '-'}</span></div>
       </div>
     </div>
-    <h4 style="margin-bottom:10px;font-size:0.9rem;color:var(--muted)">HISTORIAL DE CITAS</h4>
+    <h4 style="margin-bottom:10px;font-size:0.9rem;color:var(--text-2)">HISTORIAL DE CITAS</h4>
     ${data.bookings.length ? `
       <div style="max-height:280px;overflow-y:auto">
         ${data.bookings.map(b => `
           <div class="detail-row">
             <div>
               <div style="font-weight:600;font-size:0.88rem">${formatDateShort(b.date)} ${b.time} - ${escapeHtml(b.service_name)}</div>
-              <div style="font-size:0.78rem;color:var(--muted)">${escapeHtml(b.professional_name || '')}</div>
+              <div style="font-size:0.78rem;color:var(--text-2)">${escapeHtml(b.professional_name || '')}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               ${b.total_price > 0 ? `<span style="color:var(--green);font-weight:700">${cur}${b.total_price.toLocaleString()}</span>` : ''}
@@ -1316,9 +1381,9 @@ async function openClientModal(id) {
           </div>`).join('')}
       </div>` : '<p class="text-muted" style="text-align:center;padding:16px">Sin citas registradas</p>'}
     <details style="margin-top:16px">
-      <summary style="font-size:0.8rem;color:var(--muted);cursor:pointer;user-select:none">🔀 Fusionar con otro cliente…</summary>
+      <summary style="font-size:0.8rem;color:var(--text-2);cursor:pointer;user-select:none">Fusionar con otro cliente…</summary>
       <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-        <p style="font-size:0.8rem;color:var(--muted)">Buscá el duplicado. Todas sus reservas pasarán a <strong>${escapeHtml(data.name)}</strong> y el otro se eliminará.</p>
+        <p style="font-size:0.8rem;color:var(--text-2)">Buscá el duplicado. Todas sus reservas pasarán a <strong>${escapeHtml(data.name)}</strong> y el otro se eliminará.</p>
         <input id="merge-search" type="text" class="form-control" placeholder="Nombre del cliente a fusionar…" oninput="searchMergeCandidates(${data.id})">
         <div id="merge-results"></div>
       </div>
@@ -1334,10 +1399,10 @@ async function searchMergeCandidates(targetId) {
   if (q.length < 2) { $('merge-results').innerHTML = ''; return; }
   const data = await api(`/api/admin/clients?search=${encodeURIComponent(q)}&limit=5`);
   const clients = (data.clients || []).filter(c => c.id !== targetId);
-  if (!clients.length) { $('merge-results').innerHTML = '<p style="font-size:0.8rem;color:var(--muted)">Sin resultados</p>'; return; }
+  if (!clients.length) { $('merge-results').innerHTML = '<p style="font-size:0.8rem;color:var(--text-2)">Sin resultados</p>'; return; }
   $('merge-results').innerHTML = clients.map(c => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f9f9f9;border-radius:8px;gap:8px">
-      <div style="font-size:0.85rem"><strong>${escapeHtml(c.name)}</strong><br><span style="color:var(--muted);font-size:0.78rem">${escapeHtml(c.phone||'')} ${c.email ? '· '+escapeHtml(c.email) : ''} · ${c.total_bookings} citas</span></div>
+      <div style="font-size:0.85rem"><strong>${escapeHtml(c.name)}</strong><br><span style="color:var(--text-2);font-size:0.78rem">${escapeHtml(c.phone||'')} ${c.email ? '· '+escapeHtml(c.email) : ''} · ${c.total_bookings} citas</span></div>
       <button class="btn btn-sm btn-danger" onclick="doMergeClient(${targetId},${c.id},'${escapeHtml(c.name).replace(/'/g,"\\'")}')">Fusionar</button>
     </div>`).join('');
 }
@@ -1369,9 +1434,9 @@ async function loadRevenue() {
   const sum = data.summary || {};
 
   $('rev-stats').innerHTML = [
-    { label: 'Total reservas', val: sum.total_bookings || 0, icon: '📋' },
-    { label: 'Total facturado', val: `${cur}${(sum.total_revenue || 0).toLocaleString()}`, icon: '💰' },
-  ].map(s => `<div class="stat-card"><div class="label">${s.icon} ${s.label}</div><div class="value">${s.val}</div></div>`).join('');
+    { label: 'Total reservas', val: sum.total_bookings || 0 },
+    { label: 'Total facturado', val: `${cur}${(sum.total_revenue || 0).toLocaleString()}` },
+  ].map(s => `<div class="stat-card"><div class="label">${s.label}</div><div class="value">${s.val}</div></div>`).join('');
 
   // Chart
   const chartData = period === 'month' ? (data.daily || []) : (data.monthly || []);
@@ -1407,14 +1472,14 @@ async function loadServices() {
   const cur = settings.currency || '$';
   $('services-tbody').innerHTML = svcs.map(s => `
     <tr>
-      <td><strong>${escapeHtml(s.name)}</strong>${s.description ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:2px">${escapeHtml(s.description.slice(0,60))}${s.description.length>60?'...':''}</div>` : ''}</td>
+      <td><strong>${escapeHtml(s.name)}</strong>${s.description ? `<div style="font-size:0.78rem;color:var(--text-2);margin-top:2px">${escapeHtml(s.description.slice(0,60))}${s.description.length>60?'...':''}</div>` : ''}</td>
       <td>${s.duration} min</td>
       <td>${s.price > 0 ? cur + s.price.toLocaleString() : '-'}</td>
       <td>${s.deposit > 0 ? cur + s.deposit.toLocaleString() : '-'}</td>
       <td>${s.professionals.map(p => `<span class="chip">${escapeHtml(p.name)}</span>`).join(' ') || '-'}</td>
       <td>${s.active ? '<span class="badge badge-confirmed">Activo</span>' : '<span class="badge badge-cancelled">Inactivo</span>'}</td>
       <td style="text-align:center">
-        ${s.photo ? `<img src="${escapeHtml(s.photo)}" style="width:48px;height:36px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px">` : '<span style="font-size:0.72rem;color:var(--muted)">Sin foto</span><br>'}
+        ${s.photo ? `<img src="${escapeHtml(s.photo)}" style="width:48px;height:36px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px">` : '<span style="font-size:0.72rem;color:var(--text-2)">Sin foto</span><br>'}
         <input type="file" id="svc-photo-input-${s.id}" accept="image/*" style="display:none" onchange="uploadServicePhoto(${s.id})">
         <button class="btn-icon" onclick="document.getElementById('svc-photo-input-${s.id}').click()" title="Subir foto">📷</button>
         ${s.photo ? `<button class="btn-icon" onclick="deleteServicePhoto(${s.id})" title="Quitar foto" style="color:var(--danger)">✕</button>` : ''}
@@ -1506,7 +1571,7 @@ async function loadHours() {
       </label>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="time" class="form-control" data-dow="${h.day_of_week}" data-field="open_time" value="${h.open_time}" style="flex:1">
-        <span style="color:var(--muted)">-</span>
+        <span style="color:var(--text-2)">-</span>
         <input type="time" class="form-control" data-dow="${h.day_of_week}" data-field="close_time" value="${h.close_time}" style="flex:1">
       </div>
       <div></div>
@@ -1660,11 +1725,11 @@ async function copyQuickPhotoLink() {
 // ─── RESEÑAS ──────────────────────────────────────────
 async function loadReviews() {
   const wrap = $('reviews-table-wrap');
-  wrap.innerHTML = '<div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>';
+  wrap.innerHTML = '<div class="loading-state" style="text-align:center;padding:24px;color:var(--text-2)">Cargando...</div>';
   let reviews;
   try { reviews = await api('/api/admin/reviews'); } catch(e) { reviews = null; }
   if (!Array.isArray(reviews) || reviews.length === 0) {
-    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.9rem;">Todavía no hay reseñas recibidas.</div>';
+    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-2);font-size:0.9rem;">Todavía no hay reseñas recibidas.</div>';
     $('reviews-count').textContent = '';
     return;
   }
@@ -1680,10 +1745,10 @@ async function loadReviews() {
     <tbody>
       ${reviews.map(r => `<tr>
         <td data-label="Cliente" class="cell-truncate">${escapeHtml(r.client_name)}</td>
-        <td data-label="Servicio" class="cell-wrap" style="font-size:0.85rem;color:var(--muted)">${escapeHtml(r.service_name || '—')}</td>
+        <td data-label="Servicio" class="cell-wrap" style="font-size:0.85rem;color:var(--text-2)">${escapeHtml(r.service_name || '—')}</td>
         <td data-label="Puntuación" style="white-space:nowrap">${stars(r.rating || 0)}</td>
-        <td data-label="Comentario" class="cell-wrap" style="font-size:0.85rem">${r.comment ? escapeHtml(r.comment) : '<span style="color:var(--muted)">Sin comentario</span>'}</td>
-        <td data-label="Fecha" style="font-size:0.82rem;color:var(--muted);white-space:nowrap">${formatDateShort(r.created_at ? r.created_at.slice(0,10) : '')}</td>
+        <td data-label="Comentario" class="cell-wrap" style="font-size:0.85rem">${r.comment ? escapeHtml(r.comment) : '<span style="color:var(--text-2)">Sin comentario</span>'}</td>
+        <td data-label="Fecha" style="font-size:0.82rem;color:var(--text-2);white-space:nowrap">${formatDateShort(r.created_at ? r.created_at.slice(0,10) : '')}</td>
         <td data-label="Estado">${r.approved ? '<span class="badge badge-confirmed">Publicada</span>' : '<span class="badge badge-pending">Pendiente</span>'}</td>
         <td data-label="Acciones" style="white-space:nowrap;display:flex;gap:6px">
           ${!r.approved ? `<button class="btn btn-sm btn-primary" onclick="approveReview(${r.id})">✓ Publicar</button>` : ''}
