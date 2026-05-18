@@ -1253,8 +1253,9 @@ function copyUrl() { navigator.clipboard.writeText($('public-url').value); alert
 async function loadReviews() {
   const wrap = $('reviews-table-wrap');
   wrap.innerHTML = '<div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>';
-  const reviews = await api('/api/admin/reviews');
-  if (!reviews || reviews.length === 0) {
+  let reviews;
+  try { reviews = await api('/api/admin/reviews'); } catch(e) { reviews = null; }
+  if (!Array.isArray(reviews) || reviews.length === 0) {
     wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.9rem;">Todavía no hay reseñas recibidas.</div>';
     $('reviews-count').textContent = '';
     return;
