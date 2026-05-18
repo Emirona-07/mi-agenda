@@ -596,6 +596,11 @@
     }
     .pay-method-btn:hover { border-color: var(--p-mid); }
     .pay-method-btn.active { border-color: var(--p); background: var(--p-light); }
+    .gc-amt-btn { padding: 9px 18px; border: 2px solid var(--border-dark); border-radius: var(--r);
+      background: white; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--muted);
+      transition: all 0.15s; font-family: inherit; }
+    .gc-amt-btn:hover { border-color: var(--p); color: var(--p); }
+    .gc-amt-btn.active { border-color: var(--p); background: var(--p-light); color: var(--p); }
     .pay-method-icon { font-size: 1.25rem; line-height: 1; }
     .pay-method-name {
       font-size: 0.8rem;
@@ -1487,6 +1492,98 @@
   </div>
 </div>
 
+<!-- Gift Card inline section -->
+<div class="container" id="section-gift" style="display:none">
+
+  <div class="section active" id="gc-form-wrap">
+    <div style="margin-bottom:12px">
+      <button onclick="exitGiftCard()" style="background:none;border:none;cursor:pointer;font-size:0.87rem;color:var(--muted);font-family:inherit;padding:0;display:flex;align-items:center;gap:4px">
+        ← Volver a servicios
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:4px">🎁 Gift card</div>
+      <p style="font-size:0.86rem;color:var(--muted);line-height:1.6;margin-bottom:24px">
+        Comprá una gift card y enviala a quien quieras. El código se puede usar al reservar cualquier turno.
+      </p>
+
+      <!-- Monto -->
+      <div class="section-label" style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Monto</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px" id="gc-amt-btns">
+        <button class="gc-amt-btn" data-val="500"  onclick="gcSetAmt(500)">$500</button>
+        <button class="gc-amt-btn" data-val="1000" onclick="gcSetAmt(1000)">$1.000</button>
+        <button class="gc-amt-btn" data-val="1500" onclick="gcSetAmt(1500)">$1.500</button>
+        <button class="gc-amt-btn" data-val="2000" onclick="gcSetAmt(2000)">$2.000</button>
+        <button class="gc-amt-btn" data-val="3000" onclick="gcSetAmt(3000)">$3.000</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
+        <input type="number" id="gc-custom-amt" placeholder="Otro monto" min="100" style="max-width:160px;padding:10px 12px;border:1.5px solid var(--border-dark);border-radius:var(--r);font-size:0.95rem;font-family:inherit;outline:none;color:var(--text)" oninput="gcSetCustomAmt(this.value)" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border-dark)'">
+        <span style="font-size:0.85rem;color:var(--muted)">pesos uruguayos</span>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:0 0 20px">
+
+      <!-- Datos del comprador -->
+      <div class="section-label" style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Tus datos</div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px">Tu nombre *</label>
+        <input type="text" id="gc-purchaser-name" placeholder="Nombre y apellido" style="width:100%;padding:11px 14px;border:1.5px solid var(--border-dark);border-radius:var(--r);font-size:0.95rem;font-family:inherit;outline:none;color:var(--text)" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border-dark)'">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px">Tu email * <span style="font-weight:400">(te enviamos el código aquí)</span></label>
+        <input type="email" id="gc-purchaser-email" placeholder="tucorreo@email.com" style="width:100%;padding:11px 14px;border:1.5px solid var(--border-dark);border-radius:var(--r);font-size:0.95rem;font-family:inherit;outline:none;color:var(--text)" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border-dark)'">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px">Para quién es <span style="font-weight:400">(opcional)</span></label>
+        <input type="text" id="gc-recipient-name" placeholder="Nombre del destinatario" style="width:100%;padding:11px 14px;border:1.5px solid var(--border-dark);border-radius:var(--r);font-size:0.95rem;font-family:inherit;outline:none;color:var(--text)" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border-dark)'">
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text);cursor:pointer;margin-bottom:10px;user-select:none">
+        <input type="checkbox" id="gc-recipient-check" onchange="toggleGcRecipientEmail()" style="width:16px;height:16px;accent-color:var(--p);cursor:pointer;flex-shrink:0">
+        Enviarle el código directamente al destinatario por email
+      </label>
+      <div id="gc-recipient-email-wrap" style="display:none;margin-bottom:14px">
+        <input type="email" id="gc-recipient-email" placeholder="Email del destinatario" style="width:100%;padding:11px 14px;border:1.5px solid var(--border-dark);border-radius:var(--r);font-size:0.95rem;font-family:inherit;outline:none;color:var(--text)" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border-dark)'">
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:6px 0 20px">
+
+      <!-- Pago -->
+      <div class="section-label" style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Pago</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px" id="gc-pay-methods">
+        <button id="gc-pm-transfer" onclick="gcSetPayMethod('transfer')" style="flex:1;padding:10px;border:2px solid var(--p);border-radius:var(--r);background:var(--p-light);font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--p);font-family:inherit">🏦 Transferencia</button>
+        <button id="gc-pm-mp" onclick="gcSetPayMethod('mp')" style="display:none;flex:1;padding:10px;border:2px solid var(--border-dark);border-radius:var(--r);background:white;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit">💳 Mercado Pago</button>
+      </div>
+      <div id="gc-transfer-info" style="display:none;background:var(--p-light);border:1.5px solid var(--p);border-radius:var(--r);padding:12px 14px;font-size:0.85rem;line-height:1.7;color:var(--text);margin-bottom:14px"></div>
+      <div id="gc-mp-note" style="display:none;background:#fff8e1;border:1.5px solid #f9a825;border-radius:var(--r);padding:11px 14px;font-size:0.82rem;color:#7a5500;margin-bottom:14px">
+        Se agrega un recargo del <strong id="gc-mp-pct">5</strong>% por uso de Mercado Pago.
+        Monto final: <strong id="gc-mp-total"></strong>.
+      </div>
+
+      <div id="gc-inline-error" style="display:none;background:#fff5f5;color:#c0392b;border-radius:var(--r);padding:10px 14px;font-size:0.85rem;margin-bottom:14px"></div>
+      <button id="gc-submit-btn" onclick="submitGiftCardInline()" class="btn btn-primary">Comprar gift card 🎁</button>
+      <p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:10px" id="gc-submit-note">Recibirás el código en tu email al confirmar el pago.</p>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div id="gc-success-wrap" style="display:none">
+    <div class="card" style="text-align:center;padding:40px 28px">
+      <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:8px">¡Gift card creada!</h2>
+      <p style="color:var(--muted);font-size:0.87rem;line-height:1.6;margin-bottom:24px">Te enviamos el código a tu email. Guardalo para usarlo al reservar.</p>
+      <div style="background:var(--p-light);border:2px dashed var(--p);border-radius:12px;padding:24px;margin:0 auto 20px;max-width:280px">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Tu código</div>
+        <div id="gc-success-code" style="font-size:1.9rem;font-weight:800;color:var(--p);letter-spacing:0.12em;font-family:monospace"></div>
+        <div id="gc-success-amount" style="margin-top:10px;font-size:1.1rem;font-weight:700;color:var(--text)"></div>
+      </div>
+      <p style="font-size:0.84rem;color:var(--muted);margin-bottom:24px">Ingresá este código en el paso de pago al hacer tu reserva.</p>
+      <button class="btn btn-primary" onclick="gcDone()">Hacer una reserva →</button>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="gcBuyAnother()">Comprar otra gift card</button>
+    </div>
+  </div>
+
+</div>
+
 <!-- Login Modal -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal-box">
@@ -1824,6 +1921,10 @@ let _bankAccount   = '';       // datos de cuenta bancaria para transferencia
 let _gcCode        = null;     // código de gift card validado
 let _gcDiscount    = 0;        // monto de descuento de gift card
 
+// ── Gift card inline ──────────────────────────────────────────────────────────
+let _gcAmt         = 0;
+let _gcPayMethod   = 'transfer';
+
 function renderServices() {
   const list = document.getElementById('services-list');
   if (!state.services.length) { list.innerHTML = '<div class="empty">No hay servicios disponibles.</div>'; return; }
@@ -1969,8 +2070,7 @@ function updateStickyCta(step) {
     btnEl.onclick       = () => {
       const isGiftCard = /gift\s*card/i.test(state.selectedService?.name || '');
       if (isGiftCard) {
-        const price = state.selectedService.price;
-        window.location.href = '/gift' + (price > 0 ? `?amount=${price}` : '');
+        goGiftCard(state.selectedService.price);
       } else {
         goStep(2);
       }
@@ -2031,6 +2131,191 @@ async function selectService(id) {
 
   // Mostrar botón home
   document.getElementById('btn-home').classList.add('show');
+}
+
+// ── Gift card inline flow ─────────────────────────────────────────────────────
+function goGiftCard(presetAmount) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('progress-bar').style.display = 'none';
+  document.getElementById('sticky-cta')?.classList.remove('show');
+  document.getElementById('section-gift').style.display = '';
+  document.getElementById('gc-form-wrap').style.display = '';
+  document.getElementById('gc-success-wrap').style.display = 'none';
+
+  // Pre-llenar monto si el servicio tiene precio
+  if (presetAmount > 0) {
+    const matchBtn = document.querySelector(`.gc-amt-btn[data-val="${presetAmount}"]`);
+    if (matchBtn) { gcSetAmt(presetAmount); }
+    else { _gcAmt = presetAmount; document.getElementById('gc-custom-amt').value = presetAmount; }
+  }
+
+  // Mostrar MP si está activo
+  const mpBtn = document.getElementById('gc-pm-mp');
+  if (mpBtn) mpBtn.style.display = _mpActive ? '' : 'none';
+  document.getElementById('gc-mp-pct').textContent = _mpSurcharge;
+
+  // Arrancar en transferencia
+  gcSetPayMethod('transfer');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function exitGiftCard() {
+  document.getElementById('section-gift').style.display = 'none';
+  document.getElementById('progress-bar').style.display = '';
+  goStep(1);
+  // Reset form
+  _gcAmt = 0;
+  _gcPayMethod = 'transfer';
+  document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('gc-custom-amt').value = '';
+  ['gc-purchaser-name','gc-purchaser-email','gc-recipient-name','gc-recipient-email'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('gc-recipient-check').checked = false;
+  document.getElementById('gc-recipient-email-wrap').style.display = 'none';
+  document.getElementById('gc-inline-error').style.display = 'none';
+}
+
+function gcSetAmt(val) {
+  _gcAmt = val;
+  document.getElementById('gc-custom-amt').value = '';
+  document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === val));
+  gcUpdateMpTotal();
+}
+
+function gcSetCustomAmt(val) {
+  _gcAmt = parseInt(val) || 0;
+  document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.remove('active'));
+  gcUpdateMpTotal();
+}
+
+function gcUpdateMpTotal() {
+  if (_gcPayMethod !== 'mp' || !_gcAmt) return;
+  const total = Math.round(_gcAmt * (1 + _mpSurcharge / 100));
+  document.getElementById('gc-mp-total').textContent = `$${total.toLocaleString('es-UY')}`;
+}
+
+function gcSetPayMethod(m) {
+  _gcPayMethod = m;
+  const transfer = document.getElementById('gc-pm-transfer');
+  const mp       = document.getElementById('gc-pm-mp');
+  const info     = document.getElementById('gc-transfer-info');
+  const mpNote   = document.getElementById('gc-mp-note');
+  const btn      = document.getElementById('gc-submit-btn');
+  const note     = document.getElementById('gc-submit-note');
+
+  transfer.style.border  = m === 'transfer' ? '2px solid var(--p)' : '2px solid var(--border-dark)';
+  transfer.style.background = m === 'transfer' ? 'var(--p-light)' : 'white';
+  transfer.style.color   = m === 'transfer' ? 'var(--p)' : 'var(--muted)';
+  if (mp) {
+    mp.style.border    = m === 'mp' ? '2px solid #009ee3' : '2px solid var(--border-dark)';
+    mp.style.background = m === 'mp' ? '#e8f5ff' : 'white';
+    mp.style.color     = m === 'mp' ? '#007bb5' : 'var(--muted)';
+  }
+
+  if (m === 'transfer' && _bankAccount) {
+    info.innerHTML = `<strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g,'<br>')}`;
+    info.style.display = 'block';
+  } else { info.style.display = 'none'; }
+
+  mpNote.style.display = m === 'mp' ? 'block' : 'none';
+  gcUpdateMpTotal();
+
+  if (m === 'mp') {
+    btn.textContent = 'Pagar con Mercado Pago 💳';
+    btn.style.background = '#009ee3';
+    note.textContent = 'Serás redirigido a Mercado Pago para completar el pago.';
+  } else {
+    btn.textContent = 'Comprar gift card 🎁';
+    btn.style.background = '';
+    note.textContent = 'Recibirás el código en tu email al confirmar el pago.';
+  }
+}
+
+function toggleGcRecipientEmail() {
+  const show = document.getElementById('gc-recipient-check').checked;
+  document.getElementById('gc-recipient-email-wrap').style.display = show ? 'block' : 'none';
+}
+
+async function submitGiftCardInline() {
+  const name    = document.getElementById('gc-purchaser-name').value.trim();
+  const email   = document.getElementById('gc-purchaser-email').value.trim();
+  const recip   = document.getElementById('gc-recipient-name').value.trim();
+  const sendTo  = document.getElementById('gc-recipient-check').checked;
+  const recipEmail = sendTo ? document.getElementById('gc-recipient-email').value.trim() : '';
+  const errEl   = document.getElementById('gc-inline-error');
+
+  if (!name || !email) { errEl.textContent = 'Completá tu nombre y email.'; errEl.style.display = 'block'; return; }
+  if (!_gcAmt || _gcAmt < 100) { errEl.textContent = 'Elegí un monto (mínimo $100).'; errEl.style.display = 'block'; return; }
+  if (sendTo && !recipEmail) { errEl.textContent = 'Ingresá el email del destinatario.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('gc-submit-btn');
+  btn.disabled = true;
+  btn.textContent = _gcPayMethod === 'mp' ? 'Redirigiendo...' : 'Procesando...';
+
+  try {
+    const res = await fetch('/api/gift-cards/purchase', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        purchaser_name: name, purchaser_email: email,
+        recipient_name: recip, recipient_email: recipEmail,
+        amount: _gcAmt, payment_method: _gcPayMethod,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Error al procesar. Intentá de nuevo.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = _gcPayMethod === 'mp' ? 'Pagar con Mercado Pago 💳' : 'Comprar gift card 🎁';
+      return;
+    }
+    if (data.mp_url) { window.location.href = data.mp_url; return; }
+
+    // Transferencia: mostrar pantalla de éxito inline
+    document.getElementById('gc-form-wrap').style.display = 'none';
+    document.getElementById('gc-success-wrap').style.display = '';
+    document.getElementById('gc-success-amount').textContent = `$${_gcAmt.toLocaleString('es-UY')}`;
+    // La gift card queda pendiente hasta que Maru confirme el pago — no hay code aún
+    document.getElementById('gc-success-code').style.display = 'none';
+    document.querySelector('#gc-success-wrap h2').textContent = '¡Pedido recibido!';
+    document.querySelector('#gc-success-wrap .success-icon').innerHTML = '<div style="font-size:3rem">🎁</div>';
+    document.querySelector('#gc-success-wrap p').textContent = 'Te avisamos por email cuando tu pago sea confirmado y el código quede activo.';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch(e) {
+    errEl.textContent = 'Error de conexión. Intentá de nuevo.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = _gcPayMethod === 'mp' ? 'Pagar con Mercado Pago 💳' : 'Comprar gift card 🎁';
+  }
+}
+
+function gcDone() {
+  document.getElementById('section-gift').style.display = 'none';
+  document.getElementById('progress-bar').style.display = '';
+  goStep(1);
+}
+
+function gcBuyAnother() {
+  document.getElementById('gc-success-wrap').style.display = 'none';
+  document.getElementById('gc-form-wrap').style.display = '';
+  // Reset form fields
+  _gcAmt = 0;
+  document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('gc-custom-amt').value = '';
+  ['gc-purchaser-name','gc-purchaser-email','gc-recipient-name','gc-recipient-email'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('gc-recipient-check').checked = false;
+  document.getElementById('gc-recipient-email-wrap').style.display = 'none';
+  document.getElementById('gc-inline-error').style.display = 'none';
+  const btn = document.getElementById('gc-submit-btn');
+  btn.disabled = false; btn.textContent = 'Comprar gift card 🎁'; btn.style.background = '';
+  gcSetPayMethod('transfer');
+  document.getElementById('gc-success-code').style.display = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function goStep(step) {

@@ -415,6 +415,35 @@ async function sendGiftCard({ purchaser_name, purchaser_email, recipient_name, c
   return sendMail({ to: purchaser_email, subject: `🎁 Tu gift card de ${biz} — ${code}`, html }, settings);
 }
 
+async function sendGiftCardRecipient({ purchaser_name, recipient_name, recipient_email, code, amount, business_name }, settings) {
+  const biz = business_name || 'Mi Piel';
+  const greeting = recipient_name ? `Hola <strong>${recipient_name}</strong>` : 'Hola';
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Inter,sans-serif">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e8e8e8">
+    <div style="background:#2d6a4f;padding:28px 32px;text-align:center">
+      <h1 style="color:white;font-size:1.3rem;font-weight:700;margin:0">🎁 ¡Te regalaron una gift card!</h1>
+    </div>
+    <div style="padding:32px">
+      <p style="font-size:1rem;color:#111;margin:0 0 12px">${greeting},</p>
+      <p style="font-size:0.93rem;color:#444;line-height:1.65;margin:0 0 24px">
+        <strong>${purchaser_name}</strong> te regaló una gift card para usar en <strong>${biz}</strong>. ¡Ya podés reservar tu turno y aplicar el código al pagar!
+      </p>
+      <div style="background:#f0f7f3;border:2px dashed #2d6a4f;border-radius:12px;padding:24px;text-align:center;margin:0 0 24px">
+        <div style="font-size:0.78rem;color:#888;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Tu código de regalo</div>
+        <div style="font-size:2rem;font-weight:800;color:#2d6a4f;letter-spacing:0.12em;font-family:monospace">${code}</div>
+        <div style="margin-top:12px;font-size:1.1rem;font-weight:700;color:#111">$ ${Number(amount).toLocaleString('es-UY')}</div>
+      </div>
+      <p style="font-size:0.85rem;color:#888;line-height:1.6;margin:0">
+        Ingresá este código al hacer tu reserva online en <strong>${biz}</strong>. El saldo se descuenta automáticamente del precio del servicio.
+      </p>
+    </div>
+    <div style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:0.78rem;color:#aaa">© ${new Date().getFullYear()} ${biz}</div>
+  </div>
+</body></html>`;
+  return sendMail({ to: recipient_email, subject: `🎁 ${purchaser_name} te regaló una gift card de ${biz}`, html }, settings);
+}
+
 module.exports = {
   sendMail,
   sendConfirmation,
@@ -424,6 +453,7 @@ module.exports = {
   sendWeeklySummary,
   sendReviewRequest,
   sendGiftCard,
+  sendGiftCardRecipient,
   testConnection,
   getStatus,
 };

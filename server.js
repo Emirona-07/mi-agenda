@@ -146,16 +146,26 @@ function pickSettings(body) {
   return Object.fromEntries(Object.entries(body || {}).filter(([key]) => allowed.has(key)));
 }
 
-async function sendGiftCardEmail(gc, settings) {
-  if (!gc?.purchaser_email) return { ok: false, reason: 'sin_destinatario' };
-  return emailSvc.sendGiftCard({
-    purchaser_name: gc.purchaser_name,
-    purchaser_email: gc.purchaser_email,
-    recipient_name: gc.recipient_name,
-    code: gc.code,
-    amount: gc.amount,
-    business_name: settings.business_name || 'Mi Piel',
-  }, settings);
+async function sendGiftCardEmails(gc, settings) {
+  const biz = settings.business_name || 'Mi Piel';
+  const tasks = [];
+  if (gc?.purchaser_email) {
+    tasks.push(emailSvc.sendGiftCard({
+      purchaser_name: gc.purchaser_name,
+      purchaser_email: gc.purchaser_email,
+      recipient_name: gc.recipient_name,
+      code: gc.code, amount: gc.amount, business_name: biz,
+    }, settings));
+  }
+  if (gc?.recipient_email) {
+    tasks.push(emailSvc.sendGiftCardRecipient({
+      purchaser_name: gc.purchaser_name,
+      recipient_name: gc.recipient_name,
+      recipient_email: gc.recipient_email,
+      code: gc.code, amount: gc.amount, business_name: biz,
+    }, settings));
+  }
+  await Promise.allSettled(tasks);
 }
 
 async function verifyGoogleToken(credential) {
@@ -394,7 +404,7 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
           const gc = db.getGiftCardById(gcId);
           if (gc) {
             const s = db.getSettings();
-            await sendGiftCardEmail(gc, s).catch(() => {});
+            await sendGiftCardEmails(gc, s).catch(() => {});
             console.log(`Gift card activada: #${gcId} código ${gc.code}`);
           }
         }
@@ -775,19 +785,21 @@ app.post('/api/gift-cards/check', (req, res) => {
 app.post('/api/gift-cards/purchase', async (req, res) => {
   const purchaser_name = sanitizeOptional(req.body.purchaser_name, 120);
   const purchaser_email = sanitizeOptional(req.body.purchaser_email, 160);
-  const recipient_name = sanitizeOptional(req.body.recipient_name, 120);
+  const recipient_name  = sanitizeOptional(req.body.recipient_name, 120);
+  const recipient_email = req.body.recipient_email ? sanitizeOptional(req.body.recipient_email, 160) : '';
   const note = sanitizeOptional(req.body.note, 1000);
   const amount = parseInt(req.body.amount, 10);
   const payment_method = req.body.payment_method;
   if (!purchaser_name || !purchaser_email || !amount || amount < 100)
     return res.status(400).json({ error: 'Faltan datos o monto inválido' });
   if (!isValidEmail(purchaser_email)) return res.status(400).json({ error: 'Email inválido' });
+  if (recipient_email && !isValidEmail(recipient_email)) return res.status(400).json({ error: 'Email del destinatario inválido' });
   const s = db.getSettings();
   const mpSurchargePct = (payment_method === 'mp') ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
   const finalAmount = Math.round(parseInt(amount) * (1 + mpSurchargePct));
   // Queda pendiente hasta confirmación de MP o activación manual de transferencia.
   const status = 'pending';
-  const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, note, status });
+  const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, recipient_email, note, status });
 
   if (payment_method === 'mp' && mpClient) {
     try {
@@ -839,12 +851,15 @@ app.put('/api/admin/gift-cards/:id/activate', requireAuth, (req, res) => {
   const id = parseInt(req.params.id);
   db.activateGiftCard(id);
   const gc = db.getGiftCardById(id);
-  if (gc) sendGiftCardEmail(gc, db.getSettings()).catch(() => {});
+  if (gc) sendGiftCardEmails(gc, db.getSettings()).catch(() => {});
   res.json({ success: true });
 });
 
 // ─── MÉTRICAS ─────────────────────────────────────────────────────────────────
-app.get('/api/admin/metrics', requireAuth, (req, res) => res.json(db.getMetrics()));
+app.get('/api/admin/metrics', requireAuth, (req, res) => {
+  const { year, month } = req.query;
+  res.json(db.getMetrics({ year, month }));
+});
 
 // ─── CRON: recordatorio configurable (cada hora) ─────────────────────────────
 cron.schedule('0 * * * *', async () => {

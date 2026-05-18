@@ -222,12 +222,24 @@
           <div id="metrics-chart" style="min-height:120px"></div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>📊 Este mes</h3></div>
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <h3 id="metrics-kpi-title">📊 Este mes</h3>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="metrics-month-sel" onchange="onMetricsMonthChange()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:white;color:var(--text)">
+                <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+                <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+                <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+              <select id="metrics-year-sel" onchange="onMetricsMonthChange()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:white;color:var(--text)">
+              </select>
+            </div>
+          </div>
           <div id="metrics-kpi"></div>
         </div>
       </div>
       <div class="card mt-2">
-        <div class="card-header"><h3>🏆 Servicios más reservados (este mes)</h3></div>
+        <div class="card-header"><h3 id="metrics-services-title">🏆 Servicios más reservados</h3></div>
         <div id="metrics-services"></div>
       </div>
     </div>
@@ -703,55 +715,91 @@ async function loadDashboard() {
     : '<div class="empty-state"><div class="emoji">✨</div><p>No hay citas próximas</p></div>';
 
   // Métricas
-  loadMetrics();
+  initMetricsSelectors(); loadMetrics();
 }
 
-async function loadMetrics() {
-  let m;
-  try { m = await api('/api/admin/metrics'); } catch(e) {
+function initMetricsSelectors() {
+  const now = new Date();
+  const yearSel = $('metrics-year-sel');
+  const monthSel = $('metrics-month-sel');
+  if (!yearSel || !monthSel) return;
+  const curY = now.getFullYear();
+  for (let y = curY; y >= curY - 2; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    yearSel.appendChild(opt);
+  }
+  yearSel.value = curY;
+  monthSel.value = now.getMonth() + 1;
+}
+
+function onMetricsMonthChange() {
+  const year  = parseInt($('metrics-year-sel')?.value  || new Date().getFullYear());
+  const month = parseInt($('metrics-month-sel')?.value || new Date().getMonth() + 1);
+  loadMetrics({ year, month });
+}
+
+async function loadMetrics({ year, month } = {}) {
+  const now = new Date();
+  const y = year  || now.getFullYear();
+  const m = month || (now.getMonth() + 1);
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const label = `${monthNames[m-1]} ${y}`;
+  const isCurrentMonth = (y === now.getFullYear() && m === now.getMonth() + 1);
+
+  // Sync selectors if called programmatically
+  if ($('metrics-year-sel'))  $('metrics-year-sel').value  = y;
+  if ($('metrics-month-sel')) $('metrics-month-sel').value = m;
+
+  let met;
+  try { met = await api(`/api/admin/metrics?year=${y}&month=${m}`); } catch(e) {
     ['metrics-chart','metrics-kpi','metrics-services'].forEach(id => {
       const el = $(id); if(el) el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.82rem">No se pudieron cargar los datos.</div>';
     });
     return;
   }
-  if (!m || m.error) return;
+  if (!met || met.error) return;
   const cur = settings.currency || '$';
 
-  // Gráfico de barras (SVG inline)
+  // Update dynamic titles
+  if ($('metrics-kpi-title'))      $('metrics-kpi-title').textContent      = `📊 ${isCurrentMonth ? 'Este mes' : label}`;
+  if ($('metrics-services-title')) $('metrics-services-title').textContent = `🏆 Servicios más reservados${isCurrentMonth ? ' (este mes)' : ' — ' + label}`;
+
+  // Bar chart (last 12 months — always current, not filtered by selector)
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const maxRev = Math.max(...m.monthly.map(r => r.revenue), 1);
-  const barW = 100 / Math.max(m.monthly.length, 1);
-  const bars = m.monthly.map((r, i) => {
+  const maxRev = Math.max(...met.monthly.map(r => r.revenue), 1);
+  const barW = 100 / Math.max(met.monthly.length, 1);
+  const bars = met.monthly.map((r, i) => {
     const h = Math.max((r.revenue / maxRev) * 100, 2);
     const mo = parseInt(r.month) - 1;
     return `<g>
       <rect x="${i * barW + 0.5}%" y="${100 - h}%" width="${barW - 1}%" height="${h}%"
         fill="var(--green)" rx="3" opacity="0.85">
-        <title>${months[mo]} — ${cur}${r.revenue.toLocaleString()} (${r.bookings} citas)</title>
+        <title>${months[mo]} ${r.year} — ${cur}${r.revenue.toLocaleString()} (${r.bookings} citas)</title>
       </rect>
       <text x="${i * barW + barW/2}%" y="100%" dy="-2" text-anchor="middle"
         font-size="9" fill="var(--muted)">${months[mo]}</text>
     </g>`;
   }).join('');
-  $('metrics-chart').innerHTML = m.monthly.length
+  $('metrics-chart').innerHTML = met.monthly.length
     ? `<svg viewBox="0 0 100 70" preserveAspectRatio="none" style="width:100%;height:130px;display:block;overflow:visible">${bars}</svg>`
     : '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem">Sin datos aún</div>';
 
-  // KPIs del mes
+  // KPIs
   $('metrics-kpi').innerHTML = [
-    { icon: '❌', label: 'Cancelaciones', val: `${m.cancelRate}%` },
-    { icon: '🆕', label: 'Clientes nuevos', val: m.newClients },
-    { icon: '💵', label: 'Ticket promedio', val: m.avgTicket > 0 ? `${cur}${m.avgTicket.toLocaleString()}` : '—' },
+    { icon: '❌', label: 'Cancelaciones', val: `${met.cancelRate}%` },
+    { icon: '🆕', label: 'Clientes nuevos', val: met.newClients },
+    { icon: '💵', label: 'Ticket promedio', val: met.avgTicket > 0 ? `${cur}${met.avgTicket.toLocaleString()}` : '—' },
   ].map(k => `
     <div class="detail-row">
       <span style="font-size:0.88rem;color:var(--muted)">${k.icon} ${k.label}</span>
       <span style="font-weight:700;font-size:0.95rem">${k.val}</span>
     </div>`).join('');
 
-  // Top servicios
-  $('metrics-services').innerHTML = m.topServices.length
-    ? m.topServices.map((s, i) => {
-        const maxB = m.topServices[0].bookings;
+  // Top services
+  $('metrics-services').innerHTML = met.topServices.length
+    ? met.topServices.map((s, i) => {
+        const maxB = met.topServices[0].bookings;
         const pct = Math.round((s.bookings / maxB) * 100);
         return `<div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;font-size:0.87rem;margin-bottom:4px">
@@ -785,7 +833,7 @@ async function loadGiftCards() {
     used:   '<span class="badge badge-completed">Usada</span>',
     cancelled: '<span class="badge badge-cancelled">Cancelada</span>',
   }[s] || s);
-  wrap.innerHTML = `<table class="data-table">
+  wrap.innerHTML = `<div style="overflow-x:auto"><table class="data-table">
     <thead><tr><th>Código</th><th>Monto</th><th>Saldo</th><th>Comprador</th><th>Para</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
     <tbody>${cards.map(gc => `<tr>
       <td style="font-family:monospace;font-weight:700;letter-spacing:0.05em">${escapeHtml(gc.code)}</td>
@@ -800,7 +848,7 @@ async function loadGiftCards() {
         ${['pending','cancelled'].includes(gc.status) ? `<button class="btn btn-sm btn-primary" onclick="activateGc(${gc.id})">Activar</button>` : ''}
       </td>
     </tr>`).join('')}</tbody>
-  </table>`;
+  </table></div>`;
 }
 
 async function createGiftCardAdmin() {

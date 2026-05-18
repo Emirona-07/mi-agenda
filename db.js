@@ -778,6 +778,7 @@ db.exec(`
 try { db.exec("ALTER TABLE bookings ADD COLUMN review_sent INTEGER DEFAULT 0"); } catch(_e) {}
 try { db.exec("ALTER TABLE bookings ADD COLUMN gift_card_code TEXT"); } catch(_e) {}
 try { db.exec("ALTER TABLE bookings ADD COLUMN gift_card_discount INTEGER DEFAULT 0"); } catch(_e) {}
+try { db.exec("ALTER TABLE gift_cards ADD COLUMN recipient_email TEXT"); } catch(_e) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS gift_cards (
@@ -857,11 +858,11 @@ function _gcCode() {
   return `${part(4)}-${part(4)}`;
 }
 
-function createGiftCard({ amount, purchaser_name, purchaser_email, recipient_name, note, status }) {
+function createGiftCard({ amount, purchaser_name, purchaser_email, recipient_name, recipient_email, note, status }) {
   const code = _gcCode();
   const gcStatus = status || 'active';
-  db.prepare(`INSERT INTO gift_cards (code, amount, balance, purchaser_name, purchaser_email, recipient_name, note, status)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(code, amount, amount, purchaser_name||'', purchaser_email||'', recipient_name||'', note||'', gcStatus);
+  db.prepare(`INSERT INTO gift_cards (code, amount, balance, purchaser_name, purchaser_email, recipient_name, recipient_email, note, status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(code, amount, amount, purchaser_name||'', purchaser_email||'', recipient_name||'', recipient_email||'', note||'', gcStatus);
   return db.prepare('SELECT * FROM gift_cards WHERE code=?').get(code);
 }
 
@@ -898,10 +899,10 @@ function activateGiftCard(id) {
 }
 
 // ─── MÉTRICAS ─────────────────────────────────────────────────────────────────
-function getMetrics() {
+function getMetrics({ year, month } = {}) {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
+  const y = year  ? parseInt(year)  : now.getFullYear();
+  const m = month ? parseInt(month) : now.getMonth() + 1;
   const ym = `${y}-${String(m).padStart(2,'0')}`;
 
   const monthly = db.prepare(`
