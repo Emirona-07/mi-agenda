@@ -443,10 +443,25 @@
   </div>
 
   <script>
-    // Token: URL param tiene prioridad (primer acceso), luego localStorage (lanzamiento desde inicio)
+    // Token: URL param → cookie → localStorage
+    // Las cookies se comparten entre Safari y modo standalone (a diferencia de localStorage)
+    function getCookie(name) {
+      const m = document.cookie.match('(^|;)\\s*' + name + '=([^;]+)');
+      return m ? decodeURIComponent(m[2]) : '';
+    }
+    function setCookie(name, value) {
+      document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Strict`;
+    }
+    function clearCookie(name) {
+      document.cookie = `${name}=; path=/; max-age=0`;
+    }
+
     const urlToken = new URLSearchParams(location.search).get('token') || '';
-    if (urlToken) localStorage.setItem('qp_token', urlToken);
-    const token = urlToken || localStorage.getItem('qp_token') || '';
+    if (urlToken) {
+      setCookie('qp_token', urlToken);
+      localStorage.setItem('qp_token', urlToken);
+    }
+    const token = urlToken || getCookie('qp_token') || localStorage.getItem('qp_token') || '';
 
     let bookings = [];
     let selectedId = null;
@@ -467,6 +482,7 @@
         if (!res.ok) {
           if (res.status === 401) {
             localStorage.removeItem('qp_token');
+            clearCookie('qp_token');
             showErr('Token vencido. Pedile al admin un nuevo link y abrilo de nuevo.');
           } else {
             showErr(data.error || `Error ${res.status}`);
