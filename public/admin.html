@@ -1638,7 +1638,7 @@ async function loadReviews() {
         <td data-label="Estado">${r.approved ? '<span class="badge badge-confirmed">Publicada</span>' : '<span class="badge badge-pending">Pendiente</span>'}</td>
         <td data-label="Acciones" style="white-space:nowrap;display:flex;gap:6px">
           ${!r.approved ? `<button class="btn btn-sm btn-primary" onclick="approveReview(${r.id})">✓ Publicar</button>` : ''}
-          <button class="btn btn-sm btn-danger" onclick="deleteReview(${r.id})">🗑</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteReview(${r.id})" title="Eliminar reseña">🗑 Eliminar</button>
         </td>
       </tr>`).join('')}
     </tbody>
