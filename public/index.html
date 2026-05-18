@@ -1306,7 +1306,7 @@
   </div>
 </section>
 
-<div class="container">
+<div class="container" id="booking-flow">
   <!-- Progress -->
   <div class="progress" id="progress-bar">
     <div class="step-dot active" id="dot-1">1</div>
@@ -2143,6 +2143,10 @@ async function selectService(id) {
 // ── Gift card inline flow ─────────────────────────────────────────────────────
 function goGiftCard(presetAmount) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector('.about-section').style.display = 'none';
+  const revSec = document.getElementById('reviews-section');
+  if (revSec) revSec.style.display = 'none';
+  document.getElementById('booking-flow').style.display = 'none';
   document.getElementById('progress-bar').style.display = 'none';
   document.getElementById('sticky-cta')?.classList.remove('show');
   document.getElementById('section-gift').style.display = 'block';
@@ -2168,6 +2172,7 @@ function goGiftCard(presetAmount) {
 }
 
 function exitGiftCard() {
+  document.getElementById('booking-flow').style.display = '';
   document.getElementById('section-gift').style.display = 'none';
   document.getElementById('progress-bar').style.display = '';
   goStep(1);
@@ -2315,6 +2320,7 @@ function gcDone() {
   btn.disabled = false; btn.textContent = 'Comprar gift card 🎁'; btn.style.background = '';
 
   document.getElementById('section-gift').style.display = 'none';
+  document.getElementById('booking-flow').style.display = '';
   document.getElementById('progress-bar').style.display = '';
   goStep(1);
 }
@@ -2340,6 +2346,8 @@ function gcBuyAnother() {
 }
 
 function goStep(step) {
+  document.getElementById('booking-flow').style.display = '';
+  document.getElementById('section-gift').style.display = 'none';
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(`step-${step}`).classList.add('active');
   document.getElementById('progress-bar').style.display = '';
@@ -2652,6 +2660,8 @@ async function submitBooking() {
 }
 
 function newBooking() {
+  document.getElementById('booking-flow').style.display = '';
+  document.getElementById('section-gift').style.display = 'none';
   state.selectedService = null; state.selectedProfessional = null;
   state.selectedDate = null; state.selectedTime = null;
   state.calYear = null; state.calMonth = null;
