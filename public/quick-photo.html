@@ -198,8 +198,17 @@
     async function loadBookings() {
       try {
         const res = await fetch(`/api/quick-photo/bookings?token=${encodeURIComponent(token)}`);
-        const data = await res.json();
-        if (!res.ok) { showErr(data.error || 'Error al cargar citas'); return; }
+        let data;
+        try { data = await res.json(); } catch(_) { data = {}; }
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('qp_token');
+            showErr('Token vencido. Pedile al admin un nuevo link y abrilo de nuevo.');
+          } else {
+            showErr(data.error || `Error ${res.status}`);
+          }
+          return;
+        }
 
         bookings = data.bookings || [];
         selectedId = data.current_id || (bookings.length ? bookings[0].id : null);
@@ -209,7 +218,7 @@
 
         if (selectedId) document.getElementById('btn-photo').disabled = false;
       } catch(e) {
-        showErr('Sin conexión');
+        showErr('Error de red: ' + e.message);
       }
     }
 
