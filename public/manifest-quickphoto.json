@@ -1,7 +1,7 @@
 {
-  "name": "Quick Photo · Mi Piel",
-  "short_name": "Quick Photo",
-  "description": "Adjuntar foto a la cita en curso",
+  "name": "Turno · Mi Piel",
+  "short_name": "Turno",
+  "description": "Panel de trabajo: fotos y cobros en cita",
   "start_url": "/quick-photo",
   "scope": "/quick-photo",
   "display": "standalone",

@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Quick Photo">
+  <meta name="apple-mobile-web-app-title" content="Turno">
   <meta name="theme-color" content="#2d6a4f">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest-quickphoto.json">
-  <title>Quick Photo · Mi Piel</title>
+  <title>Turno · Mi Piel</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -90,6 +91,28 @@
     .badge-unpaid  { background: #f8d7da; color: #721c24; }
     .badge-price   { background: #e8f4fd; color: #0c5460; }
 
+    /* Charge button */
+    .btn-charge {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: #1a3a8f;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-charge:active { opacity: .85; transform: scale(.98); }
+    .btn-charge:disabled { background: #8fa3c9; cursor: not-allowed; transform: none; }
+    .btn-charge.paid { background: #155724; cursor: default; }
+
     /* Selector */
     select {
       width: 100%;
@@ -152,13 +175,89 @@
 
     .spinner { display: inline-block; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* QR Overlay */
+    #qr-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.75);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #qr-overlay.active { display: flex; }
+    .qr-box {
+      background: white;
+      border-radius: 24px;
+      padding: 28px 24px 24px;
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+    }
+    .qr-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .qr-amount {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #1a3a8f;
+      letter-spacing: -.02em;
+    }
+    #qr-canvas {
+      border-radius: 12px;
+      display: block;
+    }
+    .qr-hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .qr-waiting {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #856404;
+      background: #fffbeb;
+      padding: 8px 16px;
+      border-radius: 20px;
+    }
+    .qr-success {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #155724;
+      background: #d4edda;
+      padding: 10px 20px;
+      border-radius: 20px;
+      display: none;
+    }
+    .qr-success.active { display: block; }
+    .btn-qr-close {
+      width: 100%;
+      padding: 13px;
+      background: #f3f4f6;
+      color: var(--text);
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .btn-qr-close:active { opacity: .8; }
   </style>
 </head>
 <body>
 
   <header>
-    <span class="logo">📸</span>
-    <h1>Quick Photo · Mi Piel</h1>
+    <span class="logo">⚡</span>
+    <h1>Turno · Mi Piel</h1>
   </header>
 
   <!-- Current booking info -->
@@ -180,6 +279,19 @@
 
   <div id="status"></div>
 
+  <!-- QR Payment Overlay -->
+  <div id="qr-overlay">
+    <div class="qr-box">
+      <div class="qr-title" id="qr-service-label"></div>
+      <div class="qr-amount" id="qr-amount-label"></div>
+      <canvas id="qr-canvas" width="256" height="256"></canvas>
+      <div class="qr-hint">Apuntá la cámara al QR para pagar</div>
+      <div class="qr-waiting" id="qr-waiting"><span class="spinner">⏳</span> Esperando pago…</div>
+      <div class="qr-success" id="qr-success">✅ ¡Pagado!</div>
+      <button class="btn-qr-close" onclick="closeQR()">Cerrar</button>
+    </div>
+  </div>
+
   <script>
     // Token: URL param tiene prioridad (primer acceso), luego localStorage (lanzamiento desde inicio)
     const urlToken = new URLSearchParams(location.search).get('token') || '';
@@ -188,6 +300,7 @@
 
     let bookings = [];
     let selectedId = null;
+    let _pollTimer = null;
 
     if (!token) {
       showErr('Token inválido. Pedile el link al admin.');
@@ -288,6 +401,17 @@
         : b.date === tomorrow ? 'Mañana'
         : d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
 
+      // Botón cobrar: solo si hay monto y no está pagado completo
+      const depositPaid = b.deposit_paid || 0;
+      const remaining = ps === 'deposit' ? Math.max(0, price - depositPaid) : price;
+      let chargeBtn = '';
+      if (ps === 'full') {
+        chargeBtn = `<button class="btn-charge paid" disabled>✅ Cobrado</button>`;
+      } else if (remaining > 0) {
+        const label = ps === 'deposit' ? `Cobrar saldo $${remaining.toLocaleString('es')}` : `Cobrar $${remaining.toLocaleString('es')}`;
+        chargeBtn = `<button class="btn-charge" onclick="startCharge(${b.id})">💳 ${label}</button>`;
+      }
+
       el.innerHTML = `
         <div class="booking-name">${esc(b.client_name)}</div>
         <div class="booking-service">${esc(b.service_name)}</div>
@@ -297,7 +421,8 @@
           ${priceBadge}
           ${methodBadge}
           ${gcBadge}
-        </div>`;
+        </div>
+        ${chargeBtn}`;
     }
 
     function takePicture() {
@@ -336,6 +461,101 @@
       btn.disabled = false;
       e.target.value = '';
     });
+
+    // ─── Cobro QR ─────────────────────────────────────────────────────────────
+
+    async function startCharge(bookingId) {
+      const b = bookings.find(x => x.id === bookingId);
+      if (!b) return;
+
+      // Mostrar overlay con spinner mientras carga
+      const overlay = document.getElementById('qr-overlay');
+      document.getElementById('qr-service-label').textContent = `${b.service_name} · ${b.client_name}`;
+      document.getElementById('qr-amount-label').textContent = '';
+      document.getElementById('qr-waiting').style.display = 'block';
+      document.getElementById('qr-success').classList.remove('active');
+      const canvas = document.getElementById('qr-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      overlay.classList.add('active');
+
+      try {
+        const res = await fetch(`/api/quick-photo/charge?token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking_id: bookingId }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          overlay.classList.remove('active');
+          setStatus('err', '❌ ' + (data.error || 'Error al generar QR'));
+          return;
+        }
+
+        if (data.already_paid) {
+          overlay.classList.remove('active');
+          // Recargar bookings para reflejar estado
+          await loadBookings();
+          setStatus('ok', '✅ Ya estaba pagado');
+          return;
+        }
+
+        // Mostrar monto y QR
+        document.getElementById('qr-amount-label').textContent = `$${data.amount.toLocaleString('es')}`;
+        await QRCode.toCanvas(canvas, data.init_point, {
+          width: 256,
+          margin: 2,
+          color: { dark: '#000000', light: '#ffffff' },
+        });
+
+        // Empezar polling
+        startPolling(bookingId);
+
+      } catch(e) {
+        overlay.classList.remove('active');
+        setStatus('err', '❌ Sin conexión');
+      }
+    }
+
+    function startPolling(bookingId) {
+      stopPolling();
+      _pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/quick-photo/payment-status?token=${encodeURIComponent(token)}&booking_id=${bookingId}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.payment_status === 'full') {
+            stopPolling();
+            showQRSuccess(bookingId);
+          }
+        } catch(_) {}
+      }, 3000);
+    }
+
+    function stopPolling() {
+      if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+    }
+
+    async function showQRSuccess(bookingId) {
+      document.getElementById('qr-waiting').style.display = 'none';
+      document.getElementById('qr-success').classList.add('active');
+      // Actualizar la lista local para reflejar el pago
+      const b = bookings.find(x => x.id === bookingId);
+      if (b) b.payment_status = 'full';
+      // Auto-cerrar tras 3 segundos
+      setTimeout(() => {
+        closeQR();
+        renderBookingInfo();
+      }, 3000);
+    }
+
+    function closeQR() {
+      stopPolling();
+      document.getElementById('qr-overlay').classList.remove('active');
+    }
+
+    // ─── Utils ────────────────────────────────────────────────────────────────
 
     function setStatus(cls, html) {
       const el = document.getElementById('status');
