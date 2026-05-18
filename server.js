@@ -1170,6 +1170,22 @@ app.post('/api/quick-photo/mark-paid', (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/quick-photo/note', (req, res) => {
+  const token = req.query.token || '';
+  const expected = getOrCreateQuickPhotoToken();
+  if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
+
+  const bookingId = parseInt(req.body.booking_id);
+  const notes_public = (req.body.notes_public || '').trim();
+  if (!bookingId) return res.status(400).json({ error: 'booking_id requerido' });
+
+  const booking = db.getBookingById(bookingId);
+  if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
+
+  db.updateBookingPublicNote(bookingId, notes_public);
+  res.json({ ok: true });
+});
+
 // Recibe una foto, la adjunta a la cita en progreso del día
 app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
   const token = req.headers['x-quick-token'] || req.query.token || '';
@@ -1218,9 +1234,10 @@ app.get('/gift', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gift
 app.get('/api/admin/quick-photo-link', requireAuth, (req, res) => {
   const token = getOrCreateQuickPhotoToken();
   const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
-  res.json({ url: `${publicUrl}/quick-photo?token=${token}` });
+  res.json({ url: `${publicUrl}/turno?token=${token}` });
 });
-app.get('/quick-photo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'quick-photo.html')));
+app.get('/turno', (req, res) => res.sendFile(path.join(__dirname, 'public', 'quick-photo.html')));
+app.get('/quick-photo', (req, res) => res.redirect(301, '/turno' + (req.query.token ? `?token=${req.query.token}` : '')));
 
 // ─── GIFT CARDS (público) ────────────────────────────────────────────────────
 app.post('/api/gift-cards/check', (req, res) => {

@@ -354,6 +354,32 @@
       font-family: inherit;
     }
     .btn-confirm-cancel:active { background: #f3f4f6; }
+
+    /* Note card */
+    .note-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      color: var(--text);
+      background: white;
+      resize: vertical;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .note-textarea:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(26,122,86,.08); }
+    .note-save-status {
+      font-size: 0.72rem;
+      color: var(--text-3);
+      margin-top: 5px;
+      min-height: 14px;
+      transition: color .2s;
+    }
+    .note-save-status.saved { color: var(--p); }
+    .note-save-status.saving { color: var(--text-3); }
   </style>
 </head>
 <body>
@@ -367,6 +393,13 @@
   <div class="card" id="booking-card">
     <div class="card-label">Cita seleccionada</div>
     <div id="booking-info"><span class="spinner">⏳</span> Cargando…</div>
+  </div>
+
+  <!-- Public note for client -->
+  <div class="card" id="note-card" style="display:none">
+    <div class="card-label">Comentario para la cliente</div>
+    <textarea class="note-textarea" id="note-textarea" placeholder="Ej: Se trató zona de cejas y frente. Próxima sesión en 4 semanas…" oninput="scheduleNoteSave()" onblur="saveNoteNow()"></textarea>
+    <div class="note-save-status" id="note-status"></div>
   </div>
 
   <!-- Booking selector -->
@@ -418,6 +451,7 @@
     let bookings = [];
     let selectedId = null;
     let _pollTimer = null;
+    let _noteTimer = null;
 
     if (!token) {
       showErr('Token inválido. Pedile el link al admin.');
@@ -476,7 +510,54 @@
     function selectBooking(id) {
       selectedId = parseInt(id);
       renderBookingInfo();
+      updateNoteCard();
       document.getElementById('btn-photo').disabled = !selectedId;
+    }
+
+    function updateNoteCard() {
+      const noteCard = document.getElementById('note-card');
+      const textarea = document.getElementById('note-textarea');
+      const b = bookings.find(x => x.id === selectedId);
+      if (!b) { noteCard.style.display = 'none'; return; }
+      noteCard.style.display = 'block';
+      textarea.value = b.notes_public || '';
+      document.getElementById('note-status').textContent = '';
+      document.getElementById('note-status').className = 'note-save-status';
+    }
+
+    function scheduleNoteSave() {
+      clearTimeout(_noteTimer);
+      const status = document.getElementById('note-status');
+      status.textContent = 'Escribiendo…';
+      status.className = 'note-save-status saving';
+      _noteTimer = setTimeout(saveNoteNow, 1500);
+    }
+
+    async function saveNoteNow() {
+      clearTimeout(_noteTimer);
+      if (!selectedId) return;
+      const textarea = document.getElementById('note-textarea');
+      const status = document.getElementById('note-status');
+      const text = textarea.value;
+      // Update local copy
+      const b = bookings.find(x => x.id === selectedId);
+      if (b) b.notes_public = text;
+      try {
+        const res = await fetch(`/api/quick-photo/note?token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking_id: selectedId, notes_public: text }),
+        });
+        if (res.ok) {
+          status.textContent = 'Guardado';
+          status.className = 'note-save-status saved';
+          setTimeout(() => { status.textContent = ''; status.className = 'note-save-status'; }, 2000);
+        } else {
+          status.textContent = 'Error al guardar';
+        }
+      } catch {
+        status.textContent = 'Sin conexión';
+      }
     }
 
     function renderBookingInfo() {

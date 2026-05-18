@@ -1949,6 +1949,9 @@ function bookingCardHtml(b, fmtDate, canCancel) {
       </div>
     </div>`;
   }
+  const publicNote = b.notes_public
+    ? `<div style="margin-top:10px;padding:10px 12px;background:var(--p-light);border-radius:8px;font-size:0.85rem;color:var(--text);border-left:3px solid var(--p)">${escapeHtml(b.notes_public)}</div>`
+    : '';
   const photosBtn = `<div class="cancel-area" style="margin-top:8px">
     <button class="btn-cancel" style="color:var(--p);border-color:var(--p-light)" onclick="loadBookingPhotos(${b.id}, this)">📷 Ver fotos</button>
     <div id="photos-${b.id}" style="margin-top:8px;display:none"></div>
@@ -1966,6 +1969,7 @@ function bookingCardHtml(b, fmtDate, canCancel) {
       </div>
       ${b.notes_admin ? `<div style="margin-top:8px;padding:8px 10px;background:var(--p-light);border-radius:6px;font-size:0.82rem;color:var(--p-dark)">📝 ${escapeHtml(b.notes_admin)}</div>` : ''}
       ${cancelArea}
+      ${publicNote}
       ${photosBtn}
     </div>`;
 }

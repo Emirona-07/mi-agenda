@@ -706,6 +706,7 @@ const _migrations = [
   "ALTER TABLE bookings ADD COLUMN mp_url_deposit TEXT",
   "ALTER TABLE bookings ADD COLUMN mp_url_full TEXT",
   "ALTER TABLE services ADD COLUMN photo TEXT",
+  "ALTER TABLE bookings ADD COLUMN notes_public TEXT",
 ];
 for (const _m of _migrations) { try { db.exec(_m); } catch (_e) {} }
 
@@ -738,6 +739,10 @@ function deleteBookingPhoto(photoId) {
 function updateBookingAdmin(id, { notes_admin, payment_status }) {
   if (notes_admin !== undefined) db.prepare('UPDATE bookings SET notes_admin = ? WHERE id = ?').run(notes_admin, id);
   if (payment_status !== undefined) db.prepare('UPDATE bookings SET payment_status = ? WHERE id = ?').run(payment_status, id);
+}
+
+function updateBookingPublicNote(id, notes_public) {
+  db.prepare('UPDATE bookings SET notes_public = ? WHERE id = ?').run(notes_public, id);
 }
 
 function getCurrentBooking() {
@@ -1049,7 +1054,7 @@ module.exports = {
   createBooking, createBookingAtomic, getBookings, getBookingById, updateBooking, cancelBooking,
   getDashboardStats, getRevenue,
   findOrCreateClientByGoogle, cancelClientBooking,
-  addBookingPhoto, getBookingPhotos, deleteBookingPhoto, updateBookingAdmin,
+  addBookingPhoto, getBookingPhotos, deleteBookingPhoto, updateBookingAdmin, updateBookingPublicNote,
   getBookingsNeedingReminder, markReminderSent, getWeekBookings,
   updateBookingPayment,
   getBookingsNeedingReview, markReviewSent, createReviewToken,
