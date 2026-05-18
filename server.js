@@ -13,9 +13,16 @@ const session = require('express-session');
 const path = require('path');
 const db = require('./db');
 const wa = require('./whatsapp');
+const { hashPassword, isPasswordHash, verifyPassword } = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
+const sessionSecret = process.env.SESSION_SECRET
+  || process.env.ADMIN_PASSWORD
+  || require('crypto').randomBytes(32).toString('hex');
+
+app.set('trust proxy', 1);
 
 // ─── Uploads ──────────────────────────────────────────────────────────────────
 const { mkdirSync } = require('fs');
@@ -41,11 +48,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', require('express').static(uploadsDir));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
+  name: 'mi_agenda.sid',
   store: db.createSessionStore(session),
-  secret: process.env.SESSION_SECRET || 'agenda-secret-2024',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+  }
 }));
 
 function requireAuth(req, res, next) {
@@ -383,9 +396,15 @@ app.post('/api/client/logout', (req, res) => {
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
   const s = db.getSettings();
-  const correct = s.admin_password || process.env.ADMIN_PASSWORD || 'admin123';
-  if (password === correct) { req.session.authenticated = true; res.json({ success: true }); }
-  else res.status(401).json({ error: 'Contraseña incorrecta' });
+  const stored = s.admin_password || process.env.ADMIN_PASSWORD || '';
+  if (!password || !verifyPassword(password, stored)) {
+    return res.status(401).json({ error: 'Contraseña incorrecta' });
+  }
+  if (!isPasswordHash(stored)) {
+    db.updateSettings({ admin_password: hashPassword(password) });
+  }
+  req.session.authenticated = true;
+  res.json({ success: true });
 });
 
 app.post('/api/admin/logout', (req, res) => { req.session.destroy(); res.json({ success: true }); });
@@ -506,7 +525,9 @@ app.get('/api/admin/revenue', requireAuth, (req, res) => {
 // Settings
 app.get('/api/admin/settings', requireAuth, (req, res) => res.json(db.getSettings()));
 app.put('/api/admin/settings', requireAuth, (req, res) => {
-  db.updateSettings(req.body);
+  const data = { ...req.body };
+  if (data.admin_password) data.admin_password = hashPassword(data.admin_password);
+  db.updateSettings(data);
   res.json({ success: true });
 });
 
@@ -822,11 +843,8 @@ app.listen(PORT, () => {
   console.log(`\n✅ Agenda corriendo en http://localhost:${PORT}`);
   console.log(`📅 Página de reservas: http://localhost:${PORT}`);
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
-  console.log(`   Contraseña admin:   admin123 (cambiala en Configuración)\n`);
+  console.log(`   Contraseña admin:   configurala desde ADMIN_PASSWORD o el panel\n`);
 });
-
-
-
 
 
 

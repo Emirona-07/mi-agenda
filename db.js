@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { hashPassword } = require('./auth');
 
 const DB_DIR = process.env.DATABASE_PATH
   ? path.dirname(process.env.DATABASE_PATH)
@@ -10,6 +11,7 @@ fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 console.log(`SQLite database: ${DB_PATH}`);
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS settings (
@@ -101,7 +103,7 @@ const initSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALU
   ['business_description', 'Reserva tu turno online'],
   ['business_address', ''],
   ['whatsapp_phone', ''],
-  ['admin_password', 'admin123'],
+  ['admin_password', process.env.ADMIN_PASSWORD ? hashPassword(process.env.ADMIN_PASSWORD) : ''],
   ['booking_advance_days', '60'],
   ['slot_interval', '30'],
   ['currency', '$'],
@@ -930,6 +932,5 @@ module.exports = {
   getMetrics,
   createSessionStore,
 };
-
 
 
