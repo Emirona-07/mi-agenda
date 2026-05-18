@@ -8,90 +8,106 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #f5f5f5; min-height: 100vh;
+    :root {
+      --p: #1a7a56;
+      --p-light: #eaf5f0;
+      --p-hover: #158a5e;
+      --text: #111827;
+      --text-2: #6b7280;
+      --text-3: #9ca3af;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); min-height: 100vh;
       display: flex; align-items: center; justify-content: center; padding: 24px 16px; -webkit-font-smoothing: antialiased; }
-    .card { background: white; border-radius: 16px; max-width: 500px; width: 100%;
-      overflow: hidden; border: 1px solid #e8e8e8; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-    .header { background: #2d6a4f; padding: 28px 32px; text-align: center; }
-    .header h1 { color: white; font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
-    .header p { color: rgba(255,255,255,0.75); font-size: 0.83rem; }
-    .body { padding: 32px; }
-    .section-label { font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase;
+    .card { background: white; border-radius: 14px; max-width: 480px; width: 100%;
+      overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+    .header { padding: 28px 32px 24px; border-bottom: 1px solid var(--border); }
+    .header h1 { color: var(--text); font-size: 1.2rem; font-weight: 700; margin-bottom: 3px; }
+    .header p { color: var(--text-2); font-size: 0.82rem; }
+    .body { padding: 28px 32px; }
+    .section-label { font-size: 0.68rem; font-weight: 700; color: var(--text-3); text-transform: uppercase;
       letter-spacing: 0.07em; margin-bottom: 10px; }
-    .form-group { margin-bottom: 18px; }
-    .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #555; margin-bottom: 6px; }
-    input, textarea { width: 100%; padding: 11px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px;
-      font-size: 1rem; font-family: inherit; outline: none; transition: border-color 0.2s; color: #111; }
-    input:focus, textarea:focus { border-color: #2d6a4f; }
-    input::placeholder, textarea::placeholder { color: #bbb; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+    input, textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
+      font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.15s, box-shadow 0.15s; color: var(--text); background: white; }
+    input:focus, textarea:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(26,122,86,.08); }
+    input::placeholder, textarea::placeholder { color: var(--text-3); }
 
     /* Amounts */
-    .amounts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-    .amt-btn { padding: 9px 18px; border: 2px solid #e0e0e0; border-radius: 8px; background: white;
-      font-size: 0.9rem; font-weight: 600; cursor: pointer; color: #555; transition: all 0.15s; font-family: inherit; }
-    .amt-btn:hover { border-color: #2d6a4f; color: #2d6a4f; }
-    .amt-btn.active { border-color: #2d6a4f; background: #f0faf4; color: #2d6a4f; }
-    .custom-wrap { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; }
-    .custom-wrap input { max-width: 160px; }
-    .custom-wrap span { font-size: 0.85rem; color: #888; }
+    .amounts { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+    .amt-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 7px; background: white;
+      font-size: 0.875rem; font-weight: 600; cursor: pointer; color: var(--text-2); transition: all 0.12s; font-family: inherit; }
+    .amt-btn:hover { border-color: var(--p); color: var(--p); }
+    .amt-btn.active { border-color: var(--p); background: var(--p-light); color: var(--p); }
+    .custom-wrap { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+    .custom-wrap input { max-width: 150px; }
+    .custom-wrap span { font-size: 0.82rem; color: var(--text-3); }
 
     /* Pay method */
-    .pay-methods { display: flex; gap: 8px; margin-bottom: 14px; }
-    .pay-method-btn { flex: 1; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
-      background: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #555;
-      transition: all 0.15s; font-family: inherit; text-align: center; }
-    .pay-method-btn:hover { border-color: #2d6a4f; color: #2d6a4f; }
-    .pay-method-btn.active { border-color: #2d6a4f; background: #f0faf4; color: #2d6a4f; }
+    .pay-methods { display: flex; gap: 7px; margin-bottom: 14px; }
+    .pay-method-btn { flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
+      background: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--text-2);
+      transition: all 0.12s; font-family: inherit; text-align: center; }
+    .pay-method-btn:hover { border-color: var(--p); color: var(--p); }
+    .pay-method-btn.active { border-color: var(--p); background: var(--p-light); color: var(--p); }
 
     /* Transfer info */
-    .transfer-box { background: #f0f7f3; border: 1.5px solid #40916c; border-radius: 10px;
-      padding: 14px 16px; font-size: 0.86rem; line-height: 1.7; color: #1b4332;
-      margin-bottom: 18px; display: none; }
-    .transfer-box strong { color: #2d6a4f; }
+    .transfer-box { background: var(--p-light); border: 1px solid #b6dece; border-radius: 8px;
+      padding: 12px 14px; font-size: 0.85rem; line-height: 1.7; color: #1b4332;
+      margin-bottom: 16px; display: none; }
+    .transfer-box strong { color: var(--p); }
 
     /* MP note */
-    .mp-note { background: #fff8e1; border: 1.5px solid #f9a825; border-radius: 10px;
-      padding: 12px 14px; font-size: 0.82rem; color: #7a5500; margin-bottom: 14px; display: none; }
+    .mp-note { background: #fef9c3; border: 1px solid #fde68a; border-radius: 8px;
+      padding: 10px 14px; font-size: 0.82rem; color: #854d0e; margin-bottom: 14px; display: none; }
 
     /* Button */
-    .btn { width: 100%; padding: 14px; background: #2d6a4f; color: white; border: none;
-      border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    .btn { width: 100%; padding: 12px; background: var(--p); color: white; border: none;
+      border-radius: 8px; font-size: 0.925rem; font-weight: 700; cursor: pointer;
       font-family: inherit; transition: background 0.15s; }
-    .btn:hover { background: #1b4332; }
-    .btn:disabled { background: #ccc; cursor: not-allowed; }
-    .btn-mp { background: #009ee3; }
-    .btn-mp:hover { background: #007db5; }
-    .error-msg { background: #fff5f5; color: #c0392b; border-radius: 8px;
+    .btn:hover { background: var(--p-hover); }
+    .btn:disabled { background: var(--text-3); cursor: not-allowed; }
+    .btn-mp { background: #0284c7; }
+    .btn-mp:hover { background: #0369a1; }
+    .error-msg { background: #fee2e2; color: #991b1b; border-radius: 7px;
       padding: 10px 14px; font-size: 0.85rem; margin-bottom: 14px; display: none; }
     .error-msg.show { display: block; }
 
     /* Success */
     .state { text-align: center; padding: 8px 0; }
-    .state-icon { font-size: 3rem; margin-bottom: 14px; }
-    .state h2 { font-size: 1.15rem; font-weight: 700; color: #111; margin-bottom: 8px; }
-    .state p { font-size: 0.88rem; color: #666; line-height: 1.6; }
-    .code-box { margin: 20px auto; background: #f0faf4; border: 2px dashed #2d6a4f;
-      border-radius: 12px; padding: 20px; text-align: center; max-width: 300px; }
-    .code-label { font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase;
+    .state-icon { font-size: 2.5rem; margin-bottom: 14px; }
+    .state h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .state p { font-size: 0.875rem; color: var(--text-2); line-height: 1.6; }
+    .code-box { margin: 20px auto; background: var(--p-light); border: 1.5px dashed #6ab89a;
+      border-radius: 10px; padding: 20px; text-align: center; max-width: 280px; }
+    .code-label { font-size: 0.68rem; font-weight: 700; color: var(--text-3); text-transform: uppercase;
       letter-spacing: 0.07em; margin-bottom: 8px; }
-    .code-val { font-size: 1.8rem; font-weight: 800; color: #2d6a4f; letter-spacing: 0.12em; font-family: monospace; }
-    .code-amount { margin-top: 10px; font-size: 1.1rem; font-weight: 700; color: #111; }
+    .code-val { font-size: 1.7rem; font-weight: 800; color: var(--p); letter-spacing: 0.1em; font-family: monospace; }
+    .code-amount { margin-top: 10px; font-size: 1rem; font-weight: 700; color: var(--text); }
 
     /* Pending state */
-    .state-pending { background: #fff8e1; border: 1.5px solid #f9a825; border-radius: 12px;
-      padding: 20px; margin-top: 16px; text-align: center; }
-    .state-pending p { font-size: 0.85rem; color: #7a5500; }
+    .state-pending { background: #fef9c3; border: 1px solid #fde68a; border-radius: 10px;
+      padding: 16px; margin-top: 16px; text-align: center; }
+    .state-pending p { font-size: 0.84rem; color: #854d0e; }
 
-    .divider { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
     a.back { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
-      color: #2d6a4f; text-decoration: none; font-weight: 600; }
+      color: var(--p); text-decoration: none; font-weight: 600; }
+    a.back:hover { text-decoration: underline; }
+
+    @media (max-width: 520px) {
+      .header { padding: 20px; }
+      .body { padding: 20px; }
+    }
   </style>
 </head>
 <body>
 <div class="card">
   <div class="header">
     <h1 id="biz-name">Mi Piel</h1>
-    <p>🎁 Regalá una experiencia de bienestar</p>
+    <p>Regalá una experiencia de bienestar</p>
   </div>
   <div class="body">
 
@@ -139,8 +155,8 @@
       <div class="section-label">Pago</div>
 
       <div class="pay-methods" id="pay-methods-wrap">
-        <button class="pay-method-btn active" id="pm-transfer" onclick="setPayMethod('transfer')">🏦 Transferencia</button>
-        <button class="pay-method-btn" id="pm-mp" onclick="setPayMethod('mp')" style="display:none">💳 Mercado Pago</button>
+        <button class="pay-method-btn active" id="pm-transfer" onclick="setPayMethod('transfer')">Transferencia</button>
+        <button class="pay-method-btn" id="pm-mp" onclick="setPayMethod('mp')" style="display:none">Mercado Pago</button>
       </div>
 
       <div class="mp-note" id="mp-note">
@@ -151,14 +167,14 @@
       <div class="transfer-box" id="transfer-box"></div>
 
       <div class="error-msg" id="g-error"></div>
-      <button class="btn" id="g-btn" onclick="submitGift()">Comprar gift card 🎁</button>
+      <button class="btn" id="g-btn" onclick="submitGift()">Comprar gift card</button>
       <p style="font-size:0.75rem;color:#999;text-align:center;margin-top:10px" id="g-footer-note">
         Recibirás el código en tu email al confirmar el pago.
       </p>
     </div>
 
     <div id="state-success" class="state" style="display:none">
-      <div class="state-icon">🎁</div>
+      <div class="state-icon">✦</div>
       <h2 id="success-title">¡Gift card creada!</h2>
       <p id="success-msg">Te enviamos el código a tu email. Guardalo para usarlo al reservar.</p>
       <div class="code-box">
@@ -167,7 +183,7 @@
         <div class="code-amount" id="success-amount"></div>
       </div>
       <div id="pending-note" class="state-pending" style="display:none">
-        <p>⏳ Tu pago está siendo procesado. El código quedará activo en breves minutos y recibirás un email de confirmación.</p>
+        <p>Tu pago está siendo procesado. El código quedará activo en breves minutos y recibirás un email de confirmación.</p>
       </div>
       <p style="font-size:0.83rem;color:#666;margin-top:12px">
         Ingresá este código en el paso de pago al hacer tu reserva en <span id="success-biz"></span>.
@@ -280,11 +296,11 @@
     document.getElementById('transfer-box').style.display = (m === 'transfer' && _bankAccount) ? 'block' : 'none';
     const btn = document.getElementById('g-btn');
     if (m === 'mp') {
-      btn.textContent = 'Pagar con Mercado Pago 💳';
+      btn.textContent = 'Pagar con Mercado Pago';
       btn.classList.add('btn-mp');
       document.getElementById('g-footer-note').textContent = 'Serás redirigido a Mercado Pago para completar el pago.';
     } else {
-      btn.textContent = 'Comprar gift card 🎁';
+      btn.textContent = 'Comprar gift card';
       btn.classList.remove('btn-mp');
       document.getElementById('g-footer-note').textContent = 'Recibirás el código en tu email al confirmar el pago.';
     }
@@ -369,7 +385,7 @@
         errEl.textContent = data.error || 'Error al procesar. Intentá de nuevo.';
         errEl.classList.add('show');
         btn.disabled = false;
-        btn.textContent = 'Comprar gift card 🎁';
+        btn.textContent = 'Comprar gift card';
       }
     } catch(e) {
       errEl.textContent = 'Error de conexión. Intentá de nuevo.';
