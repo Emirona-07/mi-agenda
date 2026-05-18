@@ -553,11 +553,14 @@ function getRevenue({ period, year, month }) {
 }
 
 function findOrCreateClientByGoogle({ google_id, email, name, picture }) {
+  // 1. Match exacto por google_id
   let client = db.prepare('SELECT * FROM clients WHERE google_id=?').get(google_id);
   if (client) {
     if (picture) db.prepare('UPDATE clients SET google_picture=? WHERE id=?').run(picture, client.id);
     return db.prepare('SELECT * FROM clients WHERE id=?').get(client.id);
   }
+
+  // 2. Match por email (cliente existente sin google_id)
   if (email) {
     client = db.prepare("SELECT * FROM clients WHERE email=? AND (google_id IS NULL OR google_id='')").get(email);
     if (client) {
@@ -565,10 +568,39 @@ function findOrCreateClientByGoogle({ google_id, email, name, picture }) {
       return db.prepare('SELECT * FROM clients WHERE id=?').get(client.id);
     }
   }
+
+  // 3. Crear nuevo cliente Google
   const r = db.prepare('INSERT INTO clients (name, phone, email, google_id, google_picture) VALUES (?, ?, ?, ?, ?)').run(
     name || 'Usuario', `g_${google_id.slice(-8)}`, email || null, google_id, picture || null
   );
-  return db.prepare('SELECT * FROM clients WHERE id=?').get(r.lastInsertRowid);
+  const newClient = db.prepare('SELECT * FROM clients WHERE id=?').get(r.lastInsertRowid);
+
+  // 4. Auto-merge: si existe exactamente 1 cliente con el mismo nombre completo,
+  //    sin google_id ni email, con reservas → absorbemos sus reservas (evita duplicados
+  //    cuando el admin crea la cita sin email y el cliente luego entra con Google)
+  if (name) {
+    const nameLower = name.trim().toLowerCase();
+    const orphans = db.prepare(`
+      SELECT c.* FROM clients c
+      WHERE LOWER(TRIM(c.name)) = ?
+        AND (c.google_id IS NULL OR c.google_id = '')
+        AND (c.email IS NULL OR c.email = '')
+        AND c.id != ?
+        AND EXISTS (SELECT 1 FROM bookings b WHERE b.client_id = c.id)
+    `).all(nameLower, newClient.id);
+
+    if (orphans.length === 1) {
+      // Mover reservas y copiar teléfono real si el nuevo tiene uno falso
+      const orphan = orphans[0];
+      db.prepare('UPDATE bookings SET client_id=? WHERE client_id=?').run(newClient.id, orphan.id);
+      if (newClient.phone.startsWith('g_') && orphan.phone && !orphan.phone.startsWith('g_')) {
+        db.prepare('UPDATE clients SET phone=? WHERE id=?').run(orphan.phone, newClient.id);
+      }
+      db.prepare('DELETE FROM clients WHERE id=?').run(orphan.id);
+    }
+  }
+
+  return db.prepare('SELECT * FROM clients WHERE id=?').get(newClient.id);
 }
 
 function mergeClients(targetId, sourceId) {
