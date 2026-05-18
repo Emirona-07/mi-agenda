@@ -1584,8 +1584,7 @@ function showServiceDesc(id, event) {
   event.stopPropagation();
   const s = state.services.find(x => x.id === id);
   if (!s) return;
-  // Eliminar emojis usando propiedad Unicode (seguro en todos los browsers modernos)
-  document.getElementById('svc-desc-title').textContent = s.name.replace(/\p{Emoji}/gu, '').replace(/\s+/g, ' ').trim();
+  document.getElementById('svc-desc-title').textContent = s.name;
   const tags = [];
   if (s.duration) tags.push(`⏱ ${s.duration} min`);
   if (s.price > 0) tags.push(`$${s.price.toLocaleString()}`);
