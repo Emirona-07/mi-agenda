@@ -2479,23 +2479,27 @@ function renderSummary() {
   const [y, mo, dy] = s.selectedDate.split('-');
   const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
 
-  // Aplicar recargo si el método de pago es MP
-  const surge = _paymentMethod === 'mp' ? (1 + _mpSurcharge / 100) : 1;
-  const displayPrice   = s.selectedService.price   > 0 ? Math.round(s.selectedService.price   * surge) : 0;
-  const displayDeposit = s.selectedService.deposit > 0 ? Math.round(s.selectedService.deposit * surge) : 0;
+  // Orden correcto: precio base → descuento gift card → recargo MP (sobre el neto)
+  const surge      = _paymentMethod === 'mp' ? (1 + _mpSurcharge / 100) : 1;
+  const basePrice  = s.selectedService.price   > 0 ? s.selectedService.price   : 0;
+  const baseDeposit = s.selectedService.deposit > 0 ? s.selectedService.deposit : 0;
 
-  const gcApplied = _gcCode && _gcDiscount > 0;
-  const finalDisplay = gcApplied ? Math.max(0, displayPrice - _gcDiscount) : displayPrice;
+  const gcApplied      = _gcCode && _gcDiscount > 0;
+  const effectiveDiscount = gcApplied ? Math.min(_gcDiscount, basePrice) : 0;
+  const netAfterGc     = Math.max(0, basePrice - effectiveDiscount);
+
+  const finalDisplay   = Math.round(netAfterGc  * surge);
+  const displayDeposit = gcApplied ? 0 : Math.round(baseDeposit * surge); // sin seña cuando aplica gc
 
   const rows = [
     ['Servicio', escapeHtml(s.selectedService.name)],
     s.selectedProfessional ? ['Profesional', escapeHtml(s.selectedProfessional.name)] : null,
     ['Fecha', dateStr],
     ['Hora', s.selectedTime],
-    displayPrice > 0 && gcApplied ? ['Precio original', `<s style="color:var(--muted)">$${displayPrice.toLocaleString()}</s>`] : (displayPrice > 0 ? ['Precio', `$${displayPrice.toLocaleString()}`] : null),
-    gcApplied ? ['🎁 Gift card', `<span style="color:var(--p)">-$${Math.min(_gcDiscount,displayPrice).toLocaleString()}</span>`] : null,
-    gcApplied && displayPrice > 0 ? ['Total', `<strong>$${finalDisplay.toLocaleString()}</strong>`] : null,
-    displayDeposit > 0 && !gcApplied ? ['Seña', `$${displayDeposit.toLocaleString()}`] : null,
+    basePrice > 0 && gcApplied ? ['Precio original', `<s style="color:var(--muted)">$${basePrice.toLocaleString()}</s>`] : (basePrice > 0 ? ['Precio', `$${Math.round(basePrice * surge).toLocaleString()}`] : null),
+    gcApplied ? ['🎁 Gift card', `<span style="color:var(--p)">-$${effectiveDiscount.toLocaleString()}</span>`] : null,
+    gcApplied && basePrice > 0 ? ['Total', `<strong>$${finalDisplay.toLocaleString()}</strong>`] : null,
+    displayDeposit > 0 ? ['Seña', `$${displayDeposit.toLocaleString()}`] : null,
   ].filter(Boolean);
   document.getElementById('booking-summary').innerHTML = `
     <h3>Resumen</h3>

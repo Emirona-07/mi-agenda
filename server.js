@@ -328,11 +328,11 @@ app.post('/api/bookings', async (req, res) => {
   const client = db.upsertClient({ name, phone, email, instagram });
   const professional = professional_id ? db.getProfessionalById(parseInt(professional_id)) : service.professionals[0] || null;
 
-  // Precios: aplicar recargo de MP si el cliente eligió pagar con MP
+  // Precios: el recargo MP se aplica sobre el neto DESPUÉS del descuento de gift card
   const payMethod = payment_method === 'mp' ? 'mp' : payment_method === 'transfer' ? 'transfer' : 'cash';
   const mpSurchargePct = payMethod === 'mp' ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
-  const effectivePrice   = service.price   > 0 ? Math.round(service.price   * (1 + mpSurchargePct)) : 0;
-  const effectiveDeposit = service.deposit > 0 ? Math.round(service.deposit * (1 + mpSurchargePct)) : 0;
+  const basePrice   = service.price   > 0 ? service.price   : 0;
+  const baseDeposit = service.deposit > 0 ? service.deposit : 0;
 
   let atomicResult;
   try {
@@ -345,7 +345,7 @@ app.post('/api/bookings', async (req, res) => {
         deposit_paid: 0,
       },
       gift_card_code,
-      effective_price: effectivePrice,
+      effective_price: basePrice, // precio base sin recargo; el recargo se aplica al neto
     });
   } catch (err) {
     if (err.message === 'gift_card_unavailable') {
@@ -358,8 +358,15 @@ app.post('/api/bookings', async (req, res) => {
     return res.status(409).json({ error: 'El horario ya no está disponible. Por favor elegí otro.' });
   }
   const booking = atomicResult.booking;
-  const finalPrice = atomicResult.final_price;
   const gcDiscount = atomicResult.gift_card_discount;
+  const netPrice = atomicResult.final_price; // precio base neto de gift card
+
+  // Aplicar recargo MP al neto (no al precio bruto)
+  const effectivePrice   = netPrice   > 0 ? Math.round(netPrice   * (1 + mpSurchargePct)) : 0;
+  // Seña: solo si no hubo gift card; si la gc cubre parcialmente, no cobramos seña separada
+  const effectiveDeposit = gcDiscount > 0 ? 0 : (baseDeposit > 0 ? Math.round(baseDeposit * (1 + mpSurchargePct)) : 0);
+
+  const finalPrice = effectivePrice; // lo que el cliente realmente paga (neto + recargo)
 
   const profName = professional ? professional.name : '';
   const bizName = s.business_name || 'Mi Negocio';
