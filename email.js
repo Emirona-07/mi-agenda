@@ -46,7 +46,7 @@ function btnMP(url, label) {
 
 function fmtPeso(n) { return '$ ' + Number(n).toLocaleString('es-UY'); }
 
-function confirmacionHTML({ name, bizName, serviceName, profName, date, time, price, deposit, mp_url_deposit, mp_url_full }) {
+function confirmacionHTML({ name, bizName, serviceName, profName, date, time, price, deposit, mp_url_deposit, mp_url_full, payment_method, bank_account }) {
   const hasMP = mp_url_deposit || mp_url_full;
   const resto = (price || 0) - (deposit || 0);
 
@@ -58,6 +58,10 @@ function confirmacionHTML({ name, bizName, serviceName, profName, date, time, pr
         ${mp_url_full && price ? `<div style="margin-bottom:8px">${btnMP(mp_url_full, `Pagar total ${fmtPeso(price)}`)}</div>` : ''}
       </div>
       ${deposit && resto > 0 ? `<p style="font-size:.82rem;color:#888;margin:8px 0 0">Si pagás la seña, el saldo restante de ${fmtPeso(resto)} se abona el día del turno.</p>` : ''}
+    </div>` : payment_method === 'transfer' && bank_account ? `
+    <div style="margin-top:20px;background:#f0f7f3;border-left:4px solid #2d6a4f;border-radius:4px;padding:14px">
+      <p style="font-weight:600;margin:0 0 8px;color:#2d6a4f">🏦 Datos para transferencia:</p>
+      <p style="font-size:.9rem;color:#333;margin:0;line-height:1.8;white-space:pre-line">${bank_account}</p>
     </div>` : '';
 
   return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">

@@ -609,6 +609,13 @@
       font-weight: 400;
     }
     .pay-method-btn.active .pay-method-sub { color: var(--p-mid); }
+    .transfer-info {
+      margin-top: 10px; padding: 12px 14px;
+      background: var(--p-light); border-radius: 10px;
+      border: 1.5px solid var(--p-mid);
+      font-size: 0.84rem; line-height: 1.7; color: var(--text);
+    }
+    .transfer-info strong { color: var(--p); }
     .pay-surcharge-note {
       font-size: 0.73rem;
       color: var(--muted);
@@ -1257,10 +1264,10 @@
 <!-- ── Sobre mí ─────────────────────────────────────────── -->
 <section class="about-section">
   <div class="about-inner">
-    <div class="about-avatar">MR</div>
+    <div class="about-avatar"><img src="/mariana.png" alt="Mariana Recoba"></div>
     <div class="about-content">
       <div class="about-name">Mariana Recoba</div>
-      <div class="about-title">Cosmetóloga Médica · Buceo, Montevideo</div>
+      <div class="about-title">Buceo, Montevideo</div>
       <p class="about-bio">"Te ayudo a mejorar tu autoestima a través del cuidado de tu piel."</p>
       <div class="about-creds">
         <div class="about-cred">
@@ -1351,8 +1358,8 @@
       <div class="error-msg" id="form-error"></div>
       <div class="summary" id="booking-summary"><h3>Resumen</h3></div>
 
-      <!-- Selector de método de pago (solo si MP está configurado y el servicio tiene precio) -->
-      <div id="pay-method-wrap" class="pay-method-wrap" style="display:none">
+      <!-- Selector de método de pago -->
+      <div id="pay-method-wrap" class="pay-method-wrap">
         <div class="pay-method-label">¿Cómo vas a pagar?</div>
         <div class="pay-method-row">
           <button class="pay-method-btn active" id="pm-cash" onclick="setPayMethod('cash')">
@@ -1360,12 +1367,18 @@
             <span class="pay-method-name">Efectivo</span>
             <span class="pay-method-sub">En el local</span>
           </button>
-          <button class="pay-method-btn" id="pm-mp" onclick="setPayMethod('mp')">
+          <button class="pay-method-btn" id="pm-transfer" onclick="setPayMethod('transfer')">
+            <span class="pay-method-icon">🏦</span>
+            <span class="pay-method-name">Transferencia</span>
+            <span class="pay-method-sub">Bancaria</span>
+          </button>
+          <button class="pay-method-btn" id="pm-mp" onclick="setPayMethod('mp')" style="display:none">
             <span class="pay-method-icon">💳</span>
             <span class="pay-method-name">Mercado Pago</span>
             <span class="pay-method-sub" id="pm-mp-sub">Online</span>
           </button>
         </div>
+        <div id="transfer-info" class="transfer-info" style="display:none"></div>
         <div class="pay-surcharge-note" id="pay-surcharge-note" style="display:none"></div>
       </div>
 
@@ -1503,6 +1516,7 @@ async function init() {
 
   _mpSurcharge = biz.mp_surcharge || 0;
   _mpActive    = !!biz.mp_active;
+  _bankAccount = biz.bank_account || '';
 
   // Configurar campos de contacto según canal de notificaciones
   configureContactFields(biz.notification_channel || 'email');
@@ -1778,6 +1792,7 @@ let _activeCat = 'Todos';
 let _paymentMethod = 'cash';   // 'cash' | 'mp'
 let _mpSurcharge   = 0;        // % como número (ej. 5)
 let _mpActive      = false;    // true si MP_ACCESS_TOKEN está configurado
+let _bankAccount   = '';       // datos de cuenta bancaria para transferencia
 
 function renderServices() {
   const list = document.getElementById('services-list');
@@ -1855,7 +1870,17 @@ function closeServiceDesc() {
 function setPayMethod(method) {
   _paymentMethod = method;
   document.getElementById('pm-cash').classList.toggle('active', method === 'cash');
+  document.getElementById('pm-transfer').classList.toggle('active', method === 'transfer');
   document.getElementById('pm-mp').classList.toggle('active', method === 'mp');
+
+  const transferInfo = document.getElementById('transfer-info');
+  if (method === 'transfer' && _bankAccount) {
+    transferInfo.innerHTML = `<strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g, '<br>')}`;
+    transferInfo.style.display = '';
+  } else {
+    transferInfo.style.display = 'none';
+  }
+
   const note = document.getElementById('pay-surcharge-note');
   if (method === 'mp' && _mpSurcharge > 0) {
     note.textContent = `Los precios con Mercado Pago incluyen el ${_mpSurcharge}% de comisión de la plataforma.`;
@@ -1953,15 +1978,15 @@ function goStep(step) {
   if (revSec) revSec.style.display = showHome && revSec.dataset.hasReviews ? '' : 'none';
   if (step === 2) loadCalendar();
   if (step === 3) {
-    // Mostrar selector de método de pago si MP está activo y el servicio tiene precio
+    // Mostrar botón MP solo si está activo y el servicio tiene precio
     const hasMpPrice = _mpActive && state.selectedService && state.selectedService.price > 0;
-    document.getElementById('pay-method-wrap').style.display = hasMpPrice ? '' : 'none';
-    // Si MP no está activo, asegurar que siempre sea 'cash'
-    if (!hasMpPrice) _paymentMethod = 'cash';
-    // Actualizar label del recargo en el botón MP
+    document.getElementById('pm-mp').style.display = hasMpPrice ? '' : 'none';
     if (_mpSurcharge > 0) {
       document.getElementById('pm-mp-sub').textContent = `+${_mpSurcharge}% comisión`;
     }
+    // Si cambiamos de MP a otro paso, resetear a cash por defecto
+    if (!hasMpPrice && _paymentMethod === 'mp') { _paymentMethod = 'cash'; }
+    setPayMethod(_paymentMethod);
     renderSummary();
     if (state.clientUser) {
       if (!document.getElementById('f-name').value) document.getElementById('f-name').value = state.clientUser.name || '';
@@ -2172,7 +2197,10 @@ async function submitBooking() {
     const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const [y, mo, dy] = state.selectedDate.split('-');
     const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
-    const payMethodLabel = data.payment_method === 'mp' ? 'Mercado Pago' : 'Efectivo';
+    const payMethodLabel = data.payment_method === 'mp' ? 'Mercado Pago' : data.payment_method === 'transfer' ? 'Transferencia' : 'Efectivo';
+    const transferNote = data.payment_method === 'transfer' && _bankAccount
+      ? `<div style="margin-top:12px;padding:12px 14px;background:#f0f7f3;border-radius:8px;border-left:3px solid var(--p);font-size:0.83rem;line-height:1.7"><strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g,'<br>')}</div>`
+      : '';
     document.getElementById('confirm-summary').innerHTML = `
       <h3>Detalle</h3>
       <div class="summary-row"><span>Nº de reserva</span><span>#${data.booking_id}</span></div>
@@ -2184,6 +2212,7 @@ async function submitBooking() {
       ${data.price > 0 ? `<div class="summary-row"><span>Precio</span><span>$${data.price.toLocaleString()}</span></div>` : ''}
       ${data.deposit > 0 ? `<div class="summary-row"><span>Seña</span><span>$${data.deposit.toLocaleString()}</span></div>` : ''}
       <div class="summary-row"><span>Forma de pago</span><span>${payMethodLabel}</span></div>
+      ${transferNote}
     `;
     if (data.whatsapp_url) document.getElementById('whatsapp-btn').href = data.whatsapp_url;
     else document.getElementById('whatsapp-btn').style.display = 'none';
@@ -2247,7 +2276,9 @@ function newBooking() {
   _paymentMethod = 'cash';
   // Resetear botones del selector
   document.getElementById('pm-cash').classList.add('active');
+  document.getElementById('pm-transfer').classList.remove('active');
   document.getElementById('pm-mp').classList.remove('active');
+  document.getElementById('transfer-info').style.display = 'none';
   document.getElementById('pay-surcharge-note').style.display = 'none';
   ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
   // Restaurar sección Sobre mí, reseñas y ocultar sticky/home

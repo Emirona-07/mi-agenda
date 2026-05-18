@@ -87,6 +87,7 @@ app.get('/api/business', (req, res) => {
     notification_channel: s.notification_channel || 'email',
     mp_surcharge: parseFloat(s.mp_surcharge || '5'),
     mp_active: !!mpClient,
+    bank_account: s.bank_account || '',
   });
 });
 
@@ -132,7 +133,7 @@ app.post('/api/bookings', async (req, res) => {
   const professional = professional_id ? db.getProfessionalById(parseInt(professional_id)) : service.professionals[0] || null;
 
   // Precios: aplicar recargo de MP si el cliente eligió pagar con MP
-  const payMethod = payment_method === 'mp' ? 'mp' : 'cash';
+  const payMethod = payment_method === 'mp' ? 'mp' : payment_method === 'transfer' ? 'transfer' : 'cash';
   const mpSurchargePct = payMethod === 'mp' ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
   const effectivePrice   = service.price   > 0 ? Math.round(service.price   * (1 + mpSurchargePct)) : 0;
   const effectiveDeposit = service.deposit > 0 ? Math.round(service.deposit * (1 + mpSurchargePct)) : 0;
@@ -217,6 +218,8 @@ app.post('/api/bookings', async (req, res) => {
           date: fmtDate, time,
           price: effectivePrice, deposit: effectiveDeposit,
           mp_url_deposit, mp_url_full,
+          payment_method: payMethod,
+          bank_account: s.bank_account || '',
         }, s);
       }
       const ownerEmail = s.owner_email || '';
@@ -584,6 +587,7 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 cron.schedule('0 * * * *', async () => {
   try {
     const s = db.getSettings();
+    if (s.reminder_emails_enabled === '0') return;
     const hours = parseInt(s.reminder_hours || '48');
     const bookings = db.getBookingsNeedingReminder(hours);
     const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];

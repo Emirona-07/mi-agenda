@@ -432,38 +432,31 @@
             <input type="text" class="form-control" id="cfg-currency" placeholder="$">
           </div>
           <div class="form-group">
-            <label class="form-label">🔔 Recordatorio al cliente (horas antes del turno)</label>
-            <input type="number" class="form-control" id="cfg-reminder-hours" placeholder="48" min="1" max="168">
+            <label class="form-label">🏦 Cuenta bancaria para transferencias</label>
+            <textarea class="form-control" id="cfg-bank-account" placeholder="Ej: Banco República — Caja de ahorro — 12345678 — Mariana Recoba" style="min-height:70px;font-size:0.9rem"></textarea>
+            <small style="color:var(--muted);font-size:0.78rem">Se muestra al cliente cuando elige pagar por transferencia y se incluye en el email de confirmación.</small>
           </div>
           <div class="form-group">
-            <label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer">
-              <input type="checkbox" id="cfg-reviews-enabled" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
-              ⭐ Enviar email de reseña 24 hs después del turno
-            </label>
+            <label class="form-label" style="font-weight:700;margin-bottom:10px">📧 Emails automáticos</label>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:400">
+                <input type="checkbox" id="cfg-reminder-emails" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
+                🔔 Recordatorio al cliente (horas antes del turno)
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:400">
+                <input type="checkbox" id="cfg-reviews-enabled" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
+                ⭐ Solicitud de reseña (24 hs después del turno)
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Horas de anticipación para el recordatorio</label>
+            <input type="number" class="form-control" id="cfg-reminder-hours" placeholder="48" min="1" max="168" style="max-width:100px">
           </div>
           <button class="btn btn-primary" onclick="saveConfigSecurity()">Guardar</button>
           <p id="cfg-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
         </div>
       </div>
-      <!-- Canal de notificaciones -->
-      <div class="card mt-2">
-        <div class="card-header"><h3>🔔 Canal de notificaciones</h3></div>
-        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">Elegí cómo se envían los mensajes de confirmación al cliente y los avisos a la dueña al crearse una reserva.</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-email">
-            <input type="radio" name="notification_channel" value="email" id="ch-email" onchange="updateChannelUI()"> 📧 Solo email
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-whatsapp">
-            <input type="radio" name="notification_channel" value="whatsapp" id="ch-whatsapp" onchange="updateChannelUI()"> 📱 Solo WhatsApp
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border:2px solid var(--border);border-radius:8px;flex:1;min-width:140px" id="ch-label-both">
-            <input type="radio" name="notification_channel" value="both" id="ch-both" onchange="updateChannelUI()"> 📧📱 Ambos
-          </label>
-        </div>
-        <button class="btn btn-primary" onclick="saveChannel()">Guardar canal</button>
-        <p id="ch-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
-      </div>
-
       <!-- Email SMTP -->
       <div class="card mt-2">
         <div class="card-header"><h3>📧 Configuración de email (SMTP)</h3></div>
@@ -499,20 +492,6 @@
           <span id="email-test-result" style="font-size:0.85rem"></span>
         </div>
         <div id="email-status-badge" style="margin-top:12px;font-size:0.9rem;font-weight:600">Cargando...</div>
-      </div>
-
-      <!-- WhatsApp Business API -->
-      <div class="card mt-2">
-        <div class="card-header"><h3>📱 WhatsApp Business API</h3></div>
-        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">Mensajes automáticos vía la API oficial de Meta. Configurá las variables de entorno <code>WHATSAPP_PHONE_NUMBER_ID</code> y <code>WHATSAPP_ACCESS_TOKEN</code> en Railway.</p>
-        <div id="wa-status-box">
-          <div id="wa-status-badge" style="font-size:0.9rem;font-weight:600">Cargando...</div>
-          <div style="margin-top:12px;font-size:0.85rem;color:var(--muted);line-height:1.7">
-            <strong>Plantillas requeridas en Meta Business Manager:</strong><br>
-            • <code>confirmacion_reserva</code> — 7 parámetros: nombre, negocio, servicio, profesional, fecha, hora, nro reserva<br>
-            • <code>nueva_reserva</code> — 6 parámetros: nro reserva, servicio, cliente, teléfono, fecha, hora
-          </div>
-        </div>
       </div>
 
       <div class="card mt-2">
@@ -1225,35 +1204,16 @@ async function loadConfig() {
   $('cfg-owner-email').value = s.owner_email || '';
   $('cfg-interval').value = s.slot_interval || '30'; $('cfg-advance').value = s.booking_advance_days || '60';
   $('cfg-currency').value = s.currency || '$';
+  $('cfg-bank-account').value = s.bank_account || '';
+  $('cfg-reminder-emails').checked = s.reminder_emails_enabled !== '0';
   $('cfg-reminder-hours').value = s.reminder_hours || '48';
   $('cfg-reviews-enabled').checked = s.reviews_enabled === '1';
-  // Canal
-  const ch = s.notification_channel || 'email';
-  const radio = document.querySelector(`input[name="notification_channel"][value="${ch}"]`);
-  if (radio) radio.checked = true;
-  updateChannelUI();
   // Email SMTP
   $('cfg-email-host').value = s.email_host || ''; $('cfg-email-port').value = s.email_port || '587';
   $('cfg-email-user').value = s.email_user || ''; $('cfg-email-pass').value = s.email_pass || '';
   $('cfg-email-from').value = s.email_from || '';
   $('public-url').value = window.location.origin;
-  pollWhatsAppStatus(); pollEmailStatus();
-}
-
-function updateChannelUI() {
-  const ch = document.querySelector('input[name="notification_channel"]:checked')?.value || 'email';
-  ['email','whatsapp','both'].forEach(v => {
-    const lbl = $(`ch-label-${v}`);
-    if (lbl) lbl.style.borderColor = ch === v ? 'var(--green)' : 'var(--border)';
-    if (lbl) lbl.style.background  = ch === v ? 'var(--green-light,#f0faf4)' : '';
-  });
-}
-
-async function saveChannel() {
-  const ch = document.querySelector('input[name="notification_channel"]:checked')?.value;
-  if (!ch) return;
-  await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({ notification_channel: ch }) });
-  const m = $('ch-msg'); m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 2000);
+  pollEmailStatus();
 }
 
 async function saveEmail() {
@@ -1294,19 +1254,6 @@ async function pollEmailStatus() {
   } catch(e) { /* ignore */ }
 }
 
-async function pollWhatsAppStatus() {
-  try {
-    const { status } = await api('/api/admin/whatsapp/status');
-    const badge = $('wa-status-badge');
-    if (!badge) return;
-    if (status === 'configured') {
-      badge.innerHTML = '<span style="color:#27ae60">✅ API configurada — los mensajes se envían automáticamente al confirmar una reserva</span>';
-    } else {
-      badge.innerHTML = '<span style="color:#e67e22">⚠️ API no configurada — configurá las variables de entorno en Railway</span>';
-    }
-  } catch(e) { /* silently ignore */ }
-}
-
 async function saveConfig() {
   await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({
     business_name: $('cfg-name').value, business_description: $('cfg-desc').value,
@@ -1325,6 +1272,8 @@ async function saveConfigSecurity() {
     slot_interval: $('cfg-interval').value,
     booking_advance_days: $('cfg-advance').value,
     currency: $('cfg-currency').value,
+    bank_account: $('cfg-bank-account').value.trim(),
+    reminder_emails_enabled: $('cfg-reminder-emails').checked ? '1' : '0',
     reminder_hours: $('cfg-reminder-hours').value || '48',
     reviews_enabled: $('cfg-reviews-enabled').checked ? '1' : '0',
   };
