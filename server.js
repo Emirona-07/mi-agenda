@@ -482,7 +482,7 @@ app.post('/api/admin/email/test', requireAuth, async (req, res) => {
   const result = await emailSvc.testConnection(db.getSettings());
   res.json(result);
 });
-app.post('/api/admin/email/test-review', async (req, res) => {
+app.post('/api/admin/email/test-review', requireAuth, async (req, res) => {
   const { email, name } = req.body;
   if (!email) return res.status(400).json({ error: 'Falta email' });
   const s = db.getSettings();
