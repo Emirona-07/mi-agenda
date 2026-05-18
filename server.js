@@ -475,6 +475,9 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
       if (extRef.startsWith('gc:')) {
         const gcId = parseInt(extRef.slice(3));
         if (!isNaN(gcId)) {
+          const current = db.getGiftCardById(gcId);
+          if (!current || current.status !== 'pending') return;
+
           db.activateGiftCard(gcId);
           const gc = db.getGiftCardById(gcId);
           if (gc) {
@@ -491,6 +494,13 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
       const bookingId = parseInt(bookingIdStr);
       if (!isNaN(bookingId)) {
         const newPaymentStatus = payType === 'full' ? 'full' : 'deposit';
+        const current = db.getBookingById(bookingId);
+        if (!current) return;
+        const alreadyRecorded =
+          String(current.mp_payment_id || '') === String(body.data.id) &&
+          current.payment_status === newPaymentStatus;
+        if (alreadyRecorded) return;
+
         db.updateBookingAdmin(bookingId, { payment_status: newPaymentStatus });
         db.updateBookingPayment(bookingId, {
           deposit_paid: payData.transaction_amount,
