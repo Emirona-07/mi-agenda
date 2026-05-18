@@ -14,6 +14,36 @@ const path = require('path');
 const db = require('./db');
 const wa = require('./whatsapp');
 const { hashPassword, isPasswordHash, verifyPassword } = require('./auth');
+const webPush = require('web-push');
+
+// Web Push — se inicializa solo si hay VAPID keys configuradas
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webPush.setVapidDetails(
+    `mailto:${process.env.OWNER_EMAIL || 'admin@mipiel.com'}`,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
+async function sendPushToAll(payload) {
+  if (!process.env.VAPID_PUBLIC_KEY) return;
+  const subs = db.getAllPushSubscriptions();
+  if (!subs.length) return;
+  const msg = JSON.stringify(payload);
+  await Promise.allSettled(
+    subs.map(s =>
+      webPush.sendNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        msg
+      ).catch(err => {
+        // 410 Gone = subscription expired, remove it
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          db.deletePushSubscription(s.endpoint);
+        }
+      })
+    )
+  );
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -330,6 +360,14 @@ app.post('/api/bookings', async (req, res) => {
     const sendWA    = channel === 'whatsapp' || channel === 'both';
     const sendEmail = channel === 'email'    || channel === 'both';
     const fmtDate   = formatDate(date);
+
+    // Push notification al admin (inmediato, independiente del canal)
+    sendPushToAll({
+      title: `Nueva reserva — ${service.name}`,
+      body:  `${name} · ${fmtDate} ${time}`,
+      tag:   `booking-${booking.id}`,
+      url:   '/admin',
+    }).catch(() => {});
 
     if (sendWA) {
       await wa.sendTemplate(phone, 'confirmacion_reserva', [
@@ -852,6 +890,27 @@ app.put('/api/admin/gift-cards/:id/activate', requireAuth, (req, res) => {
   db.activateGiftCard(id);
   const gc = db.getGiftCardById(id);
   if (gc) sendGiftCardEmails(gc, db.getSettings()).catch(() => {});
+  res.json({ success: true });
+});
+
+// ─── MÉTRICAS ─────────────────────────────────────────────────────────────────
+// ─── Push notifications ───────────────────────────────────────────────────────
+app.get('/api/admin/push/vapid-key', requireAuth, (req, res) => {
+  const key = process.env.VAPID_PUBLIC_KEY;
+  res.json({ key: key || null });
+});
+
+app.post('/api/admin/push/subscribe', requireAuth, (req, res) => {
+  const { endpoint, keys, label } = req.body;
+  if (!endpoint || !keys?.p256dh || !keys?.auth)
+    return res.status(400).json({ error: 'Datos de suscripción inválidos' });
+  db.savePushSubscription({ endpoint, p256dh: keys.p256dh, auth: keys.auth, label: label || '' });
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/push/unsubscribe', requireAuth, (req, res) => {
+  const { endpoint } = req.body;
+  if (endpoint) db.deletePushSubscription(endpoint);
   res.json({ success: true });
 });
 

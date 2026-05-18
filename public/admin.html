@@ -546,6 +546,23 @@
         <p id="ch-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
       </div>
 
+      <!-- Notificaciones push -->
+      <div class="card mt-2" id="push-card">
+        <div class="card-header"><h3>🔔 Notificaciones en este dispositivo</h3></div>
+        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">
+          Recibí una notificación instantánea en este celular o computadora cada vez que entre una reserva nueva, aunque el admin esté cerrado.
+        </p>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div id="push-status-badge" style="font-size:0.85rem;padding:6px 14px;border-radius:99px;background:var(--border);color:var(--muted);font-weight:600">
+            Cargando...
+          </div>
+          <button id="push-toggle-btn" onclick="togglePushSubscription()" class="btn btn-primary" style="display:none">
+            Activar notificaciones
+          </button>
+        </div>
+        <p id="push-msg" style="font-size:0.82rem;color:var(--muted);margin-top:10px;display:none"></p>
+      </div>
+
       <div class="card mt-2">
         <div class="card-header"><h3>🔗 Tu página de reservas</h3></div>
         <p style="font-size:0.9rem;margin-bottom:12px;color:var(--muted)">Compartí este link con tus clientes para que puedan reservar:</p>
@@ -1558,7 +1575,107 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
+
+// ── Push notifications ────────────────────────────────────────────────────────
+let _pushSubscription = null;
+let _vapidPublicKey   = null;
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw     = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function initPush() {
+  const badge  = $('push-status-badge');
+  const btn    = $('push-toggle-btn');
+  const msg    = $('push-msg');
+  if (!badge) return;
+
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    badge.textContent = '⚠️ No compatible con este navegador';
+    return;
+  }
+
+  // Get VAPID key
+  try {
+    const r = await api('/api/admin/push/vapid-key');
+    if (!r.key) { badge.textContent = '⚠️ Push no configurado'; return; }
+    _vapidPublicKey = r.key;
+  } catch { badge.textContent = '⚠️ Error al cargar'; return; }
+
+  const reg  = await navigator.serviceWorker.ready;
+  const sub  = await reg.pushManager.getSubscription();
+  _pushSubscription = sub;
+
+  if (sub) {
+    badge.style.background = '#d1fae5'; badge.style.color = '#065f46';
+    badge.textContent = '✅ Activadas en este dispositivo';
+    btn.textContent   = 'Desactivar'; btn.classList.replace('btn-primary','btn-secondary');
+  } else {
+    badge.style.background = 'var(--border)'; badge.style.color = 'var(--muted)';
+    badge.textContent = '⭕ Desactivadas';
+    btn.textContent   = 'Activar notificaciones'; btn.classList.replace('btn-secondary','btn-primary');
+  }
+  btn.style.display = '';
+}
+
+async function togglePushSubscription() {
+  const btn = $('push-toggle-btn');
+  const msg = $('push-msg');
+  btn.disabled = true;
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+
+    if (_pushSubscription) {
+      // Unsubscribe
+      await api('/api/admin/push/unsubscribe', {
+        method: 'DELETE', body: JSON.stringify({ endpoint: _pushSubscription.endpoint })
+      });
+      await _pushSubscription.unsubscribe();
+      _pushSubscription = null;
+      showPushMsg('Notificaciones desactivadas en este dispositivo.', false);
+    } else {
+      // Request permission
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        showPushMsg('Permiso denegado. Habilitalo en la configuración del navegador.', true);
+        btn.disabled = false; return;
+      }
+      // Subscribe
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(_vapidPublicKey),
+      });
+      _pushSubscription = sub;
+      const json = sub.toJSON();
+      await api('/api/admin/push/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys, label: navigator.userAgent.slice(0, 80) }),
+      });
+      showPushMsg('¡Listo! Vas a recibir una notificación cada vez que entre una reserva.', false);
+    }
+  } catch(e) {
+    showPushMsg('Error: ' + e.message, true);
+  }
+
+  btn.disabled = false;
+  initPush();
+}
+
+function showPushMsg(text, isError) {
+  const el = $('push-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isError ? '#c0392b' : 'var(--green)';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
 checkAuth();
+// Init push after auth check runs
+setTimeout(initPush, 800);
 </script>
 </body>
 </html>

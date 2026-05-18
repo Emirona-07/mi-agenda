@@ -760,6 +760,18 @@ function updateBookingPayment(id, { mp_preference_id, mp_payment_id, deposit_pai
   db.prepare(`UPDATE bookings SET ${sets.join(', ')} WHERE id = @id`).run(params);
 }
 
+// ─── Push subscriptions ───────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    endpoint   TEXT UNIQUE NOT NULL,
+    p256dh     TEXT NOT NULL,
+    auth       TEXT NOT NULL,
+    label      TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
 // ─── Reviews ──────────────────────────────────────────────────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS reviews (
@@ -849,6 +861,22 @@ function approveReview(id) {
 
 function deleteReview(id) {
   db.prepare('DELETE FROM reviews WHERE id=?').run(id);
+}
+
+// ─── Push subscriptions ───────────────────────────────────────────────────────
+function savePushSubscription({ endpoint, p256dh, auth, label }) {
+  db.prepare(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, label)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth, label=excluded.label`
+  ).run(endpoint, p256dh, auth, label || '');
+}
+
+function deletePushSubscription(endpoint) {
+  db.prepare('DELETE FROM push_subscriptions WHERE endpoint=?').run(endpoint);
+}
+
+function getAllPushSubscriptions() {
+  return db.prepare('SELECT * FROM push_subscriptions').all();
 }
 
 // ─── GIFT CARDS ───────────────────────────────────────────────────────────────
@@ -962,6 +990,7 @@ module.exports = {
   getBookingsNeedingReview, markReviewSent, createReviewToken,
   getReviewByToken, submitReview,
   getApprovedReviews, getAllReviews, approveReview, deleteReview,
+  savePushSubscription, deletePushSubscription, getAllPushSubscriptions,
   createGiftCard, getGiftCardByCode, getGiftCardById, useGiftCard, getAllGiftCards, cancelGiftCard, activateGiftCard,
   getMetrics,
   createSessionStore,
