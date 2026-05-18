@@ -222,7 +222,19 @@
           <div id="metrics-chart" style="min-height:120px"></div>
         </div>
         <div class="card">
-          <div class="card-header"><h3 id="metrics-kpi-title">📊 Este mes</h3></div>
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <h3 id="metrics-kpi-title">📊 Este mes</h3>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="metrics-month-sel-2" onchange="onMetricsMonthChange2()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:white;color:var(--text)">
+                <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+                <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+                <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+              <select id="metrics-year-sel-2" onchange="onMetricsMonthChange2()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:white;color:var(--text)">
+              </select>
+            </div>
+          </div>
           <div id="metrics-kpi"></div>
         </div>
       </div>
@@ -737,22 +749,37 @@ async function loadDashboard() {
 
 function initMetricsSelectors() {
   const now = new Date();
-  const yearSel = $('metrics-year-sel');
-  const monthSel = $('metrics-month-sel');
-  if (!yearSel || !monthSel) return;
   const curY = now.getFullYear();
-  for (let y = curY; y >= curY - 2; y--) {
-    const opt = document.createElement('option');
-    opt.value = y; opt.textContent = y;
-    yearSel.appendChild(opt);
-  }
-  yearSel.value = curY;
-  monthSel.value = now.getMonth() + 1;
+  ['metrics-year-sel','metrics-year-sel-2'].forEach(id => {
+    const el = $(id); if (!el) return;
+    for (let y = curY; y >= curY - 2; y--) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      el.appendChild(opt);
+    }
+    el.value = curY;
+  });
+  ['metrics-month-sel','metrics-month-sel-2'].forEach(id => {
+    const el = $(id); if (el) el.value = now.getMonth() + 1;
+  });
+}
+
+function _syncSelectors(year, month) {
+  ['metrics-year-sel','metrics-year-sel-2'].forEach(id => { const e = $(id); if(e) e.value = year; });
+  ['metrics-month-sel','metrics-month-sel-2'].forEach(id => { const e = $(id); if(e) e.value = month; });
 }
 
 function onMetricsMonthChange() {
   const year  = parseInt($('metrics-year-sel')?.value  || new Date().getFullYear());
   const month = parseInt($('metrics-month-sel')?.value || new Date().getMonth() + 1);
+  _syncSelectors(year, month);
+  loadMetrics({ year, month });
+}
+
+function onMetricsMonthChange2() {
+  const year  = parseInt($('metrics-year-sel-2')?.value  || new Date().getFullYear());
+  const month = parseInt($('metrics-month-sel-2')?.value || new Date().getMonth() + 1);
+  _syncSelectors(year, month);
   loadMetrics({ year, month });
 }
 
@@ -764,9 +791,8 @@ async function loadMetrics({ year, month } = {}) {
   const label = `${monthNames[m-1]} ${y}`;
   const isCurrentMonth = (y === now.getFullYear() && m === now.getMonth() + 1);
 
-  // Sync selectors if called programmatically
-  if ($('metrics-year-sel'))  $('metrics-year-sel').value  = y;
-  if ($('metrics-month-sel')) $('metrics-month-sel').value = m;
+  // Sync both selector pairs
+  _syncSelectors(y, m);
 
   let met;
   try { met = await api(`/api/admin/metrics?year=${y}&month=${m}`); } catch(e) {
