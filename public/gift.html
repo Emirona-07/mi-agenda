@@ -322,7 +322,7 @@
 
   function updateMpTotal() {
     if (_payMethod !== 'mp' || !_amount) return;
-    const total = Math.round(_amount * (1 + _mpSurcharge / 100));
+    const total = _mpSurcharge > 0 ? Math.round(_amount / (1 - _mpSurcharge / 100)) : _amount;
     document.getElementById('mp-total-display').textContent = `$${total.toLocaleString('es-UY')}`;
   }
 

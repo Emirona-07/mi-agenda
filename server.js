@@ -280,7 +280,7 @@ app.get('/api/business', (req, res) => {
     description: s.business_description,
     address: s.business_address,
     notification_channel: s.notification_channel || 'email',
-    mp_surcharge: parseFloat(s.mp_surcharge || '5'),
+    mp_surcharge: parseFloat(s.mp_surcharge || '10'),
     mp_active: !!mpClient,
     bank_account: s.bank_account || '',
   });
@@ -351,7 +351,7 @@ app.post('/api/bookings', async (req, res) => {
 
   // Precios: el recargo MP se aplica sobre el neto DESPUÉS del descuento de gift card
   const payMethod = payment_method === 'mp' ? 'mp' : payment_method === 'transfer' ? 'transfer' : 'cash';
-  const mpSurchargePct = payMethod === 'mp' ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
+  const mpSurchargePct = payMethod === 'mp' ? parseFloat(s.mp_surcharge || '10') / 100 : 0;
   const basePrice   = service.price   > 0 ? service.price   : 0;
   const baseDeposit = service.deposit > 0 ? service.deposit : 0;
 
@@ -382,10 +382,12 @@ app.post('/api/bookings', async (req, res) => {
   const gcDiscount = atomicResult.gift_card_discount;
   const netPrice = atomicResult.final_price; // precio base neto de gift card
 
-  // Aplicar recargo MP al neto (no al precio bruto)
-  const effectivePrice   = netPrice   > 0 ? Math.round(netPrice   * (1 + mpSurchargePct)) : 0;
+  // Aplicar recargo MP: fórmula pass-through para que Maru reciba siempre el precio neto
+  // gross = net / (1 - tasa)  →  MP se queda con su % y Maru recibe exactamente el neto
+  const mpDivisor = mpSurchargePct > 0 ? (1 - mpSurchargePct) : 1;
+  const effectivePrice   = netPrice   > 0 ? Math.round(netPrice   / mpDivisor) : 0;
   // Seña: solo si no hubo gift card; si la gc cubre parcialmente, no cobramos seña separada
-  const effectiveDeposit = gcDiscount > 0 ? 0 : (baseDeposit > 0 ? Math.round(baseDeposit * (1 + mpSurchargePct)) : 0);
+  const effectiveDeposit = gcDiscount > 0 ? 0 : (baseDeposit > 0 ? Math.round(baseDeposit / mpDivisor) : 0);
 
   const finalPrice = effectivePrice; // lo que el cliente realmente paga (neto + recargo)
 
@@ -1265,8 +1267,9 @@ app.post('/api/gift-cards/purchase', async (req, res) => {
   if (!isValidEmail(purchaser_email)) return res.status(400).json({ error: 'Email inválido' });
   if (recipient_email && !isValidEmail(recipient_email)) return res.status(400).json({ error: 'Email del destinatario inválido' });
   const s = db.getSettings();
-  const mpSurchargePct = (payment_method === 'mp') ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
-  const finalAmount = Math.round(parseInt(amount) * (1 + mpSurchargePct));
+  const mpSurchargePct = (payment_method === 'mp') ? parseFloat(s.mp_surcharge || '10') / 100 : 0;
+  const mpDivisorGc = mpSurchargePct > 0 ? (1 - mpSurchargePct) : 1;
+  const finalAmount = Math.round(parseInt(amount) / mpDivisorGc);
   // Queda pendiente hasta confirmación de MP o activación manual de transferencia.
   const status = 'pending';
   const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, recipient_email, note, status });

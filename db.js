@@ -115,7 +115,7 @@ const initSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALU
   ['slot_interval', '30'],
   ['currency', '$'],
   ['notification_channel', 'email'],
-  ['mp_surcharge', '5'],
+  ['mp_surcharge', '10'],
   ['owner_email', ''],
   ['email_host', ''],
   ['email_port', '587'],

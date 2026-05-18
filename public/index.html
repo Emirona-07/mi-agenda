@@ -2467,7 +2467,7 @@ function gcSetCustomAmt(val) {
 
 function gcUpdateMpTotal() {
   if (_gcPayMethod !== 'mp' || !_gcAmt) return;
-  const total = Math.round(_gcAmt * (1 + _mpSurcharge / 100));
+  const total = _mpSurcharge > 0 ? Math.round(_gcAmt / (1 - _mpSurcharge / 100)) : _gcAmt;
   document.getElementById('gc-mp-total').textContent = `$${total.toLocaleString('es-UY')}`;
 }
 
@@ -2723,7 +2723,8 @@ function renderSummary() {
   const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
 
   // Orden correcto: precio base → descuento gift card → recargo MP (sobre el neto)
-  const surge      = _paymentMethod === 'mp' ? (1 + _mpSurcharge / 100) : 1;
+  // Fórmula pass-through: gross = net / (1 - tasa) → Maru siempre recibe el neto
+  const surge      = _paymentMethod === 'mp' && _mpSurcharge > 0 ? 1 / (1 - _mpSurcharge / 100) : 1;
   const basePrice  = s.selectedService.price   > 0 ? s.selectedService.price   : 0;
   const baseDeposit = s.selectedService.deposit > 0 ? s.selectedService.deposit : 0;
 
