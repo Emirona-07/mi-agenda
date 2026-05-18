@@ -658,13 +658,11 @@
 </div>
 
 <!-- MODAL: Booking detail -->
-<div class="modal-overlay" id="modal-booking">
-  <div class="modal">
-    <h2>📋 Detalle de la cita</h2>
+<div class="modal-overlay" id="modal-booking" onclick="if(event.target===this)closeModal('modal-booking')">
+  <div class="modal" style="position:relative">
+    <button onclick="closeModal('modal-booking')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <h2 style="padding-right:32px">📋 Detalle de la cita</h2>
     <div id="modal-booking-content"></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-booking')">Cerrar</button>
-    </div>
   </div>
 </div>
 
@@ -1150,14 +1148,12 @@ async function openBookingModal(id) {
     <div class="detail-row"><span class="key">Nº de reserva</span><span>#${b.id}</span></div>
     <div class="detail-row"><span class="key">Fecha y hora</span><span><strong>${formatDateShort(b.date)} — ${b.time}</strong></span></div>
     <div class="detail-row"><span class="key">Servicio</span><span>${escapeHtml(b.service_name)} ${b.total_price > 0 ? `(${cur}${b.total_price.toLocaleString()})` : ''}</span></div>
-    <div class="detail-row"><span class="key">Profesional</span><span>${escapeHtml(b.professional_name || '-')}</span></div>
+    ${professionals.length > 1 ? `<div class="detail-row"><span class="key">Profesional</span><span>${escapeHtml(b.professional_name || '-')}</span></div>` : ''}
     <div class="detail-row"><span class="key">Estado</span><span>${statusBadge(b.status)}</span></div>
     <div class="detail-row"><span class="key">Cliente</span><span><strong>${escapeHtml(b.client_name)}</strong></span></div>
-    <div class="detail-row"><span class="key">Teléfono</span><span>
-      ${b.client_phone ? `<a class="whatsapp-link" href="https://wa.me/${b.client_phone.replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(b.client_phone)}</a>` : '-'}
-    </span></div>
-    <div class="detail-row"><span class="key">Email</span><span>${escapeHtml(b.client_email || '-')}</span></div>
-    <div class="detail-row"><span class="key">Instagram</span><span>${b.client_instagram ? '@' + escapeHtml(b.client_instagram.replace('@','')) : '-'}</span></div>
+    ${b.client_phone ? `<div class="detail-row"><span class="key">Teléfono</span><span><a class="whatsapp-link" href="https://wa.me/${b.client_phone.replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(b.client_phone)}</a></span></div>` : ''}
+    ${b.client_email ? `<div class="detail-row"><span class="key">Email</span><span>${escapeHtml(b.client_email)}</span></div>` : ''}
+    ${b.client_instagram ? `<div class="detail-row"><span class="key">Instagram</span><span>@${escapeHtml(b.client_instagram.replace('@',''))}</span></div>` : ''}
     ${b.notes ? `<div class="detail-row"><span class="key">Notas cliente</span><span>${escapeHtml(b.notes)}</span></div>` : ''}
     ${b.utm_source ? `<div class="detail-row"><span class="key">Origen</span><span class="chip">${escapeHtml(b.utm_source)}</span></div>` : ''}
 
