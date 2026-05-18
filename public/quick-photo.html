@@ -113,6 +113,28 @@
     .btn-charge:disabled { background: #8fa3c9; cursor: not-allowed; transform: none; }
     .btn-charge.paid { background: #155724; cursor: default; }
 
+    /* Manual payment buttons */
+    .manual-pay {
+      display: flex;
+      gap: 7px;
+      margin-top: 8px;
+    }
+    .btn-manual {
+      flex: 1;
+      padding: 10px 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: background .12s, border-color .12s;
+    }
+    .btn-manual:active { background: #f0faf4; border-color: var(--green); }
+    .btn-manual .icon { display: block; font-size: 1.1rem; margin-bottom: 2px; }
+
     /* Selector */
     select {
       width: 100%;
@@ -409,7 +431,13 @@
         chargeBtn = `<button class="btn-charge paid" disabled>✅ Cobrado</button>`;
       } else if (remaining > 0) {
         const label = ps === 'deposit' ? `Cobrar saldo $${remaining.toLocaleString('es')}` : `Cobrar $${remaining.toLocaleString('es')}`;
-        chargeBtn = `<button class="btn-charge" onclick="startCharge(${b.id})">💳 ${label}</button>`;
+        chargeBtn = `
+          <button class="btn-charge" onclick="startCharge(${b.id})">💳 ${label}</button>
+          <div class="manual-pay">
+            <button class="btn-manual" onclick="markPaid(${b.id},'cash')"><span class="icon">💵</span>Efectivo</button>
+            <button class="btn-manual" onclick="markPaid(${b.id},'transfer')"><span class="icon">🏦</span>Transf.</button>
+            <button class="btn-manual" onclick="markPaid(${b.id},'qr')"><span class="icon">📲</span>QR físico</button>
+          </div>`;
       }
 
       el.innerHTML = `
@@ -553,6 +581,32 @@
     function closeQR() {
       stopPolling();
       document.getElementById('qr-overlay').classList.remove('active');
+    }
+
+    // ─── Cobro manual ────────────────────────────────────────────────────────
+
+    async function markPaid(bookingId, method) {
+      const labels = { cash: 'efectivo', transfer: 'transferencia', qr: 'QR físico' };
+      if (!confirm(`¿Marcar como cobrado por ${labels[method]}?`)) return;
+
+      try {
+        const res = await fetch(`/api/quick-photo/mark-paid?token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking_id: bookingId, method }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          const b = bookings.find(x => x.id === bookingId);
+          if (b) b.payment_status = 'full';
+          renderBookingInfo();
+          setStatus('ok', `✅ Cobrado por ${labels[method]}`);
+        } else {
+          setStatus('err', '❌ ' + (data.error || 'Error'));
+        }
+      } catch(e) {
+        setStatus('err', '❌ Sin conexión');
+      }
     }
 
     // ─── Utils ────────────────────────────────────────────────────────────────
