@@ -1255,9 +1255,109 @@
       font-size: 0.77rem;
       color: var(--muted);
     }
+    /* ── Photo thumbnails + lightbox ──────────────────── */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .photo-thumb {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: zoom-in;
+      background: #f0f0f0;
+    }
+    .photo-thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .2s;
+    }
+    .photo-thumb:hover img { transform: scale(1.05); }
+
+    /* Lightbox */
+    #photo-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.92);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+    #photo-lightbox.open { display: flex; }
+    #photo-lightbox img {
+      max-width: 96vw;
+      max-height: 88vh;
+      object-fit: contain;
+      border-radius: 6px;
+      cursor: zoom-in;
+      transition: transform .25s ease;
+      transform-origin: center center;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    #photo-lightbox img.zoomed { cursor: zoom-out; }
+    .lb-close {
+      position: absolute;
+      top: 16px; right: 20px;
+      background: rgba(255,255,255,.15);
+      border: none; color: white;
+      font-size: 1.4rem; line-height: 1;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lb-close:hover { background: rgba(255,255,255,.3); }
+    .lb-nav {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,.15);
+      border: none; color: white;
+      font-size: 1.5rem;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lb-nav:hover { background: rgba(255,255,255,.3); }
+    .lb-prev { left: 12px; }
+    .lb-next { right: 12px; }
+    .lb-counter {
+      position: absolute;
+      bottom: 16px;
+      color: rgba(255,255,255,.7);
+      font-size: 0.82rem;
+    }
+    .lb-comment {
+      position: absolute;
+      bottom: 36px;
+      color: white;
+      font-size: 0.88rem;
+      background: rgba(0,0,0,.5);
+      padding: 5px 12px;
+      border-radius: 20px;
+      max-width: 80vw;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+
+<!-- Lightbox -->
+<div id="photo-lightbox">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-nav lb-prev" onclick="lbNav(-1)">‹</button>
+  <img id="lb-img" src="" alt="" onclick="lbToggleZoom(event)">
+  <button class="lb-nav lb-next" onclick="lbNav(1)">›</button>
+  <div class="lb-comment" id="lb-comment" style="display:none"></div>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
 
 <header>
   <button class="btn-home" id="btn-home" onclick="newBooking()">← Inicio</button>
@@ -1864,6 +1964,65 @@ function bookingCardHtml(b, fmtDate, canCancel) {
     </div>`;
 }
 
+// ── Lightbox state ──────────────────────────────────────────────────────────
+let _lbPhotos = [], _lbIdx = 0, _lbZoomed = false;
+
+function openLightbox(photos, idx) {
+  _lbPhotos = photos; _lbIdx = idx; _lbZoomed = false;
+  _lbRender();
+  document.getElementById('photo-lightbox').classList.add('open');
+  document.addEventListener('keydown', _lbKey);
+}
+function closeLightbox() {
+  document.getElementById('photo-lightbox').classList.remove('open');
+  document.removeEventListener('keydown', _lbKey);
+  _lbZoomed = false;
+  const img = document.getElementById('lb-img');
+  img.style.transform = ''; img.classList.remove('zoomed');
+}
+function lbNav(dir) {
+  _lbZoomed = false;
+  const img = document.getElementById('lb-img');
+  img.style.transform = ''; img.classList.remove('zoomed');
+  _lbIdx = (_lbIdx + dir + _lbPhotos.length) % _lbPhotos.length;
+  _lbRender();
+}
+function _lbRender() {
+  const p = _lbPhotos[_lbIdx];
+  document.getElementById('lb-img').src = p.file_path;
+  const comment = document.getElementById('lb-comment');
+  if (p.comment) { comment.textContent = p.comment; comment.style.display = 'block'; }
+  else { comment.style.display = 'none'; }
+  document.getElementById('lb-counter').textContent = _lbPhotos.length > 1 ? `${_lbIdx + 1} / ${_lbPhotos.length}` : '';
+  // Ocultar flechas si solo hay 1 foto
+  document.querySelector('.lb-prev').style.display = _lbPhotos.length > 1 ? '' : 'none';
+  document.querySelector('.lb-next').style.display = _lbPhotos.length > 1 ? '' : 'none';
+}
+function lbToggleZoom(e) {
+  const img = document.getElementById('lb-img');
+  if (!_lbZoomed) {
+    // Zoom centrado en el punto tocado
+    const rect = img.getBoundingClientRect();
+    const ox = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
+    const oy = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
+    img.style.transformOrigin = `${ox}% ${oy}%`;
+    img.style.transform = 'scale(2.5)';
+    img.classList.add('zoomed');
+    _lbZoomed = true;
+  } else {
+    img.style.transform = ''; img.classList.remove('zoomed'); _lbZoomed = false;
+  }
+}
+function _lbKey(e) {
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowRight') lbNav(1);
+  if (e.key === 'ArrowLeft')  lbNav(-1);
+}
+// Cerrar al tocar el fondo oscuro
+document.getElementById('photo-lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('photo-lightbox')) closeLightbox();
+});
+
 async function loadBookingPhotos(id, btn) {
   const container = document.getElementById(`photos-${id}`);
   if (container.style.display !== 'none') { container.style.display = 'none'; btn.textContent = '📷 Ver fotos'; return; }
@@ -1875,12 +2034,14 @@ async function loadBookingPhotos(id, btn) {
     if (!r.ok) { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px">Sin fotos todavía</div>'; return; }
     const photos = await r.json();
     if (!Array.isArray(photos) || !photos.length) { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px">Sin fotos todavía</div>'; return; }
-    container.innerHTML = photos.map(p => `
-      <div style="margin-bottom:10px">
-        <img src="${escapeHtml(p.file_path)}" style="max-width:100%;border-radius:6px;display:block" loading="lazy">
-        ${p.comment ? `<div style="font-size:0.82rem;color:var(--muted);margin-top:4px">${escapeHtml(p.comment)}</div>` : ''}
-      </div>
-    `).join('');
+    container.innerHTML = `<div class="photo-grid">${
+      photos.map((p, i) => `
+        <div class="photo-thumb" onclick="openLightbox(window._photos_${id}, ${i})">
+          <img src="${escapeHtml(p.file_path)}" loading="lazy" alt="Foto ${i+1}">
+        </div>`).join('')
+    }</div>`;
+    // Guardar array para el lightbox
+    window[`_photos_${id}`] = photos;
   } catch { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted)">Error al cargar</div>'; }
 }
 
