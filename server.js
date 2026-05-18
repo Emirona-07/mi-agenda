@@ -901,6 +901,8 @@ app.post('/api/whatsapp/webhook', express.json(), (req, res) => {
 // ─── QUICK PHOTO — para el Shortcut de iOS de Maru ───────────────────────────
 
 function getOrCreateQuickPhotoToken() {
+  // Env var takes precedence; if not set, use/generate DB token
+  if (process.env.QUICK_PHOTO_TOKEN) return process.env.QUICK_PHOTO_TOKEN;
   const s = db.getSettings();
   if (s.quick_photo_token) return s.quick_photo_token;
   const token = crypto.randomBytes(24).toString('hex');
