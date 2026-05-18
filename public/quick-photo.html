@@ -461,7 +461,7 @@
 
     async function loadBookings() {
       try {
-        const res = await fetch(`/api/quick-photo/bookings?token=${encodeURIComponent(token)}`);
+        const res = await fetch(`/api/turno/bookings?token=${encodeURIComponent(token)}`);
         let data;
         try { data = await res.json(); } catch(_) { data = {}; }
         if (!res.ok) {
@@ -543,7 +543,7 @@
       const b = bookings.find(x => x.id === selectedId);
       if (b) b.notes_public = text;
       try {
-        const res = await fetch(`/api/quick-photo/note?token=${encodeURIComponent(token)}`, {
+        const res = await fetch(`/api/turno/note?token=${encodeURIComponent(token)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking_id: selectedId, notes_public: text }),
@@ -648,7 +648,7 @@
         form.append('photo', file);
         if (selectedId) form.append('booking_id', selectedId);
 
-        const res = await fetch(`/api/quick-photo?token=${encodeURIComponent(token)}`, {
+        const res = await fetch(`/api/turno?token=${encodeURIComponent(token)}`, {
           method: 'POST', body: form,
         });
         const data = await res.json();
@@ -682,7 +682,7 @@
       overlay.classList.add('active');
 
       try {
-        const res = await fetch(`/api/quick-photo/charge?token=${encodeURIComponent(token)}`, {
+        const res = await fetch(`/api/turno/charge?token=${encodeURIComponent(token)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking_id: bookingId }),
@@ -727,7 +727,7 @@
       stopPolling();
       _pollTimer = setInterval(async () => {
         try {
-          const res = await fetch(`/api/quick-photo/payment-status?token=${encodeURIComponent(token)}&booking_id=${bookingId}`);
+          const res = await fetch(`/api/turno/payment-status?token=${encodeURIComponent(token)}&booking_id=${bookingId}`);
           if (!res.ok) return;
           const data = await res.json();
           if (data.payment_status === 'full') {
@@ -781,7 +781,7 @@
 
     async function doMarkPaid(bookingId, method) {
       try {
-        const res = await fetch(`/api/quick-photo/mark-paid?token=${encodeURIComponent(token)}`, {
+        const res = await fetch(`/api/turno/mark-paid?token=${encodeURIComponent(token)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ booking_id: bookingId, method }),

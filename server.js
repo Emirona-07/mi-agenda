@@ -946,7 +946,7 @@ function getOrCreateQuickPhotoToken() {
 app.get('/api/admin/shortcuts/quick-photo', requireAuth, (req, res) => {
   const token = getOrCreateQuickPhotoToken();
   const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
-  const url = `${publicUrl}/api/quick-photo?token=${token}`;
+  const url = `${publicUrl}/api/turno?token=${token}`;
 
   const PHOTO_UUID = 'A0B1C2D3-E4F5-4A6B-8C7D-9E0F1A2B3C4D';
   const REQ_UUID   = 'B1C2D3E4-F5A6-4B7C-9D8E-0F1A2B3C4D5E';
@@ -1061,8 +1061,8 @@ app.get('/api/admin/shortcuts/quick-photo', requireAuth, (req, res) => {
   res.send(Buffer.from(plist, 'utf8'));
 });
 
-// Lista de citas recientes para el selector del Quick Photo
-app.get('/api/quick-photo/bookings', (req, res) => {
+// Lista de citas recientes para el selector del Turno app
+app.get('/api/turno/bookings', (req, res) => {
   const token = req.query.token || '';
   const expected = getOrCreateQuickPhotoToken();
   if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
@@ -1078,7 +1078,7 @@ app.get('/api/quick-photo/bookings', (req, res) => {
   res.json({ bookings: active, current_id: current ? current.id : null });
 });
 
-app.post('/api/quick-photo/charge', async (req, res) => {
+app.post('/api/turno/charge', async (req, res) => {
   try {
     const token = req.query.token || '';
     const expected = getOrCreateQuickPhotoToken();
@@ -1131,12 +1131,12 @@ app.post('/api/quick-photo/charge', async (req, res) => {
     const qr_data_url = await QRCodeGen.toDataURL(init_point, { width: 280, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
     res.json({ init_point, preference_id: r.id, amount: remainingAmount, qr_data_url });
   } catch (err) {
-    console.error('Error in /api/quick-photo/charge:', err);
+    console.error('Error in /api/turno/charge:', err);
     res.status(500).json({ error: err.message || 'Error al crear preferencia de pago' });
   }
 });
 
-app.get('/api/quick-photo/payment-status', (req, res) => {
+app.get('/api/turno/payment-status', (req, res) => {
   const token = req.query.token || '';
   const expected = getOrCreateQuickPhotoToken();
   if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
@@ -1148,7 +1148,7 @@ app.get('/api/quick-photo/payment-status', (req, res) => {
   res.json({ payment_status: booking.payment_status });
 });
 
-app.post('/api/quick-photo/mark-paid', (req, res) => {
+app.post('/api/turno/mark-paid', (req, res) => {
   const token = req.query.token || '';
   const expected = getOrCreateQuickPhotoToken();
   if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
@@ -1170,7 +1170,7 @@ app.post('/api/quick-photo/mark-paid', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/quick-photo/note', (req, res) => {
+app.post('/api/turno/note', (req, res) => {
   const token = req.query.token || '';
   const expected = getOrCreateQuickPhotoToken();
   if (!expected || token !== expected) return res.status(401).json({ error: 'Token inválido' });
@@ -1187,7 +1187,7 @@ app.post('/api/quick-photo/note', (req, res) => {
 });
 
 // Recibe una foto, la adjunta a la cita en progreso del día
-app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
+async function handleTurnoPhotoUpload(req, res) {
   const token = req.headers['x-quick-token'] || req.query.token || '';
   const expected = process.env.QUICK_PHOTO_TOKEN || db.getSettings().quick_photo_token || '';
   if (!expected) return res.status(503).json({ error: 'Quick photo no configurado' });
@@ -1212,7 +1212,6 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
   const comment = req.body.comment || '';
   db.addBookingPhoto(booking.id, `/uploads/${req.file.filename}`, comment);
 
-  const [h, m] = booking.time.split(':');
   res.json({
     ok: true,
     booking_id: booking.id,
@@ -1221,7 +1220,11 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
     time: booking.time,
     message: `Foto agregada a la cita de ${booking.client_name} (${booking.service_name} ${booking.time})`
   });
-});
+}
+
+app.post('/api/turno', upload.single('photo'), handleTurnoPhotoUpload);
+// Alias retrocompatible para Shortcuts de iOS ya descargados
+app.post('/api/quick-photo', upload.single('photo'), handleTurnoPhotoUpload);
 
 // ═══════════════════════════════════════════════════════
 // ROUTES (wildcard siempre al final)
