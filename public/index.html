@@ -1556,7 +1556,7 @@ function renderServices() {
           ? `<img src="${s.photo}" alt="${s.name}" loading="lazy">`
           : `<div class="svc-photo-placeholder">${leafSvg}</div>`;
         const infoBtnHtml = s.description
-          ? `<button class="svc-info-btn" onclick="showServiceDesc(${s.id}, event)" title="Ver descripción">i</button>`
+          ? `<div class="svc-info-btn" role="button" tabindex="0" onclick="showServiceDesc(${s.id}, event)" title="Ver descripción">i</div>`
           : '';
         return `
         <button class="svc-card${sel ? ' selected' : ''}" onclick="selectService(${s.id})">
