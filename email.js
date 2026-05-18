@@ -345,6 +345,43 @@ function getStatus(settings) {
   return user && pass ? 'configured' : 'not_configured';
 }
 
+async function sendReviewRequest({ client_name, client_email, service_name, review_url, business_name }) {
+  const biz = business_name || 'Mi Piel';
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Inter,sans-serif">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e8e8e8">
+    <div style="background:#2d6a4f;padding:28px 32px;text-align:center">
+      <h1 style="color:white;font-size:1.3rem;font-weight:700;margin:0">${biz}</h1>
+    </div>
+    <div style="padding:32px">
+      <p style="font-size:1rem;color:#111;margin:0 0 12px">Hola ${client_name},</p>
+      <p style="font-size:0.93rem;color:#444;line-height:1.65;margin:0 0 24px">
+        Esperamos que hayas disfrutado tu sesión de <strong>${service_name}</strong>.
+        Tu opinión nos ayuda a seguir mejorando. ¿Podés dejarnos una reseña? ¡Solo tarda un minuto!
+      </p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="${review_url}" style="display:inline-block;background:#2d6a4f;color:white;padding:14px 32px;border-radius:8px;font-size:0.95rem;font-weight:700;text-decoration:none">
+          ⭐ Dejar mi reseña
+        </a>
+      </div>
+      <p style="font-size:0.82rem;color:#888;text-align:center;margin-top:20px">
+        Si el botón no funciona, copiá este enlace:<br>
+        <a href="${review_url}" style="color:#2d6a4f;word-break:break-all">${review_url}</a>
+      </p>
+    </div>
+    <div style="background:#f5f5f5;padding:16px 32px;text-align:center;font-size:0.78rem;color:#aaa">
+      © ${new Date().getFullYear()} ${biz}
+    </div>
+  </div>
+</body></html>`;
+  return sendMail({
+    to: client_email,
+    subject: `¿Cómo te fue en ${biz}? Dejanos tu reseña ⭐`,
+    html,
+  });
+}
+
 module.exports = {
   sendMail,
   sendConfirmation,
@@ -352,6 +389,7 @@ module.exports = {
   sendOwnerNotification,
   sendReminder,
   sendWeeklySummary,
+  sendReviewRequest,
   testConnection,
   getStatus,
 };

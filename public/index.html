@@ -447,6 +447,41 @@
     }
     .sticky-cta-btn:hover { background: var(--p-dark); }
 
+    /* ── Reseñas ────────────────────────────────────────── */
+    .reviews-section {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 20px 24px;
+    }
+    .reviews-inner {
+      max-width: 900px; margin: 0 auto;
+    }
+    .reviews-title {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;
+    }
+    .reviews-grid {
+      display: flex; gap: 12px; overflow-x: auto;
+      padding-bottom: 4px; scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .reviews-grid::-webkit-scrollbar { display: none; }
+    .review-card {
+      background: var(--p-light); border-radius: 12px;
+      padding: 16px; min-width: 220px; max-width: 280px; flex-shrink: 0;
+      border: 1px solid #c8e6d4;
+    }
+    .review-stars { font-size: 0.9rem; margin-bottom: 8px; letter-spacing: 1px; }
+    .review-comment {
+      font-size: 0.82rem; color: #444; line-height: 1.55;
+      margin-bottom: 10px; font-style: italic;
+      display: -webkit-box; -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .review-meta {
+      font-size: 0.72rem; color: var(--muted); font-weight: 600;
+    }
+
     /* ── Sobre mí ───────────────────────────────────────── */
     .about-section {
       background: var(--white);
@@ -1251,6 +1286,14 @@
   </div>
 </section>
 
+<!-- ── Reseñas ────────────────────────────────────────────── -->
+<section class="reviews-section" id="reviews-section" style="display:none">
+  <div class="reviews-inner">
+    <div class="reviews-title">Lo que dicen nuestras clientas</div>
+    <div class="reviews-grid" id="reviews-grid"></div>
+  </div>
+</section>
+
 <div class="container">
   <!-- Progress -->
   <div class="progress" id="progress-bar">
@@ -1494,6 +1537,26 @@ async function init() {
       setTimeout(() => toast.remove(), 6000);
     }
   }
+  // Cargar reseñas aprobadas
+  loadReviews();
+}
+
+async function loadReviews() {
+  try {
+    const reviews = await fetch('/api/reviews').then(r => r.json());
+    if (!Array.isArray(reviews) || !reviews.length) return;
+    const section = document.getElementById('reviews-section');
+    const grid    = document.getElementById('reviews-grid');
+    const stars   = n => '⭐'.repeat(Math.max(1, Math.min(5, n)));
+    grid.innerHTML = reviews.map(r => `
+      <div class="review-card">
+        <div class="review-stars">${stars(r.rating)}</div>
+        ${r.comment ? `<div class="review-comment">"${r.comment}"</div>` : ''}
+        <div class="review-meta">${r.client_name}${r.service_name ? ` · ${r.service_name}` : ''}</div>
+      </div>`).join('');
+    section.dataset.hasReviews = '1';
+    section.style.display = '';
+  } catch(_) {}
 }
 
 function loadGoogleScript() {
@@ -1565,8 +1628,9 @@ async function showMyBookings() {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('section-bookings').classList.add('active');
   document.getElementById('progress-bar').style.display = 'none';
-  // Esconder "Sobre mí" y sticky CTA, mostrar ← Inicio
+  // Esconder "Sobre mí", reseñas y sticky CTA; mostrar ← Inicio
   document.querySelector('.about-section').style.display = 'none';
+  document.getElementById('reviews-section').style.display = 'none';
   document.getElementById('sticky-cta').classList.remove('show');
   document.getElementById('btn-home').classList.add('show');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1595,6 +1659,9 @@ async function showMyBookings() {
 function renderMyBookings(bookings) {
   const content = document.getElementById('my-bookings-content');
   if (!bookings.length) { content.innerHTML = '<div class="empty">Todavía no tenés reservas.</div>'; return; }
+  const policyNote = `<div style="font-size:0.78rem;color:var(--muted);background:var(--p-light);border-radius:8px;padding:9px 13px;margin-bottom:14px;line-height:1.5">
+    ℹ️ Podés cancelar tu turno hasta <strong>24 hs antes</strong> de la cita.
+  </div>`;
   const today = new Date().toISOString().split('T')[0];
   const upcoming = bookings.filter(b => b.date >= today && b.status !== 'cancelled');
   const past = bookings.filter(b => b.date < today || b.status === 'cancelled');
@@ -1603,7 +1670,7 @@ function renderMyBookings(bookings) {
   let html = '';
   if (upcoming.length) { html += `<div class="section-label">Próximas</div>` + upcoming.map(b => bookingCardHtml(b, fmtDate, true)).join(''); }
   if (past.length)     { html += `<div class="section-label">Historial</div>`  + past.map(b => bookingCardHtml(b, fmtDate, false)).join(''); }
-  content.innerHTML = html;
+  content.innerHTML = policyNote + html;
 }
 
 function bookingCardHtml(b, fmtDate, canCancel) {
@@ -1861,8 +1928,10 @@ async function selectService(id) {
   // Sticky CTA paso 1
   updateStickyCta(1);
 
-  // Ocultar "Sobre mí" — aprovechar espacio
+  // Ocultar "Sobre mí" y reseñas — aprovechar espacio
   document.querySelector('.about-section').style.display = 'none';
+  const _revSec = document.getElementById('reviews-section');
+  if (_revSec) _revSec.style.display = 'none';
 
   // Mostrar botón home
   document.getElementById('btn-home').classList.add('show');
@@ -1877,12 +1946,11 @@ function goStep(step) {
   updateStickyCta(step);
   // Botón home: visible en todos los pasos excepto inicio sin selección
   document.getElementById('btn-home').classList.toggle('show', step > 1 || !!state.selectedService);
-  // "Sobre mí": solo en paso 1 sin servicio seleccionado
-  if (step === 1 && !state.selectedService) {
-    document.querySelector('.about-section').style.display = '';
-  } else if (step !== 1) {
-    document.querySelector('.about-section').style.display = 'none';
-  }
+  // "Sobre mí" y reseñas: solo en paso 1 sin servicio seleccionado
+  const showHome = step === 1 && !state.selectedService;
+  document.querySelector('.about-section').style.display = showHome ? '' : 'none';
+  const revSec = document.getElementById('reviews-section');
+  if (revSec) revSec.style.display = showHome && revSec.dataset.hasReviews ? '' : 'none';
   if (step === 2) loadCalendar();
   if (step === 3) {
     // Mostrar selector de método de pago si MP está activo y el servicio tiene precio
@@ -2182,8 +2250,10 @@ function newBooking() {
   document.getElementById('pm-mp').classList.remove('active');
   document.getElementById('pay-surcharge-note').style.display = 'none';
   ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
-  // Restaurar sección Sobre mí y ocultar sticky/home
+  // Restaurar sección Sobre mí, reseñas y ocultar sticky/home
   document.querySelector('.about-section').style.display = '';
+  const _nb = document.getElementById('reviews-section');
+  if (_nb && _nb.dataset.hasReviews) _nb.style.display = '';
   document.getElementById('sticky-cta').classList.remove('show');
   document.getElementById('btn-home').classList.remove('show');
   goStep(1);

@@ -678,9 +678,9 @@ function getCurrentBooking() {
   return best;
 }
 
-function getBookingsNeedingReminder() {
-  const in48h = new Date(Date.now() + 48 * 60 * 60 * 1000);
-  const dateStr = in48h.toISOString().split('T')[0];
+function getBookingsNeedingReminder(hoursAhead = 48) {
+  const target = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
+  const dateStr = target.toISOString().split('T')[0];
   return db.prepare(`
     SELECT b.*, c.name as client_name, c.phone as client_phone, c.email as client_email,
            s.name as service_name, p.name as professional_name
@@ -725,6 +725,77 @@ function updateBookingPayment(id, { mp_preference_id, mp_payment_id, deposit_pai
   db.prepare(`UPDATE bookings SET ${sets.join(', ')} WHERE id = @id`).run(params);
 }
 
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reviews (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    booking_id INTEGER,
+    client_name TEXT NOT NULL,
+    service_name TEXT,
+    rating      INTEGER,
+    comment     TEXT,
+    created_at  TEXT DEFAULT (datetime('now')),
+    approved    INTEGER DEFAULT 0,
+    submitted   INTEGER DEFAULT 0,
+    token       TEXT UNIQUE NOT NULL
+  );
+`);
+try { db.exec("ALTER TABLE bookings ADD COLUMN review_sent INTEGER DEFAULT 0"); } catch(_e) {}
+
+const _crypto = require('crypto');
+
+function getBookingsNeedingReview() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dateStr = yesterday.toISOString().split('T')[0];
+  return db.prepare(`
+    SELECT b.*, c.name as client_name, c.email as client_email, s.name as service_name
+    FROM bookings b
+    JOIN clients c ON b.client_id = c.id
+    JOIN services s ON b.service_id = s.id
+    WHERE b.date = ? AND b.review_sent = 0 AND b.status != 'cancelled'
+    AND c.email IS NOT NULL AND c.email != ''
+  `).all(dateStr);
+}
+
+function markReviewSent(id) {
+  return db.prepare('UPDATE bookings SET review_sent = 1 WHERE id = ? AND review_sent = 0').run(id).changes > 0;
+}
+
+function createReviewToken(bookingId, clientName, serviceName) {
+  const token = _crypto.randomBytes(32).toString('hex');
+  db.prepare('INSERT OR IGNORE INTO reviews (booking_id, client_name, service_name, token) VALUES (?, ?, ?, ?)')
+    .run(bookingId, clientName, serviceName, token);
+  return token;
+}
+
+function getReviewByToken(token) {
+  return db.prepare('SELECT * FROM reviews WHERE token = ?').get(token);
+}
+
+function submitReview(token, { rating, comment }) {
+  return db.prepare(
+    'UPDATE reviews SET rating=?, comment=?, submitted=1 WHERE token=? AND submitted=0'
+  ).run(rating, comment || '', token).changes > 0;
+}
+
+function getApprovedReviews() {
+  return db.prepare('SELECT * FROM reviews WHERE approved=1 AND submitted=1 ORDER BY created_at DESC LIMIT 20').all();
+}
+
+function getAllReviews() {
+  return db.prepare('SELECT * FROM reviews WHERE submitted=1 ORDER BY created_at DESC').all();
+}
+
+function approveReview(id) {
+  const r = db.prepare('SELECT approved FROM reviews WHERE id=?').get(id);
+  if (r) db.prepare('UPDATE reviews SET approved=? WHERE id=?').run(r.approved ? 0 : 1, id);
+}
+
+function deleteReview(id) {
+  db.prepare('DELETE FROM reviews WHERE id=?').run(id);
+}
+
 module.exports = {
   getSettings, updateSettings,
   getProfessionals, getProfessionalById, createProfessional, updateProfessional, deleteProfessional, purgeProfessional,
@@ -739,6 +810,9 @@ module.exports = {
   addBookingPhoto, getBookingPhotos, deleteBookingPhoto, updateBookingAdmin,
   getBookingsNeedingReminder, markReminderSent, getWeekBookings,
   updateBookingPayment,
+  getBookingsNeedingReview, markReviewSent, createReviewToken,
+  getReviewByToken, submitReview,
+  getApprovedReviews, getAllReviews, approveReview, deleteReview,
   createSessionStore,
 };
 

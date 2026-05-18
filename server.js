@@ -580,12 +580,13 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-// ─── CRON: recordatorio 48h (cada hora) ──────────────────────────────────────
+// ─── CRON: recordatorio configurable (cada hora) ─────────────────────────────
 cron.schedule('0 * * * *', async () => {
   try {
-    const bookings = db.getBookingsNeedingReminder();
-    const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const s = db.getSettings();
+    const hours = parseInt(s.reminder_hours || '48');
+    const bookings = db.getBookingsNeedingReminder(hours);
+    const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     for (const b of bookings) {
       // Marcar primero — si otra instancia ya lo marcó, skip (previene duplicados)
       const claimed = db.markReminderSent(b.id);
@@ -619,6 +620,59 @@ cron.schedule('0 9 * * 0', async () => {
     }
     console.log(`Resumen semanal: ${bookings.length} citas`);
   } catch (err) { console.error('Cron semanal:', err.message); }
+});
+
+// ─── CRON: solicitar reseñas (diario 10:30am) ────────────────────────────────
+cron.schedule('30 10 * * *', async () => {
+  try {
+    const s = db.getSettings();
+    if (s.reviews_enabled !== '1') return;
+    const appUrl = process.env.APP_URL || `https://mipiel.up.railway.app`;
+    const bookings = db.getBookingsNeedingReview();
+    for (const b of bookings) {
+      const claimed = db.markReviewSent(b.id);
+      if (!claimed) continue;
+      const token = db.createReviewToken(b.id, b.client_name, b.service_name);
+      const reviewUrl = `${appUrl}/review?token=${token}`;
+      if (b.client_email) {
+        await emailSvc.sendReviewRequest({ ...b, review_url: reviewUrl, business_name: s.business_name || 'Mi Piel' }).catch(() => {});
+      }
+    }
+    if (bookings.length) console.log(`Solicitudes de reseña enviadas: ${bookings.length}`);
+  } catch (err) { console.error('Cron reseñas:', err.message); }
+});
+
+// ─── Reseñas (público) ────────────────────────────────────────────────────────
+app.get('/api/reviews', (req, res) => res.json(db.getApprovedReviews()));
+
+app.get('/api/review/check/:token', (req, res) => {
+  const r = db.getReviewByToken(req.params.token);
+  if (!r) return res.status(404).json({ error: 'Token inválido' });
+  res.json({ client_name: r.client_name, service_name: r.service_name, submitted: !!r.submitted });
+});
+
+app.post('/api/review/submit', (req, res) => {
+  const { token, rating, comment } = req.body;
+  if (!token || !rating || rating < 1 || rating > 5)
+    return res.status(400).json({ error: 'Datos inválidos' });
+  const ok = db.submitReview(token, { rating: parseInt(rating), comment });
+  if (!ok) return res.status(409).json({ error: 'Ya enviada o token inválido' });
+  res.json({ success: true });
+});
+
+app.get('/review', (req, res) => res.sendFile(path.join(__dirname, 'public', 'review.html')));
+
+// ─── Reseñas (admin) ──────────────────────────────────────────────────────────
+app.get('/api/admin/reviews', requireAuth, (req, res) => res.json(db.getAllReviews()));
+
+app.put('/api/admin/reviews/:id/approve', requireAuth, (req, res) => {
+  db.approveReview(parseInt(req.params.id));
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/reviews/:id', requireAuth, (req, res) => {
+  db.deleteReview(parseInt(req.params.id));
+  res.json({ success: true });
 });
 
 app.listen(PORT, () => {

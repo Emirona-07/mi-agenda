@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dejá tu reseña — Mi Piel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      background: white; border-radius: 16px;
+      max-width: 480px; width: 100%;
+      overflow: hidden; border: 1px solid #e8e8e8;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .header {
+      background: #2d6a4f; padding: 28px 32px; text-align: center;
+    }
+    .header h1 { color: white; font-size: 1.25rem; font-weight: 700; margin-bottom: 2px; }
+    .header p { color: rgba(255,255,255,0.75); font-size: 0.82rem; }
+    .body { padding: 32px; }
+    .greeting { font-size: 1rem; font-weight: 600; color: #111; margin-bottom: 4px; }
+    .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 28px; line-height: 1.5; }
+
+    /* Stars */
+    .stars-label { font-size: 0.72rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .stars { display: flex; gap: 8px; margin-bottom: 24px; }
+    .star {
+      font-size: 2.2rem; cursor: pointer; line-height: 1;
+      transition: transform 0.15s;
+      filter: grayscale(1) opacity(0.35);
+      user-select: none;
+    }
+    .star:hover, .star.active { filter: none; transform: scale(1.15); }
+    .star.active { transform: scale(1.1); }
+
+    /* Form */
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 0.72rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    textarea {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid #e0e0e0; border-radius: 8px;
+      font-size: 1rem; font-family: inherit; resize: vertical;
+      min-height: 110px; outline: none; transition: border-color 0.2s;
+      color: #111;
+    }
+    textarea:focus { border-color: #2d6a4f; }
+    textarea::placeholder { color: #bbb; }
+
+    .btn {
+      width: 100%; padding: 14px;
+      background: #2d6a4f; color: white; border: none;
+      border-radius: 8px; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background 0.15s;
+    }
+    .btn:hover { background: #1b4332; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* States */
+    .state { text-align: center; padding: 12px 0; }
+    .state-icon { font-size: 3rem; margin-bottom: 14px; }
+    .state h2 { font-size: 1.15rem; font-weight: 700; color: #111; margin-bottom: 8px; }
+    .state p { font-size: 0.88rem; color: #666; line-height: 1.6; }
+
+    .error-msg { background: #fff5f5; color: #c0392b; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
+    .error-msg.show { display: block; }
+    .loading-state { text-align: center; padding: 20px; color: #888; font-size: 0.9rem; }
+
+    .stars-hint { font-size: 0.78rem; color: #2d6a4f; font-weight: 600; min-height: 18px; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1 id="biz-name">Mi Piel</h1>
+    <p>Tu opinión nos importa</p>
+  </div>
+  <div class="body">
+
+    <!-- Cargando -->
+    <div id="state-loading" class="loading-state">Cargando...</div>
+
+    <!-- Token inválido -->
+    <div id="state-invalid" class="state" style="display:none">
+      <div class="state-icon">😕</div>
+      <h2>Enlace inválido</h2>
+      <p>Este enlace de reseña no es válido o ya expiró.</p>
+    </div>
+
+    <!-- Ya enviada -->
+    <div id="state-done" class="state" style="display:none">
+      <div class="state-icon">✅</div>
+      <h2>¡Gracias por tu reseña!</h2>
+      <p>Tu opinión ya fue enviada y la revisaremos pronto. ¡Nos alegra que hayas confiado en nosotras!</p>
+    </div>
+
+    <!-- Formulario -->
+    <div id="state-form" style="display:none">
+      <p class="greeting" id="greeting"></p>
+      <p class="subtitle" id="subtitle"></p>
+
+      <div class="stars-label">¿Cómo calificás tu experiencia?</div>
+      <div class="stars" id="stars">
+        <span class="star" data-val="1">⭐</span>
+        <span class="star" data-val="2">⭐</span>
+        <span class="star" data-val="3">⭐</span>
+        <span class="star" data-val="4">⭐</span>
+        <span class="star" data-val="5">⭐</span>
+      </div>
+      <div class="stars-hint" id="stars-hint"></div>
+
+      <div class="form-group">
+        <label class="form-label">Tu comentario (opcional)</label>
+        <textarea id="comment" placeholder="Contanos cómo fue tu experiencia..."></textarea>
+      </div>
+
+      <div class="error-msg" id="form-error">Seleccioná una puntuación antes de enviar.</div>
+      <button class="btn" id="btn-submit" onclick="submitReview()">Enviar reseña</button>
+    </div>
+
+    <!-- Éxito -->
+    <div id="state-success" class="state" style="display:none">
+      <div class="state-icon">🌿</div>
+      <h2>¡Muchas gracias!</h2>
+      <p>Tu reseña fue enviada con éxito. La revisaremos y la publicaremos pronto.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const token = new URLSearchParams(window.location.search).get('token');
+  let _rating = 0;
+
+  const HINTS = ['', 'Muy mala 😞', 'Regular 😐', 'Buena 🙂', 'Muy buena 😊', 'Excelente ✨'];
+
+  async function init() {
+    if (!token) { show('invalid'); return; }
+    try {
+      const res = await fetch(`/api/review/check/${token}`);
+      if (!res.ok) { show('invalid'); return; }
+      const data = await res.json();
+      if (data.submitted) { show('done'); return; }
+      document.getElementById('greeting').textContent = `Hola ${data.client_name} 👋`;
+      document.getElementById('subtitle').textContent =
+        `Contanos cómo te fue con tu sesión de ${data.service_name}. ¡Tu opinión nos ayuda a mejorar!`;
+      initStars();
+      show('form');
+    } catch(e) { show('invalid'); }
+  }
+
+  function show(state) {
+    document.getElementById('state-loading').style.display  = 'none';
+    document.getElementById('state-invalid').style.display  = 'none';
+    document.getElementById('state-done').style.display     = 'none';
+    document.getElementById('state-form').style.display     = 'none';
+    document.getElementById('state-success').style.display  = 'none';
+    document.getElementById('state-' + state).style.display = '';
+  }
+
+  function initStars() {
+    document.querySelectorAll('.star').forEach(s => {
+      s.addEventListener('click', () => setRating(parseInt(s.dataset.val)));
+      s.addEventListener('mouseenter', () => highlightStars(parseInt(s.dataset.val)));
+      s.addEventListener('mouseleave', () => highlightStars(_rating));
+    });
+  }
+
+  function setRating(val) {
+    _rating = val;
+    highlightStars(val);
+  }
+
+  function highlightStars(val) {
+    document.querySelectorAll('.star').forEach((s, i) => {
+      s.classList.toggle('active', i < val);
+    });
+    document.getElementById('stars-hint').textContent = val ? HINTS[val] : '';
+  }
+
+  async function submitReview() {
+    if (!_rating) {
+      document.getElementById('form-error').classList.add('show');
+      return;
+    }
+    document.getElementById('form-error').classList.remove('show');
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    try {
+      const res = await fetch('/api/review/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, rating: _rating, comment: document.getElementById('comment').value.trim() }),
+      });
+      if (res.ok) { show('success'); }
+      else {
+        const d = await res.json();
+        if (d.error === 'Ya enviada o token inválido') { show('done'); }
+        else { btn.disabled = false; btn.textContent = 'Enviar reseña'; alert('Error al enviar. Intentá de nuevo.'); }
+      }
+    } catch(e) { btn.disabled = false; btn.textContent = 'Enviar reseña'; }
+  }
+
+  init();
+</script>
+</body>
+</html>

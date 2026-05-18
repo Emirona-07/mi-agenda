@@ -189,6 +189,7 @@
       <button class="nav-item" onclick="showPage('servicios')"><span class="icon">✂️</span> Servicios</button>
       <button class="nav-item" onclick="showPage('horarios')"><span class="icon">🕐</span> Horarios</button>
       <button class="nav-item" onclick="showPage('profesionales')"><span class="icon">👩‍💼</span> Profesionales</button>
+      <button class="nav-item" onclick="showPage('reseñas')"><span class="icon">⭐</span> Reseñas</button>
       <button class="nav-item" onclick="showPage('config')"><span class="icon">⚙️</span> Configuración</button>
     </div>
     <div class="sidebar-footer">
@@ -362,6 +363,19 @@
     </div>
 
     <!-- CONFIG -->
+    <!-- RESEÑAS -->
+    <div class="page" id="page-reseñas">
+      <div class="page-title">Reseñas</div>
+      <div class="card">
+        <div class="card-header"><h3>⭐ Reseñas recibidas</h3>
+          <span id="reviews-count" style="font-size:0.82rem;color:var(--muted)"></span>
+        </div>
+        <div id="reviews-table-wrap">
+          <div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-config">
       <div class="page-title">Configuración</div>
       <div class="grid-2">
@@ -416,6 +430,16 @@
           <div class="form-group">
             <label class="form-label">Moneda</label>
             <input type="text" class="form-control" id="cfg-currency" placeholder="$">
+          </div>
+          <div class="form-group">
+            <label class="form-label">🔔 Recordatorio al cliente (horas antes del turno)</label>
+            <input type="number" class="form-control" id="cfg-reminder-hours" placeholder="48" min="1" max="168">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="cfg-reviews-enabled" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
+              ⭐ Enviar email de reseña 24 hs después del turno
+            </label>
           </div>
           <button class="btn btn-primary" onclick="saveConfigSecurity()">Guardar</button>
           <p id="cfg-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
@@ -617,7 +641,7 @@ function showPage(name) {
   $(`page-${name}`).classList.add('active');
   document.querySelector(`[onclick="showPage('${name}')"]`).classList.add('active');
 
-  const loaders = { dashboard: loadDashboard, agenda: loadAgenda, citas: loadCitas, clientes: loadClients, facturacion: loadRevenue, servicios: loadServices, profesionales: loadProfessionals, config: loadConfig };
+  const loaders = { dashboard: loadDashboard, agenda: loadAgenda, citas: loadCitas, clientes: loadClients, facturacion: loadRevenue, servicios: loadServices, profesionales: loadProfessionals, 'reseñas': loadReviews, config: loadConfig };
   if (loaders[name]) loaders[name]();
 }
 
@@ -1201,6 +1225,8 @@ async function loadConfig() {
   $('cfg-owner-email').value = s.owner_email || '';
   $('cfg-interval').value = s.slot_interval || '30'; $('cfg-advance').value = s.booking_advance_days || '60';
   $('cfg-currency').value = s.currency || '$';
+  $('cfg-reminder-hours').value = s.reminder_hours || '48';
+  $('cfg-reviews-enabled').checked = s.reviews_enabled === '1';
   // Canal
   const ch = s.notification_channel || 'email';
   const radio = document.querySelector(`input[name="notification_channel"][value="${ch}"]`);
@@ -1295,7 +1321,13 @@ async function saveConfig() {
 async function saveConfigSecurity() {
   const pass = $('cfg-pass').value; const pass2 = $('cfg-pass2').value;
   if (pass && pass !== pass2) { alert('Las contraseñas no coinciden'); return; }
-  const data = { slot_interval: $('cfg-interval').value, booking_advance_days: $('cfg-advance').value, currency: $('cfg-currency').value };
+  const data = {
+    slot_interval: $('cfg-interval').value,
+    booking_advance_days: $('cfg-advance').value,
+    currency: $('cfg-currency').value,
+    reminder_hours: $('cfg-reminder-hours').value || '48',
+    reviews_enabled: $('cfg-reviews-enabled').checked ? '1' : '0',
+  };
   if (pass) data.admin_password = pass;
   await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify(data) });
   settings = await api('/api/admin/settings');
@@ -1305,6 +1337,57 @@ async function saveConfigSecurity() {
 
 function showMsg() { const m = $('cfg-msg'); m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 2000); }
 function copyUrl() { navigator.clipboard.writeText($('public-url').value); alert('¡Link copiado!'); }
+
+// ─── RESEÑAS ──────────────────────────────────────────
+async function loadReviews() {
+  const wrap = $('reviews-table-wrap');
+  wrap.innerHTML = '<div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>';
+  const reviews = await api('/api/admin/reviews');
+  if (!reviews || reviews.length === 0) {
+    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:0.9rem;">Todavía no hay reseñas recibidas.</div>';
+    $('reviews-count').textContent = '';
+    return;
+  }
+  const pending = reviews.filter(r => !r.approved).length;
+  $('reviews-count').textContent = `${reviews.length} reseña${reviews.length !== 1 ? 's' : ''} · ${pending} pendiente${pending !== 1 ? 's' : ''}`;
+
+  const stars = n => '⭐'.repeat(n) + '☆'.repeat(5 - n);
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>Cliente</th><th>Servicio</th><th>Puntuación</th><th>Comentario</th><th>Fecha</th><th>Estado</th><th>Acciones</th>
+    </tr></thead>
+    <tbody>
+      ${reviews.map(r => `<tr>
+        <td>${r.client_name}</td>
+        <td style="font-size:0.85rem;color:var(--muted)">${r.service_name || '—'}</td>
+        <td style="white-space:nowrap">${stars(r.rating || 0)}</td>
+        <td style="font-size:0.85rem;max-width:240px">${r.comment ? escapeHtml(r.comment) : '<span style="color:var(--muted)">Sin comentario</span>'}</td>
+        <td style="font-size:0.82rem;color:var(--muted);white-space:nowrap">${formatDateShort(r.created_at ? r.created_at.slice(0,10) : '')}</td>
+        <td>${r.approved ? '<span class="badge badge-confirmed">Publicada</span>' : '<span class="badge badge-pending">Pendiente</span>'}</td>
+        <td style="white-space:nowrap;display:flex;gap:6px">
+          ${!r.approved ? `<button class="btn btn-sm btn-primary" onclick="approveReview(${r.id})">✓ Publicar</button>` : ''}
+          <button class="btn btn-sm btn-danger" onclick="deleteReview(${r.id})">🗑</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function approveReview(id) {
+  await api(`/api/admin/reviews/${id}/approve`, { method: 'PUT' });
+  loadReviews();
+}
+
+async function deleteReview(id) {
+  if (!confirm('¿Eliminár esta reseña?')) return;
+  await api(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+  loadReviews();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 // ─── HELPERS ──────────────────────────────────────────
 function statusBadge(s) {
