@@ -857,7 +857,7 @@ async function loadGiftCards() {
       <td>${cur}${gc.amount.toLocaleString()}</td>
       <td style="color:${gc.balance>0?'var(--green)':'var(--muted)'}">${cur}${gc.balance.toLocaleString()}</td>
       <td style="font-size:0.85rem">${escapeHtml(gc.purchaser_name||'—')}</td>
-      <td style="font-size:0.85rem;color:var(--muted)">${escapeHtml(gc.recipient_name||'—')}</td>
+      <td style="font-size:0.85rem;color:var(--muted)">${escapeHtml(gc.recipient_name||'—')}${gc.recipient_email ? '<br><span style="font-size:0.78rem">' + escapeHtml(gc.recipient_email) + '</span>' : ''}</td>
       <td style="font-size:0.82rem;color:var(--muted)">${formatDateShort(gc.created_at?gc.created_at.slice(0,10):'')}</td>
       <td>${statusBadgeGc(gc.status)}</td>
       <td style="white-space:nowrap;display:flex;gap:6px">

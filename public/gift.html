@@ -127,6 +127,13 @@
         <label>Para quién es <span style="font-weight:400;color:#999">(opcional)</span></label>
         <input type="text" id="g-recipient-name" placeholder="Nombre del destinatario">
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.84rem;color:#444;cursor:pointer;margin-bottom:10px;user-select:none">
+        <input type="checkbox" id="g-recipient-check" onchange="toggleRecipientEmail()" style="width:15px;height:15px;accent-color:#2d6a4f;cursor:pointer;flex-shrink:0">
+        Enviarle el código directamente al destinatario por email
+      </label>
+      <div id="g-recipient-email-wrap" style="display:none;margin-bottom:14px">
+        <input type="email" id="g-recipient-email" placeholder="Email del destinatario">
+      </div>
 
       <hr class="divider">
       <div class="section-label">Pago</div>
@@ -303,13 +310,21 @@
     document.getElementById('mp-total-display').textContent = `$${total.toLocaleString('es-UY')}`;
   }
 
+  function toggleRecipientEmail() {
+    const show = document.getElementById('g-recipient-check').checked;
+    document.getElementById('g-recipient-email-wrap').style.display = show ? 'block' : 'none';
+  }
+
   async function submitGift() {
-    const name  = document.getElementById('g-purchaser-name').value.trim();
-    const email = document.getElementById('g-purchaser-email').value.trim();
-    const recip = document.getElementById('g-recipient-name').value.trim();
+    const name        = document.getElementById('g-purchaser-name').value.trim();
+    const email       = document.getElementById('g-purchaser-email').value.trim();
+    const recip       = document.getElementById('g-recipient-name').value.trim();
+    const sendToRecip = document.getElementById('g-recipient-check').checked;
+    const recipEmail  = sendToRecip ? document.getElementById('g-recipient-email').value.trim() : '';
     const errEl = document.getElementById('g-error');
     if (!name || !email) { errEl.textContent = 'Completá tu nombre y email.'; errEl.classList.add('show'); return; }
     if (!_amount || _amount < 100) { errEl.textContent = 'Elegí un monto (mínimo $100).'; errEl.classList.add('show'); return; }
+    if (sendToRecip && !recipEmail) { errEl.textContent = 'Ingresá el email del destinatario.'; errEl.classList.add('show'); return; }
     errEl.classList.remove('show');
     const btn = document.getElementById('g-btn');
     btn.disabled = true;
@@ -319,8 +334,8 @@
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           purchaser_name: name, purchaser_email: email,
-          recipient_name: recip, amount: _amount,
-          payment_method: _payMethod,
+          recipient_name: recip, recipient_email: recipEmail,
+          amount: _amount, payment_method: _payMethod,
         }),
       });
       const data = await res.json();
