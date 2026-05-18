@@ -482,6 +482,22 @@ app.post('/api/admin/email/test', requireAuth, async (req, res) => {
   const result = await emailSvc.testConnection(db.getSettings());
   res.json(result);
 });
+app.post('/api/admin/email/test-review', requireAuth, async (req, res) => {
+  const { email, name } = req.body;
+  if (!email) return res.status(400).json({ error: 'Falta email' });
+  const s = db.getSettings();
+  const appUrl = process.env.APP_URL || process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+  const token = db.createReviewToken(0, name || 'Cliente de prueba', 'Servicio de prueba');
+  const reviewUrl = `${appUrl}/review?token=${token}`;
+  const result = await emailSvc.sendReviewRequest({
+    client_name: name || 'Cliente de prueba',
+    client_email: email,
+    service_name: 'Servicio de prueba',
+    review_url: reviewUrl,
+    business_name: s.business_name || 'Mi Piel',
+  }, s);
+  res.json({ ...result, review_url: reviewUrl });
+});
 
 
 // ─── ADMIN: fotos de citas ────────────────────────────────────────────────────
