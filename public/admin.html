@@ -667,20 +667,19 @@
 </div>
 
 <!-- MODAL: Client detail -->
-<div class="modal-overlay" id="modal-client">
-  <div class="modal" style="max-width:600px">
-    <h2>👤 Detalle del cliente</h2>
+<div class="modal-overlay" id="modal-client" onclick="if(event.target===this)closeModal('modal-client')">
+  <div class="modal" style="max-width:600px;position:relative">
+    <button onclick="closeModal('modal-client')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <h2 style="padding-right:32px">👤 Detalle del cliente</h2>
     <div id="modal-client-content"></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-client')">Cerrar</button>
-    </div>
   </div>
 </div>
 
 <!-- MODAL: Service -->
-<div class="modal-overlay" id="modal-service">
-  <div class="modal">
-    <h2 id="modal-service-title">Nuevo servicio</h2>
+<div class="modal-overlay" id="modal-service" onclick="if(event.target===this)closeModal('modal-service')">
+  <div class="modal" style="position:relative">
+    <button onclick="closeModal('modal-service')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <h2 id="modal-service-title" style="padding-right:32px">Nuevo servicio</h2>
     <input type="hidden" id="svc-id">
     <div class="form-group"><label class="form-label">Nombre *</label><input type="text" class="form-control" id="svc-name"></div>
     <div class="grid-2">
@@ -701,9 +700,10 @@
 </div>
 
 <!-- MODAL: Professional -->
-<div class="modal-overlay" id="modal-prof">
-  <div class="modal">
-    <h2 id="modal-prof-title">Nuevo profesional</h2>
+<div class="modal-overlay" id="modal-prof" onclick="if(event.target===this)closeModal('modal-prof')">
+  <div class="modal" style="position:relative">
+    <button onclick="closeModal('modal-prof')" style="position:sticky;top:0;float:right;margin:-4px -4px 0 0;background:none;border:none;cursor:pointer;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px;z-index:10" aria-label="Cerrar">✕</button>
+    <h2 id="modal-prof-title" style="padding-right:32px">Nuevo profesional</h2>
     <input type="hidden" id="prof-id">
     <div class="form-group"><label class="form-label">Nombre *</label><input type="text" class="form-control" id="prof-name"></div>
     <div class="form-group"><label class="form-label">Color en el calendario</label><input type="color" class="form-control" id="prof-color" style="height:42px"></div>
