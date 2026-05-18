@@ -998,7 +998,8 @@ async function loadAgenda() {
   $('week-label').textContent = `${fmt(days[0])} - ${fmt(days[6])} ${days[0].getFullYear()}`;
 
   const params = `from=${from}&to=${to}${profId ? '&professional_id=' + profId : ''}`;
-  const { bookings } = await api(`/api/admin/bookings?${params}&limit=500`);
+  const { bookings: allBookings } = await api(`/api/admin/bookings?${params}&limit=500`);
+  const bookings = allBookings.filter(b => b.status !== 'cancelled');
 
   const today = dateKey();
   const dayNames = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
