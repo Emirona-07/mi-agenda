@@ -439,19 +439,21 @@
           <div class="form-group">
             <label class="form-label" style="font-weight:700;margin-bottom:10px">📧 Emails automáticos</label>
             <div style="display:flex;flex-direction:column;gap:10px">
-              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:400">
-                <input type="checkbox" id="cfg-reminder-emails" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
-                🔔 Recordatorio al cliente (horas antes del turno)
-              </label>
+              <div>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:400">
+                  <input type="checkbox" id="cfg-reminder-emails" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
+                  🔔 Recordatorio al cliente antes del turno
+                </label>
+                <div style="margin-top:8px;margin-left:28px;display:flex;align-items:center;gap:8px">
+                  <input type="number" class="form-control" id="cfg-reminder-hours" placeholder="48" min="1" max="168" style="width:72px;padding:6px 8px;font-size:0.88rem">
+                  <span style="font-size:0.85rem;color:var(--muted)">horas antes</span>
+                </div>
+              </div>
               <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;font-weight:400">
                 <input type="checkbox" id="cfg-reviews-enabled" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
                 ⭐ Solicitud de reseña (24 hs después del turno)
               </label>
             </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Horas de anticipación para el recordatorio</label>
-            <input type="number" class="form-control" id="cfg-reminder-hours" placeholder="48" min="1" max="168" style="max-width:100px">
           </div>
           <button class="btn btn-primary" onclick="saveConfigSecurity()">Guardar</button>
           <p id="cfg-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
