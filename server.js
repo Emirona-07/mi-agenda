@@ -28,24 +28,35 @@ app.set('trust proxy', 1);
 const { mkdirSync } = require('fs');
 const uploadsDir = path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname, 'uploads');
 mkdirSync(uploadsDir, { recursive: true });
+const allowedImageTypes = new Map([
+  ['image/jpeg', '.jpg'],
+  ['image/png', '.png'],
+  ['image/webp', '.webp'],
+  ['image/gif', '.gif'],
+]);
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadsDir),
     filename: (_req, file, cb) => {
-      const ext = require('path').extname(file.originalname).toLowerCase();
-      cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+      const ext = allowedImageTypes.get(file.mimetype);
+      const name = require('crypto').randomBytes(16).toString('hex');
+      cb(null, `${Date.now()}-${name}${ext}`);
     },
   }),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Solo imágenes'), false);
+    if (allowedImageTypes.has(file.mimetype)) cb(null, true);
+    else cb(new Error('Solo se permiten imágenes JPG, PNG, WebP o GIF'), false);
   },
 });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', require('express').static(uploadsDir));
+app.use('/uploads', require('express').static(uploadsDir, {
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  },
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   name: 'mi_agenda.sid',
@@ -70,6 +81,40 @@ function formatDate(d) {
   const [y, m, day] = d.split('-');
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   return `${parseInt(day)} de ${months[parseInt(m)-1]} de ${y}`;
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
+}
+
+function sanitizeOptional(value, max = 1000) {
+  return String(value || '').trim().slice(0, max);
+}
+
+function adminSettings(settings) {
+  const { admin_password, email_pass, ...safe } = settings;
+  return safe;
+}
+
+function pickSettings(body) {
+  const allowed = new Set([
+    'business_name',
+    'business_description',
+    'business_address',
+    'whatsapp_phone',
+    'admin_password',
+    'booking_advance_days',
+    'slot_interval',
+    'currency',
+    'notification_channel',
+    'mp_surcharge',
+    'owner_email',
+    'bank_account',
+    'reminder_emails_enabled',
+    'reminder_hours',
+    'reviews_enabled',
+  ]);
+  return Object.fromEntries(Object.entries(body || {}).filter(([key]) => allowed.has(key)));
 }
 
 async function verifyGoogleToken(credential) {
@@ -130,19 +175,28 @@ app.get('/api/available-slots', (req, res) => {
 });
 
 app.post('/api/bookings', async (req, res) => {
-  const { name, phone, email, instagram, service_id, professional_id, date, time, notes, payment_method, gift_card_code } = req.body;
+  const name = sanitizeOptional(req.body.name, 120);
+  const phone = sanitizeOptional(req.body.phone, 40);
+  const email = sanitizeOptional(req.body.email, 160);
+  const instagram = sanitizeOptional(req.body.instagram, 80);
+  const notes = sanitizeOptional(req.body.notes, 1000);
+  const { service_id, professional_id, date, time, payment_method, gift_card_code } = req.body;
 
   const s = db.getSettings();
   const channel = s.notification_channel || 'email';
   const needPhone = channel === 'whatsapp' || channel === 'both';
-  if (!name || (needPhone && !phone) || !service_id || !date || !time)
+  const needEmail = channel === 'email' || channel === 'both';
+  if (!name || (needPhone && !phone) || (needEmail && !email) || !service_id || !date || !time)
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  if (email && !isValidEmail(email)) return res.status(400).json({ error: 'Email inválido' });
+
+  const service = db.getServiceById(parseInt(service_id));
+  if (!service || !service.active) return res.status(404).json({ error: 'Servicio no disponible' });
 
   if (!db.isSlotAvailable(date, time, parseInt(service_id), professional_id ? parseInt(professional_id) : null))
     return res.status(409).json({ error: 'El horario ya no está disponible. Por favor elegí otro.' });
 
   const client = db.upsertClient({ name, phone, email, instagram });
-  const service = db.getServiceById(parseInt(service_id));
   const professional = professional_id ? db.getProfessionalById(parseInt(professional_id)) : service.professionals[0] || null;
 
   // Precios: aplicar recargo de MP si el cliente eligió pagar con MP
@@ -523,10 +577,14 @@ app.get('/api/admin/revenue', requireAuth, (req, res) => {
 });
 
 // Settings
-app.get('/api/admin/settings', requireAuth, (req, res) => res.json(db.getSettings()));
+app.get('/api/admin/settings', requireAuth, (req, res) => res.json(adminSettings(db.getSettings())));
 app.put('/api/admin/settings', requireAuth, (req, res) => {
-  const data = { ...req.body };
+  const data = pickSettings(req.body);
   if (data.admin_password) data.admin_password = hashPassword(data.admin_password);
+  if (data.owner_email && !isValidEmail(data.owner_email)) return res.status(400).json({ error: 'Email inválido' });
+  if (data.notification_channel && !['email', 'whatsapp', 'both'].includes(data.notification_channel)) {
+    return res.status(400).json({ error: 'Canal inválido' });
+  }
   db.updateSettings(data);
   res.json({ success: true });
 });
@@ -673,9 +731,15 @@ app.post('/api/gift-cards/check', (req, res) => {
 });
 
 app.post('/api/gift-cards/purchase', async (req, res) => {
-  const { purchaser_name, purchaser_email, recipient_name, amount, note, payment_method } = req.body;
+  const purchaser_name = sanitizeOptional(req.body.purchaser_name, 120);
+  const purchaser_email = sanitizeOptional(req.body.purchaser_email, 160);
+  const recipient_name = sanitizeOptional(req.body.recipient_name, 120);
+  const note = sanitizeOptional(req.body.note, 1000);
+  const amount = parseInt(req.body.amount, 10);
+  const payment_method = req.body.payment_method;
   if (!purchaser_name || !purchaser_email || !amount || amount < 100)
     return res.status(400).json({ error: 'Faltan datos o monto inválido' });
+  if (!isValidEmail(purchaser_email)) return res.status(400).json({ error: 'Email inválido' });
   const s = db.getSettings();
   const mpSurchargePct = (payment_method === 'mp') ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
   const finalAmount = Math.round(parseInt(amount) * (1 + mpSurchargePct));
@@ -839,12 +903,17 @@ app.delete('/api/admin/reviews/:id', requireAuth, (req, res) => {
 // Wildcard: siempre al final, después de todas las rutas API
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message === 'Solo se permiten imágenes JPG, PNG, WebP o GIF') {
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
+});
+
 app.listen(PORT, () => {
   console.log(`\n✅ Agenda corriendo en http://localhost:${PORT}`);
   console.log(`📅 Página de reservas: http://localhost:${PORT}`);
   console.log(`🔐 Panel admin:        http://localhost:${PORT}/admin`);
   console.log(`   Contraseña admin:   configurala desde ADMIN_PASSWORD o el panel\n`);
 });
-
-
 
