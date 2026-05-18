@@ -35,11 +35,23 @@
     .custom-wrap input { max-width: 160px; }
     .custom-wrap span { font-size: 0.85rem; color: #888; }
 
+    /* Pay method */
+    .pay-methods { display: flex; gap: 8px; margin-bottom: 14px; }
+    .pay-method-btn { flex: 1; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+      background: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #555;
+      transition: all 0.15s; font-family: inherit; text-align: center; }
+    .pay-method-btn:hover { border-color: #2d6a4f; color: #2d6a4f; }
+    .pay-method-btn.active { border-color: #2d6a4f; background: #f0faf4; color: #2d6a4f; }
+
     /* Transfer info */
     .transfer-box { background: #f0f7f3; border: 1.5px solid #40916c; border-radius: 10px;
       padding: 14px 16px; font-size: 0.86rem; line-height: 1.7; color: #1b4332;
       margin-bottom: 18px; display: none; }
     .transfer-box strong { color: #2d6a4f; }
+
+    /* MP note */
+    .mp-note { background: #fff8e1; border: 1.5px solid #f9a825; border-radius: 10px;
+      padding: 12px 14px; font-size: 0.82rem; color: #7a5500; margin-bottom: 14px; display: none; }
 
     /* Button */
     .btn { width: 100%; padding: 14px; background: #2d6a4f; color: white; border: none;
@@ -47,6 +59,8 @@
       font-family: inherit; transition: background 0.15s; }
     .btn:hover { background: #1b4332; }
     .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-mp { background: #009ee3; }
+    .btn-mp:hover { background: #007db5; }
     .error-msg { background: #fff5f5; color: #c0392b; border-radius: 8px;
       padding: 10px 14px; font-size: 0.85rem; margin-bottom: 14px; display: none; }
     .error-msg.show { display: block; }
@@ -62,6 +76,11 @@
       letter-spacing: 0.07em; margin-bottom: 8px; }
     .code-val { font-size: 1.8rem; font-weight: 800; color: #2d6a4f; letter-spacing: 0.12em; font-family: monospace; }
     .code-amount { margin-top: 10px; font-size: 1.1rem; font-weight: 700; color: #111; }
+
+    /* Pending state */
+    .state-pending { background: #fff8e1; border: 1.5px solid #f9a825; border-radius: 12px;
+      padding: 20px; margin-top: 16px; text-align: center; }
+    .state-pending p { font-size: 0.85rem; color: #7a5500; }
 
     .divider { border: none; border-top: 1px solid #eee; margin: 20px 0; }
     a.back { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
@@ -111,27 +130,37 @@
 
       <hr class="divider">
       <div class="section-label">Pago</div>
-      <p style="font-size:0.85rem;color:#666;margin-bottom:12px">
-        El pago es por transferencia bancaria. Una vez acreditado, el código queda activo automáticamente.
-      </p>
+
+      <div class="pay-methods" id="pay-methods-wrap">
+        <button class="pay-method-btn active" id="pm-transfer" onclick="setPayMethod('transfer')">🏦 Transferencia</button>
+        <button class="pay-method-btn" id="pm-mp" onclick="setPayMethod('mp')" style="display:none">💳 Mercado Pago</button>
+      </div>
+
+      <div class="mp-note" id="mp-note">
+        Se agrega un recargo del <strong id="mp-pct">5</strong>% por uso de Mercado Pago.
+        El monto final será <strong id="mp-total-display"></strong>.
+      </div>
+
       <div class="transfer-box" id="transfer-box"></div>
-      <p style="font-size:0.78rem;color:#999;margin-bottom:18px" id="transfer-note" style="display:none"></p>
 
       <div class="error-msg" id="g-error"></div>
       <button class="btn" id="g-btn" onclick="submitGift()">Comprar gift card 🎁</button>
-      <p style="font-size:0.75rem;color:#999;text-align:center;margin-top:10px">
+      <p style="font-size:0.75rem;color:#999;text-align:center;margin-top:10px" id="g-footer-note">
         Recibirás el código en tu email al confirmar el pago.
       </p>
     </div>
 
     <div id="state-success" class="state" style="display:none">
       <div class="state-icon">🎁</div>
-      <h2>¡Gift card creada!</h2>
-      <p>Te enviamos el código a tu email. Guardalo para usarlo al reservar.</p>
+      <h2 id="success-title">¡Gift card creada!</h2>
+      <p id="success-msg">Te enviamos el código a tu email. Guardalo para usarlo al reservar.</p>
       <div class="code-box">
         <div class="code-label">Tu código</div>
         <div class="code-val" id="success-code"></div>
         <div class="code-amount" id="success-amount"></div>
+      </div>
+      <div id="pending-note" class="state-pending" style="display:none">
+        <p>⏳ Tu pago está siendo procesado. El código quedará activo en breves minutos y recibirás un email de confirmación.</p>
       </div>
       <p style="font-size:0.83rem;color:#666;margin-top:12px">
         Ingresá este código en el paso de pago al hacer tu reserva en <span id="success-biz"></span>.
@@ -147,30 +176,118 @@
   let _amount = 0;
   let _bankAccount = '';
   let _bizName = 'Mi Piel';
+  let _payMethod = 'transfer';
+  let _mpActive = false;
+  let _mpSurcharge = 5;
 
   async function init() {
+    // ── Manejar retorno de MP ─────────────────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const gcPayment = params.get('gc_payment');
+    const gcCode    = params.get('gc');
+    const gcAmount  = params.get('amount');
+
+    if (gcPayment === 'success' && gcCode) {
+      document.getElementById('state-form').style.display = 'none';
+      const s = document.getElementById('state-success');
+      s.style.display = '';
+      document.getElementById('success-code').textContent = gcCode;
+      if (gcAmount) {
+        document.getElementById('success-amount').textContent = `$${parseInt(gcAmount).toLocaleString('es-UY')}`;
+      }
+      // MP puede demorar el webhook — aclarar que el código puede tardar unos segundos en activarse
+      document.getElementById('pending-note').style.display = '';
+    } else if (gcPayment === 'pending' && gcCode) {
+      document.getElementById('state-form').style.display = 'none';
+      const s = document.getElementById('state-success');
+      s.style.display = '';
+      document.getElementById('success-title').textContent = 'Pago en proceso';
+      document.getElementById('success-msg').textContent = 'Tu pago está siendo verificado.';
+      document.getElementById('success-code').textContent = gcCode;
+      if (gcAmount) {
+        document.getElementById('success-amount').textContent = `$${parseInt(gcAmount).toLocaleString('es-UY')}`;
+      }
+      document.getElementById('pending-note').style.display = '';
+    } else if (gcPayment === 'failure') {
+      const errEl = document.getElementById('g-error');
+      errEl.textContent = 'El pago no fue aprobado. Podés intentar de nuevo o elegir transferencia.';
+      errEl.classList.add('show');
+    }
+
+    // ── Cargar datos del negocio ──────────────────────────────────────────────
     const biz = await fetch('/api/business').then(r => r.json());
-    _bizName = biz.name || 'Mi Piel';
+    _bizName    = biz.name || 'Mi Piel';
     _bankAccount = biz.bank_account || '';
+    _mpActive   = biz.mp_active || false;
+    _mpSurcharge = biz.mp_surcharge || 5;
+
     document.getElementById('biz-name').textContent = _bizName;
     document.getElementById('success-biz').textContent = _bizName;
+    document.getElementById('mp-pct').textContent = _mpSurcharge;
     document.title = `Gift Card — ${_bizName}`;
+
     if (_bankAccount) {
       const box = document.getElementById('transfer-box');
       box.innerHTML = `<strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g,'<br>')}`;
       box.style.display = 'block';
     }
+
+    if (_mpActive) {
+      document.getElementById('pm-mp').style.display = '';
+    }
+
+    // ── Pre-cargar monto desde URL (?amount=X) ────────────────────────────────
+    const amtParam = params.get('amount');
+    if (amtParam && !gcPayment) {
+      const val = parseInt(amtParam);
+      if (val >= 100) {
+        const matchBtn = document.querySelector(`.amt-btn[data-val="${val}"]`);
+        if (matchBtn) {
+          setAmt(val);
+        } else {
+          _amount = val;
+          document.getElementById('custom-amount').value = val;
+        }
+      }
+    }
+  }
+
+  function setPayMethod(m) {
+    _payMethod = m;
+    document.getElementById('pm-transfer').classList.toggle('active', m === 'transfer');
+    document.getElementById('pm-mp').classList.toggle('active', m === 'mp');
+    document.getElementById('mp-note').style.display    = m === 'mp' ? 'block' : 'none';
+    document.getElementById('transfer-box').style.display = (m === 'transfer' && _bankAccount) ? 'block' : 'none';
+    const btn = document.getElementById('g-btn');
+    if (m === 'mp') {
+      btn.textContent = 'Pagar con Mercado Pago 💳';
+      btn.classList.add('btn-mp');
+      document.getElementById('g-footer-note').textContent = 'Serás redirigido a Mercado Pago para completar el pago.';
+    } else {
+      btn.textContent = 'Comprar gift card 🎁';
+      btn.classList.remove('btn-mp');
+      document.getElementById('g-footer-note').textContent = 'Recibirás el código en tu email al confirmar el pago.';
+    }
+    updateMpTotal();
   }
 
   function setAmt(val) {
     _amount = val;
     document.getElementById('custom-amount').value = '';
     document.querySelectorAll('.amt-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === val));
+    updateMpTotal();
   }
 
   function setCustomAmt(val) {
     _amount = parseInt(val) || 0;
     document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('active'));
+    updateMpTotal();
+  }
+
+  function updateMpTotal() {
+    if (_payMethod !== 'mp' || !_amount) return;
+    const total = Math.round(_amount * (1 + _mpSurcharge / 100));
+    document.getElementById('mp-total-display').textContent = `$${total.toLocaleString('es-UY')}`;
   }
 
   async function submitGift() {
@@ -182,15 +299,32 @@
     if (!_amount || _amount < 100) { errEl.textContent = 'Elegí un monto (mínimo $100).'; errEl.classList.add('show'); return; }
     errEl.classList.remove('show');
     const btn = document.getElementById('g-btn');
-    btn.disabled = true; btn.textContent = 'Procesando...';
+    btn.disabled = true;
+    btn.textContent = _payMethod === 'mp' ? 'Redirigiendo...' : 'Procesando...';
     try {
       const res = await fetch('/api/gift-cards/purchase', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ purchaser_name: name, purchaser_email: email,
-          recipient_name: recip, amount: _amount }),
+        body: JSON.stringify({
+          purchaser_name: name, purchaser_email: email,
+          recipient_name: recip, amount: _amount,
+          payment_method: _payMethod,
+        }),
       });
       const data = await res.json();
-      if (res.ok && data.code) {
+      if (!res.ok) {
+        errEl.textContent = data.error || 'Error al procesar. Intentá de nuevo.';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = _payMethod === 'mp' ? 'Pagar con Mercado Pago 💳' : 'Comprar gift card 🎁';
+        return;
+      }
+      // MP → redirigir a checkout
+      if (data.mp_url) {
+        window.location.href = data.mp_url;
+        return;
+      }
+      // Transferencia → mostrar código en pantalla
+      if (data.code) {
         document.getElementById('state-form').style.display = 'none';
         document.getElementById('state-success').style.display = '';
         document.getElementById('success-code').textContent = data.code;
@@ -198,12 +332,14 @@
       } else {
         errEl.textContent = data.error || 'Error al procesar. Intentá de nuevo.';
         errEl.classList.add('show');
-        btn.disabled = false; btn.textContent = 'Comprar gift card 🎁';
+        btn.disabled = false;
+        btn.textContent = 'Comprar gift card 🎁';
       }
     } catch(e) {
       errEl.textContent = 'Error de conexión. Intentá de nuevo.';
       errEl.classList.add('show');
-      btn.disabled = false; btn.textContent = 'Comprar gift card 🎁';
+      btn.disabled = false;
+      btn.textContent = _payMethod === 'mp' ? 'Pagar con Mercado Pago 💳' : 'Comprar gift card 🎁';
     }
   }
 

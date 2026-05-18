@@ -276,7 +276,31 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
     const payment = new Payment(mpClient);
     const payData = await payment.get({ id: body.data.id });
     if (payData.status === 'approved') {
-      const [bookingIdStr, payType = 'deposit'] = (payData.external_reference || '').split(':');
+      const extRef = payData.external_reference || '';
+
+      // ── Gift card payment ────────────────────────────────────────────────────
+      if (extRef.startsWith('gc:')) {
+        const gcId = parseInt(extRef.slice(3));
+        if (!isNaN(gcId)) {
+          db.activateGiftCard(gcId);
+          const gc = db.getGiftCardById(gcId);
+          if (gc) {
+            const s = db.getSettings();
+            await emailSvc.sendGiftCard({
+              purchaser_name: gc.purchaser_name,
+              purchaser_email: gc.purchaser_email,
+              recipient_name: gc.recipient_name,
+              code: gc.code, amount: gc.amount,
+              business_name: s.business_name || 'Mi Piel',
+            }, s).catch(() => {});
+            console.log(`Gift card activada: #${gcId} código ${gc.code}`);
+          }
+        }
+        return;
+      }
+
+      // ── Booking payment ──────────────────────────────────────────────────────
+      const [bookingIdStr, payType = 'deposit'] = extRef.split(':');
       const bookingId = parseInt(bookingIdStr);
       if (!isNaN(bookingId)) {
         const newPaymentStatus = payType === 'full' ? 'full' : 'deposit';
@@ -629,11 +653,44 @@ app.post('/api/gift-cards/check', (req, res) => {
 });
 
 app.post('/api/gift-cards/purchase', async (req, res) => {
-  const { purchaser_name, purchaser_email, recipient_name, amount, note } = req.body;
+  const { purchaser_name, purchaser_email, recipient_name, amount, note, payment_method } = req.body;
   if (!purchaser_name || !purchaser_email || !amount || amount < 100)
     return res.status(400).json({ error: 'Faltan datos o monto inválido' });
   const s = db.getSettings();
-  const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, note });
+  const mpSurchargePct = (payment_method === 'mp') ? parseFloat(s.mp_surcharge || '5') / 100 : 0;
+  const finalAmount = Math.round(parseInt(amount) * (1 + mpSurchargePct));
+  // Gift card se crea con status 'pending' si paga con MP, 'active' si es transferencia
+  const status = (payment_method === 'mp' && mpClient) ? 'pending' : 'active';
+  const gc = db.createGiftCard({ amount: parseInt(amount), purchaser_name, purchaser_email, recipient_name, note, status });
+
+  if (payment_method === 'mp' && mpClient) {
+    try {
+      const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+      const pref = new Preference(mpClient);
+      const r = await pref.create({ body: {
+        items: [{ id: `gc-${gc.id}`, title: `Gift Card ${s.business_name || 'Mi Piel'}`,
+          description: recipient_name ? `Para ${recipient_name}` : 'Gift card',
+          quantity: 1, unit_price: finalAmount, currency_id: 'UYU' }],
+        external_reference: `gc:${gc.id}`,
+        back_urls: {
+          success: `${publicUrl}/gift?gc_payment=success&gc=${gc.code}&amount=${parseInt(amount)}`,
+          failure: `${publicUrl}/gift?gc_payment=failure`,
+          pending: `${publicUrl}/gift?gc_payment=pending&gc=${gc.code}&amount=${parseInt(amount)}`,
+        },
+        auto_return: 'approved',
+        notification_url: `${publicUrl}/api/payments/webhook`,
+        payer: { email: purchaser_email },
+      }});
+      const isTest = (process.env.MP_ACCESS_TOKEN || '').includes('-TEST-') || process.env.MP_SANDBOX === 'true';
+      const mp_url = isTest ? r.sandbox_init_point : r.init_point;
+      return res.json({ success: true, mp_url, code: gc.code });
+    } catch(mpErr) {
+      console.error('MP gift card error:', mpErr.message);
+      // Fallback: activar igual y enviar email
+      db.activateGiftCard(gc.id);
+    }
+  }
+
   await emailSvc.sendGiftCard({
     purchaser_name, purchaser_email, recipient_name,
     code: gc.code, amount: gc.amount,

@@ -1953,7 +1953,15 @@ function updateStickyCta(step) {
     nameEl.textContent  = state.selectedService.name.replace(/\p{Emoji}/gu, '').trim();
     priceEl.textContent = state.selectedService.price > 0 ? `$${state.selectedService.price.toLocaleString()}` : '';
     btnEl.textContent   = 'Continuar →';
-    btnEl.onclick       = () => goStep(2);
+    btnEl.onclick       = () => {
+      const isGiftCard = /gift\s*card/i.test(state.selectedService?.name || '');
+      if (isGiftCard) {
+        const price = state.selectedService.price;
+        window.location.href = '/gift' + (price > 0 ? `?amount=${price}` : '');
+      } else {
+        goStep(2);
+      }
+    };
     btnEl.disabled      = false;
     cta.classList.add('show');
 

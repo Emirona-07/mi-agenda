@@ -822,11 +822,16 @@ function _gcCode() {
   return `${part(4)}-${part(4)}`;
 }
 
-function createGiftCard({ amount, purchaser_name, purchaser_email, recipient_name, note }) {
+function createGiftCard({ amount, purchaser_name, purchaser_email, recipient_name, note, status }) {
   const code = _gcCode();
-  db.prepare(`INSERT INTO gift_cards (code, amount, balance, purchaser_name, purchaser_email, recipient_name, note)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`).run(code, amount, amount, purchaser_name||'', purchaser_email||'', recipient_name||'', note||'');
+  const gcStatus = status || 'active';
+  db.prepare(`INSERT INTO gift_cards (code, amount, balance, purchaser_name, purchaser_email, recipient_name, note, status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(code, amount, amount, purchaser_name||'', purchaser_email||'', recipient_name||'', note||'', gcStatus);
   return db.prepare('SELECT * FROM gift_cards WHERE code=?').get(code);
+}
+
+function getGiftCardById(id) {
+  return db.prepare('SELECT * FROM gift_cards WHERE id=?').get(id);
 }
 
 function getGiftCardByCode(code) {
@@ -921,7 +926,7 @@ module.exports = {
   getBookingsNeedingReview, markReviewSent, createReviewToken,
   getReviewByToken, submitReview,
   getApprovedReviews, getAllReviews, approveReview, deleteReview,
-  createGiftCard, getGiftCardByCode, useGiftCard, getAllGiftCards, cancelGiftCard, activateGiftCard,
+  createGiftCard, getGiftCardByCode, getGiftCardById, useGiftCard, getAllGiftCards, cancelGiftCard, activateGiftCard,
   getMetrics,
   createSessionStore,
 };
