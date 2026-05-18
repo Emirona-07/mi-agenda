@@ -884,7 +884,17 @@ function getMetrics() {
     return total > 0 ? Math.round((cancelled/total)*100) : 0;
   })();
 
-  const newClients = db.prepare(`SELECT COUNT(*) as c FROM clients WHERE created_at LIKE ?`).get(`${ym}-%`).c;
+  const newClients = (() => {
+    try {
+      return db.prepare(`SELECT COUNT(*) as c FROM clients WHERE created_at LIKE ?`).get(`${ym}-%`).c;
+    } catch(_) {
+      // Fallback: clientes con su primera cita este mes
+      return db.prepare(`SELECT COUNT(DISTINCT client_id) as c FROM bookings
+        WHERE date LIKE ? AND status!='cancelled'
+        AND client_id NOT IN (SELECT DISTINCT client_id FROM bookings WHERE date < ? AND status!='cancelled')`
+      ).get(`${ym}-%`, `${ym}-01`).c;
+    }
+  })();
 
   const avgTicket = (() => {
     const r = db.prepare(`SELECT AVG(total_price) as avg FROM bookings WHERE date LIKE ? AND status!='cancelled' AND total_price>0`).get(`${ym}-%`);

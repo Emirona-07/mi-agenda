@@ -708,7 +708,13 @@ async function loadDashboard() {
 
 async function loadMetrics() {
   let m;
-  try { m = await api('/api/admin/metrics'); } catch(e) { return; }
+  try { m = await api('/api/admin/metrics'); } catch(e) {
+    ['metrics-chart','metrics-kpi','metrics-services'].forEach(id => {
+      const el = $(id); if(el) el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.82rem">No se pudieron cargar los datos.</div>';
+    });
+    return;
+  }
+  if (!m || m.error) return;
   const cur = settings.currency || '$';
 
   // Gráfico de barras (SVG inline)
