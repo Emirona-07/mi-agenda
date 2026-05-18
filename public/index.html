@@ -1352,7 +1352,7 @@
     </div>
 
     <div class="nav-btns">
-      <button class="btn btn-secondary" onclick="goStep(1)" style="flex:0 0 auto;width:auto">← Volver</button>
+      <button class="btn btn-secondary" onclick="history.back()" style="flex:0 0 auto;width:auto">← Volver</button>
     </div>
   </div>
 
@@ -1424,7 +1424,7 @@
       </div>
     </div>
     <div class="nav-btns">
-      <button class="btn btn-secondary" onclick="goStep(2)" style="flex:0 0 auto;width:auto">← Volver</button>
+      <button class="btn btn-secondary" onclick="history.back()" style="flex:0 0 auto;width:auto">← Volver</button>
     </div>
   </div>
 
@@ -1631,6 +1631,9 @@ function dateKey(date = new Date()) {
 }
 
 async function init() {
+  // Registrar estado inicial para que el back button funcione desde el paso 2 en adelante
+  history.replaceState({ view: 'step', step: 1 }, '');
+
   state.utmSource = new URLSearchParams(window.location.search).get('ref')
     || new URLSearchParams(window.location.search).get('utm_source')
     || new URLSearchParams(window.location.search).get('source')
@@ -1932,6 +1935,20 @@ let _gcDiscount    = 0;        // monto de descuento de gift card
 let _gcAmt         = 0;
 let _gcPayMethod   = 'transfer';
 
+// ── History API (flechas del navegador) ───────────────────────────────────────
+let _historyNav = false; // true mientras manejamos un popstate, para no re-pushear
+
+window.addEventListener('popstate', (e) => {
+  _historyNav = true;
+  const st = e.state;
+  if (!st || st.view === 'step') {
+    goStep(st ? st.step : 1);
+  } else if (st.view === 'gift') {
+    goGiftCard();
+  }
+  _historyNav = false;
+});
+
 function renderServices() {
   const list = document.getElementById('services-list');
   if (!state.services.length) { list.innerHTML = '<div class="empty">No hay servicios disponibles.</div>'; return; }
@@ -2142,6 +2159,7 @@ async function selectService(id) {
 
 // ── Gift card inline flow ─────────────────────────────────────────────────────
 function goGiftCard(presetAmount) {
+  if (!_historyNav) history.pushState({ view: 'gift' }, '');
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelector('.about-section').style.display = 'none';
   const revSec = document.getElementById('reviews-section');
@@ -2172,11 +2190,11 @@ function goGiftCard(presetAmount) {
 }
 
 function exitGiftCard() {
-  document.getElementById('booking-flow').style.display = '';
-  document.getElementById('section-gift').style.display = 'none';
-  document.getElementById('progress-bar').style.display = '';
-  goStep(1);
-  // Reset form
+  _resetGcForm();
+  history.back(); // dispara popstate → goStep(1) que limpia la vista
+}
+
+function _resetGcForm() {
   _gcAmt = 0;
   _gcPayMethod = 'transfer';
   document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.remove('active'));
@@ -2187,6 +2205,8 @@ function exitGiftCard() {
   document.getElementById('gc-recipient-check').checked = false;
   document.getElementById('gc-recipient-email-wrap').style.display = 'none';
   document.getElementById('gc-inline-error').style.display = 'none';
+  const btn = document.getElementById('gc-submit-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Comprar gift card 🎁'; btn.style.background = ''; }
 }
 
 function gcSetAmt(val) {
@@ -2305,47 +2325,25 @@ async function submitGiftCardInline() {
 }
 
 function gcDone() {
-  // Reset all form state before leaving
-  _gcAmt = 0;
-  _gcPayMethod = 'transfer';
-  document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('gc-custom-amt').value = '';
-  ['gc-purchaser-name','gc-purchaser-email','gc-recipient-name','gc-recipient-email'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('gc-recipient-check').checked = false;
-  document.getElementById('gc-recipient-email-wrap').style.display = 'none';
-  document.getElementById('gc-inline-error').style.display = 'none';
-  const btn = document.getElementById('gc-submit-btn');
-  btn.disabled = false; btn.textContent = 'Comprar gift card 🎁'; btn.style.background = '';
-
-  document.getElementById('section-gift').style.display = 'none';
-  document.getElementById('booking-flow').style.display = '';
-  document.getElementById('progress-bar').style.display = '';
-  goStep(1);
+  _resetGcForm();
+  history.back(); // dispara popstate → goStep(1)
 }
 
 function gcBuyAnother() {
-  document.getElementById('gc-success-wrap').style.display = 'none';
-  document.getElementById('gc-form-wrap').style.display = '';
-  // Reset form fields
-  _gcAmt = 0;
-  document.querySelectorAll('.gc-amt-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('gc-custom-amt').value = '';
-  ['gc-purchaser-name','gc-purchaser-email','gc-recipient-name','gc-recipient-email'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('gc-recipient-check').checked = false;
-  document.getElementById('gc-recipient-email-wrap').style.display = 'none';
-  document.getElementById('gc-inline-error').style.display = 'none';
-  const btn = document.getElementById('gc-submit-btn');
-  btn.disabled = false; btn.textContent = 'Comprar gift card 🎁'; btn.style.background = '';
+  _resetGcForm();
   gcSetPayMethod('transfer');
+  document.getElementById('gc-success-wrap').style.display = 'none';
+  document.getElementById('gc-form-wrap').style.display = 'block';
   document.getElementById('gc-success-code').style.display = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function goStep(step) {
+  if (!_historyNav) {
+    // Paso 4 (confirmación) reemplaza el paso 3 para que "atrás" no vuelva al formulario ya enviado
+    if (step === 4) history.replaceState({ view: 'step', step: 4 }, '');
+    else history.pushState({ view: 'step', step }, '');
+  }
   document.getElementById('booking-flow').style.display = '';
   document.getElementById('section-gift').style.display = 'none';
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
