@@ -1623,6 +1623,13 @@ function nl2br(value) {
   return escapeHtml(value).replace(/\n/g, '<br>');
 }
 
+function dateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 async function init() {
   state.utmSource = new URLSearchParams(window.location.search).get('ref')
     || new URLSearchParams(window.location.search).get('utm_source')
@@ -1801,7 +1808,7 @@ function renderMyBookings(bookings) {
   const policyNote = `<div style="font-size:0.78rem;color:var(--muted);background:var(--p-light);border-radius:8px;padding:9px 13px;margin-bottom:14px;line-height:1.5">
     ℹ️ Podés cancelar tu turno hasta <strong>24 hs antes</strong> de la cita.
   </div>`;
-  const today = new Date().toISOString().split('T')[0];
+  const today = dateKey();
   const upcoming = bookings.filter(b => b.date >= today && b.status !== 'cancelled');
   const past = bookings.filter(b => b.date < today || b.status === 'cancelled');
   const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];

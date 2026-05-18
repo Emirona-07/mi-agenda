@@ -13,6 +13,13 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+function localDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
@@ -317,7 +324,7 @@ function getAvailableDates(serviceId, professionalId) {
   const result = [];
   const cur = new Date(today);
   for (let i = 0; i < advDays; i++) {
-    const ds = cur.toISOString().split('T')[0];
+    const ds = localDateString(cur);
     if (getAvailableSlots(ds, serviceId, professionalId).length > 0) result.push(ds);
     cur.setDate(cur.getDate() + 1);
   }
@@ -483,11 +490,11 @@ function cancelBooking(id) { db.prepare("UPDATE bookings SET status='cancelled' 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
 function getDashboardStats() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString();
   const monday = (() => {
     const d = new Date(); const day = d.getDay();
     d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-    return d.toISOString().split('T')[0];
+    return localDateString(d);
   })();
   const month1 = today.slice(0, 8) + '01';
 
@@ -677,7 +684,7 @@ function updateBookingAdmin(id, { notes_admin, payment_status }) {
 
 function getCurrentBooking() {
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = localDateString(now);
   const currentMin = now.getHours() * 60 + now.getMinutes();
 
   // Busca citas de hoy que no estén canceladas
@@ -715,7 +722,7 @@ function getCurrentBooking() {
 
 function getBookingsNeedingReminder(hoursAhead = 48) {
   const target = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
-  const dateStr = target.toISOString().split('T')[0];
+  const dateStr = localDateString(target);
   return db.prepare(`
     SELECT b.*, c.name as client_name, c.phone as client_phone, c.email as client_email,
            s.name as service_name, p.name as professional_name
@@ -734,8 +741,8 @@ function markReminderSent(id) {
 }
 
 function getWeekBookings() {
-  const from = new Date().toISOString().split('T')[0];
-  const to = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const from = localDateString();
+  const to = localDateString(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
   return db.prepare(`
     SELECT b.*, c.name as client_name, c.phone as client_phone, c.email as client_email,
            s.name as service_name, s.price, p.name as professional_name
@@ -814,7 +821,7 @@ const _crypto = require('crypto');
 function getBookingsNeedingReview() {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const dateStr = yesterday.toISOString().split('T')[0];
+  const dateStr = localDateString(yesterday);
   return db.prepare(`
     SELECT b.*, c.name as client_name, c.email as client_email, s.name as service_name
     FROM bookings b
@@ -995,4 +1002,3 @@ module.exports = {
   getMetrics,
   createSessionStore,
 };
-

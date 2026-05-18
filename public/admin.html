@@ -655,6 +655,13 @@ let professionals = [], services = [], settings = {};
 let agendaWeekOffset = 0;
 let clientSearchTimeout = null;
 
+function dateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ─── AUTH ─────────────────────────────────────────────
 async function doLogin() {
   const pass = $('login-pass').value;
@@ -938,8 +945,8 @@ function changeWeek(dir) { agendaWeekOffset += dir; loadAgenda(); }
 
 async function loadAgenda() {
   const days = getWeekDates(agendaWeekOffset);
-  const from = days[0].toISOString().split('T')[0];
-  const to = days[6].toISOString().split('T')[0];
+  const from = dateKey(days[0]);
+  const to = dateKey(days[6]);
   const profId = $('agenda-prof-filter').value;
 
   const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
@@ -948,7 +955,7 @@ async function loadAgenda() {
   const params = `from=${from}&to=${to}${profId ? '&professional_id=' + profId : ''}`;
   const { bookings } = await api(`/api/admin/bookings?${params}&limit=500`);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = dateKey();
   const dayNames = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
 
   // Get unique hours with bookings
@@ -961,7 +968,7 @@ async function loadAgenda() {
   let html = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px">`;
   html += `<tr><th style="padding:8px;font-size:0.78rem;color:var(--muted);text-align:left;width:55px;border-bottom:2px solid var(--border)">Hora</th>`;
   days.forEach((d, i) => {
-    const ds = d.toISOString().split('T')[0];
+    const ds = dateKey(d);
     const isToday = ds === today;
     html += `<th style="padding:8px;font-size:0.78rem;font-weight:700;color:${isToday ? 'var(--green)' : 'var(--muted)'};border-bottom:2px solid var(--border);text-align:center;${isToday ? 'background:var(--green-bg)' : ''}">${dayNames[i]}<br><span style="font-size:1rem;font-weight:800;color:${isToday ? 'var(--green)' : 'var(--text)'}">${d.getDate()}</span></th>`;
   });
@@ -970,7 +977,7 @@ async function loadAgenda() {
   times.forEach(time => {
     html += `<tr><td style="padding:8px;font-size:0.78rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);vertical-align:top">${time}</td>`;
     days.forEach(d => {
-      const ds = d.toISOString().split('T')[0];
+      const ds = dateKey(d);
       const dayBookings = bookings.filter(b => b.date === ds && b.time === time);
       const isToday = ds === today;
       html += `<td style="padding:4px;border-bottom:1px solid var(--border);vertical-align:top;min-width:100px;${isToday ? 'background:#f0faf4' : ''}">`;
