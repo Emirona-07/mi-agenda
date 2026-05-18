@@ -2222,7 +2222,7 @@ function gcSetPayMethod(m) {
   }
 
   if (m === 'transfer' && _bankAccount) {
-    info.innerHTML = `<strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g,'<br>')}`;
+    info.innerHTML = `<strong>Datos para transferir:</strong><br>${nl2br(_bankAccount)}`;
     info.style.display = 'block';
   } else { info.style.display = 'none'; }
 
