@@ -605,28 +605,6 @@
         <p id="ch-msg" style="color:var(--green);font-size:0.85rem;margin-top:8px;display:none">✅ Guardado</p>
       </div>
 
-      <!-- Instalar app -->
-      <div class="card mt-2" id="install-card">
-        <div class="card-header"><h3>📲 Instalar app en este dispositivo</h3></div>
-        <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">
-          Agregá el panel admin a la pantalla de inicio para abrirlo directamente sin escribir la dirección.
-        </p>
-        <div id="install-chrome-wrap" style="display:none">
-          <button onclick="triggerInstall()" class="btn btn-primary" style="margin-bottom:8px">Instalar app</button>
-          <p style="font-size:0.82rem;color:var(--muted)">Instalará el panel admin como una app en tu dispositivo.</p>
-        </div>
-        <div id="install-safari-wrap" style="display:none">
-          <ol style="font-size:0.9rem;color:var(--text);line-height:2;padding-left:20px;margin:0">
-            <li>Asegurate de estar en esta URL: <strong>mipiel.up.railway.app/admin</strong></li>
-            <li>Tocá el botón <strong>Compartir</strong> <span style="font-size:1.1rem">⬆️</span> de Safari</li>
-            <li>Elegí <strong>"Agregar a pantalla de inicio"</strong></li>
-          </ol>
-        </div>
-        <div id="install-already-wrap" style="display:none">
-          <span style="font-size:0.85rem;padding:6px 14px;border-radius:99px;background:#d4edda;color:#155724;font-weight:600">✓ Ya instalada</span>
-        </div>
-      </div>
-
       <!-- Notificaciones push -->
       <div class="card mt-2" id="push-card">
         <div class="card-header"><h3>🔔 Notificaciones en este dispositivo</h3></div>
@@ -1698,54 +1676,6 @@ $('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogi
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
-
-// ── PWA Install ───────────────────────────────────────────────────────────────
-let _installPrompt = null;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  _installPrompt = e;
-  _renderInstallCard();
-});
-
-window.addEventListener('appinstalled', () => {
-  _installPrompt = null;
-  _renderInstallCard();
-});
-
-function _renderInstallCard() {
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-
-  $('install-chrome-wrap').style.display = 'none';
-  $('install-safari-wrap').style.display = 'none';
-  $('install-already-wrap').style.display = 'none';
-
-  if (isStandalone) {
-    $('install-already-wrap').style.display = 'block';
-  } else if (_installPrompt) {
-    $('install-chrome-wrap').style.display = 'block';
-  } else if (isSafari) {
-    $('install-safari-wrap').style.display = 'block';
-  } else {
-    // Chrome sin prompt aún: mostrar instrucción manual
-    $('install-safari-wrap').style.display = 'block';
-    $('install-safari-wrap').querySelector('ol').innerHTML =
-      '<li>Abrí el menú de Chrome (⋮)</li><li>Tocá <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong></li>';
-  }
-}
-
-async function triggerInstall() {
-  if (!_installPrompt) return;
-  _installPrompt.prompt();
-  await _installPrompt.userChoice;
-  _installPrompt = null;
-  _renderInstallCard();
-}
-
-// Renderizar cuando se carga la página
-document.addEventListener('DOMContentLoaded', _renderInstallCard);
-
 
 // ── Push notifications ────────────────────────────────────────────────────────
 let _pushSubscription = null;
