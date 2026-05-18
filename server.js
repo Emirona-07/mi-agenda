@@ -597,6 +597,7 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
 // ═══════════════════════════════════════════════════════
 
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/review', (req, res) => res.sendFile(path.join(__dirname, 'public', 'review.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ─── CRON: recordatorio configurable (cada hora) ─────────────────────────────
@@ -679,8 +680,6 @@ app.post('/api/review/submit', (req, res) => {
   if (!ok) return res.status(409).json({ error: 'Ya enviada o token inválido' });
   res.json({ success: true });
 });
-
-app.get('/review', (req, res) => res.sendFile(path.join(__dirname, 'public', 'review.html')));
 
 // ─── Reseñas (admin) ──────────────────────────────────────────────────────────
 app.get('/api/admin/reviews', requireAuth, (req, res) => res.json(db.getAllReviews()));
