@@ -684,8 +684,8 @@ async function loadDashboard() {
     ? data.today_schedule.map(b => `
       <div class="detail-row" style="cursor:pointer" onclick="openBookingModal(${b.id})">
         <div>
-          <div style="font-weight:700;font-size:0.9rem">${b.time} - ${b.client_name}</div>
-          <div style="font-size:0.8rem;color:var(--muted)">${b.service_name}${b.professional_name ? ' · ' + b.professional_name : ''}</div>
+          <div style="font-weight:700;font-size:0.9rem">${b.time} - ${escapeHtml(b.client_name)}</div>
+          <div style="font-size:0.8rem;color:var(--muted)">${escapeHtml(b.service_name)}${b.professional_name ? ' · ' + escapeHtml(b.professional_name) : ''}</div>
         </div>
         <div>${statusBadge(b.status)}</div>
       </div>`).join('')
@@ -696,9 +696,9 @@ async function loadDashboard() {
       <div class="detail-row" style="cursor:pointer" onclick="openBookingModal(${b.id})">
         <div>
           <div style="font-weight:700;font-size:0.9rem">${formatDateShort(b.date)} ${b.time}</div>
-          <div style="font-size:0.8rem;color:var(--muted)">${b.client_name} · ${b.service_name}</div>
+          <div style="font-size:0.8rem;color:var(--muted)">${escapeHtml(b.client_name)} · ${escapeHtml(b.service_name)}</div>
         </div>
-        <div style="font-size:0.8rem;color:var(--muted)">${b.professional_name || ''}</div>
+        <div style="font-size:0.8rem;color:var(--muted)">${escapeHtml(b.professional_name || '')}</div>
       </div>`).join('')
     : '<div class="empty-state"><div class="emoji">✨</div><p>No hay citas próximas</p></div>';
 
@@ -787,11 +787,11 @@ async function loadGiftCards() {
   wrap.innerHTML = `<table class="data-table">
     <thead><tr><th>Código</th><th>Monto</th><th>Saldo</th><th>Comprador</th><th>Para</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
     <tbody>${cards.map(gc => `<tr>
-      <td style="font-family:monospace;font-weight:700;letter-spacing:0.05em">${gc.code}</td>
+      <td style="font-family:monospace;font-weight:700;letter-spacing:0.05em">${escapeHtml(gc.code)}</td>
       <td>${cur}${gc.amount.toLocaleString()}</td>
       <td style="color:${gc.balance>0?'var(--green)':'var(--muted)'}">${cur}${gc.balance.toLocaleString()}</td>
-      <td style="font-size:0.85rem">${gc.purchaser_name||'—'}</td>
-      <td style="font-size:0.85rem;color:var(--muted)">${gc.recipient_name||'—'}</td>
+      <td style="font-size:0.85rem">${escapeHtml(gc.purchaser_name||'—')}</td>
+      <td style="font-size:0.85rem;color:var(--muted)">${escapeHtml(gc.recipient_name||'—')}</td>
       <td style="font-size:0.82rem;color:var(--muted)">${formatDateShort(gc.created_at?gc.created_at.slice(0,10):'')}</td>
       <td>${statusBadgeGc(gc.status)}</td>
       <td style="white-space:nowrap;display:flex;gap:6px">
@@ -884,8 +884,8 @@ async function loadAgenda() {
       dayBookings.forEach(b => {
         const color = b.professional_color || '#2d6a4f';
         html += `<div class="booking-block" style="border-left-color:${color};cursor:pointer" onclick="openBookingModal(${b.id})">
-          <div class="bb-name">${b.client_name}</div>
-          <div style="font-size:0.7rem;color:var(--muted)">${b.service_name}</div>
+          <div class="bb-name">${escapeHtml(b.client_name)}</div>
+          <div style="font-size:0.7rem;color:var(--muted)">${escapeHtml(b.service_name)}</div>
         </div>`;
       });
       html += '</td>';
@@ -925,11 +925,11 @@ async function loadCitas() {
       <td>${formatDateShort(b.date)}</td>
       <td><strong>${b.time}</strong></td>
       <td>
-        <div style="font-weight:600">${b.client_name}</div>
-        <div style="font-size:0.78rem;color:var(--muted)">${b.client_phone}</div>
+        <div style="font-weight:600">${escapeHtml(b.client_name)}</div>
+        <div style="font-size:0.78rem;color:var(--muted)">${escapeHtml(b.client_phone)}</div>
       </td>
-      <td>${b.service_name}</td>
-      <td>${b.professional_name || '-'}</td>
+      <td>${escapeHtml(b.service_name)}</td>
+      <td>${escapeHtml(b.professional_name || '-')}</td>
       <td style="font-weight:700;color:var(--green)">${b.total_price > 0 ? cur + b.total_price.toLocaleString() : '-'}</td>
       <td>${statusBadge(b.status)}</td>
       <td>
@@ -954,17 +954,17 @@ async function openBookingModal(id) {
   $('modal-booking-content').innerHTML = `
     <div class="detail-row"><span class="key">Nº de reserva</span><span>#${b.id}</span></div>
     <div class="detail-row"><span class="key">Fecha y hora</span><span><strong>${formatDateShort(b.date)} — ${b.time}</strong></span></div>
-    <div class="detail-row"><span class="key">Servicio</span><span>${b.service_name} ${b.total_price > 0 ? `(${cur}${b.total_price.toLocaleString()})` : ''}</span></div>
-    <div class="detail-row"><span class="key">Profesional</span><span>${b.professional_name || '-'}</span></div>
+    <div class="detail-row"><span class="key">Servicio</span><span>${escapeHtml(b.service_name)} ${b.total_price > 0 ? `(${cur}${b.total_price.toLocaleString()})` : ''}</span></div>
+    <div class="detail-row"><span class="key">Profesional</span><span>${escapeHtml(b.professional_name || '-')}</span></div>
     <div class="detail-row"><span class="key">Estado</span><span>${statusBadge(b.status)}</span></div>
-    <div class="detail-row"><span class="key">Cliente</span><span><strong>${b.client_name}</strong></span></div>
+    <div class="detail-row"><span class="key">Cliente</span><span><strong>${escapeHtml(b.client_name)}</strong></span></div>
     <div class="detail-row"><span class="key">Teléfono</span><span>
-      ${b.client_phone ? `<a class="whatsapp-link" href="https://wa.me/${b.client_phone.replace(/\D/g,'')}" target="_blank">📱 ${b.client_phone}</a>` : '-'}
+      ${b.client_phone ? `<a class="whatsapp-link" href="https://wa.me/${b.client_phone.replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(b.client_phone)}</a>` : '-'}
     </span></div>
-    <div class="detail-row"><span class="key">Email</span><span>${b.client_email || '-'}</span></div>
-    <div class="detail-row"><span class="key">Instagram</span><span>${b.client_instagram ? '@' + b.client_instagram.replace('@','') : '-'}</span></div>
-    ${b.notes ? `<div class="detail-row"><span class="key">Notas cliente</span><span>${b.notes}</span></div>` : ''}
-    ${b.utm_source ? `<div class="detail-row"><span class="key">Origen</span><span class="chip">${b.utm_source}</span></div>` : ''}
+    <div class="detail-row"><span class="key">Email</span><span>${escapeHtml(b.client_email || '-')}</span></div>
+    <div class="detail-row"><span class="key">Instagram</span><span>${b.client_instagram ? '@' + escapeHtml(b.client_instagram.replace('@','')) : '-'}</span></div>
+    ${b.notes ? `<div class="detail-row"><span class="key">Notas cliente</span><span>${escapeHtml(b.notes)}</span></div>` : ''}
+    ${b.utm_source ? `<div class="detail-row"><span class="key">Origen</span><span class="chip">${escapeHtml(b.utm_source)}</span></div>` : ''}
 
     <!-- Cambiar estado -->
     <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -993,7 +993,7 @@ async function openBookingModal(id) {
     <!-- Notas internas -->
     <div style="margin-top:14px">
       <div style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:0.05em">NOTAS INTERNAS</div>
-      <textarea id="admin-notes-${b.id}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;font-family:inherit;resize:vertical;min-height:70px;outline:none" placeholder="Notas para Maru (el cliente no las ve)..." onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">${b.notes_admin || ''}</textarea>
+    <textarea id="admin-notes-${b.id}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;font-family:inherit;resize:vertical;min-height:70px;outline:none" placeholder="Notas para Maru (el cliente no las ve)..." onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(b.notes_admin || '')}</textarea>
       <button onclick="saveAdminNotes(${b.id})" style="margin-top:6px;padding:7px 14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.83rem;font-weight:700;cursor:pointer;font-family:inherit">Guardar nota</button>
     </div>
 
@@ -1054,8 +1054,8 @@ async function loadPhotos(bookingId) {
     if (!Array.isArray(photos) || !photos.length) { container.innerHTML = '<div style="font-size:0.83rem;color:var(--muted)">Sin fotos todavía</div>'; return; }
     container.innerHTML = photos.map(p => `
       <div style="position:relative;display:inline-block;margin:4px">
-        <img src="${p.file_path}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;display:block" loading="lazy">
-        ${p.comment ? `<div style="font-size:0.73rem;color:var(--muted);max-width:80px;word-break:break-word">${p.comment}</div>` : ''}
+      <img src="${escapeHtml(p.file_path)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;display:block" loading="lazy">
+      ${p.comment ? `<div style="font-size:0.73rem;color:var(--muted);max-width:80px;word-break:break-word">${escapeHtml(p.comment)}</div>` : ''}
         <button onclick="deletePhoto(${bookingId},${p.id},this.closest('div'))" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
       </div>
     `).join('');
@@ -1091,10 +1091,10 @@ async function loadClients(search = '') {
 
   $('clients-tbody').innerHTML = clients.map(c => `
     <tr>
-      <td><strong>${c.name}</strong></td>
-      <td><a class="whatsapp-link" href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank">📱 ${c.phone}</a></td>
-      <td>${c.email || '-'}</td>
-      <td>${c.instagram ? '@' + c.instagram.replace('@','') : '-'}</td>
+      <td><strong>${escapeHtml(c.name)}</strong></td>
+      <td><a class="whatsapp-link" href="https://wa.me/${String(c.phone || '').replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(c.phone)}</a></td>
+      <td>${escapeHtml(c.email || '-')}</td>
+      <td>${c.instagram ? '@' + escapeHtml(c.instagram.replace('@','')) : '-'}</td>
       <td style="font-weight:700;text-align:center">${c.total_bookings}</td>
       <td style="font-weight:700;color:var(--green)">${c.total_spent > 0 ? cur + Number(c.total_spent).toLocaleString() : '-'}</td>
       <td>${c.last_booking ? formatDateShort(c.last_booking) : '-'}</td>
@@ -1116,10 +1116,10 @@ async function openClientModal(id) {
   $('modal-client-content').innerHTML = `
     <div class="grid-2" style="margin-bottom:16px">
       <div>
-        <div class="detail-row"><span class="key">Nombre</span><span><strong>${data.name}</strong></span></div>
-        <div class="detail-row"><span class="key">Teléfono</span><span><a class="whatsapp-link" href="https://wa.me/${data.phone.replace(/\D/g,'')}" target="_blank">📱 ${data.phone}</a></span></div>
-        <div class="detail-row"><span class="key">Email</span><span>${data.email || '-'}</span></div>
-        <div class="detail-row"><span class="key">Instagram</span><span>${data.instagram ? '@' + data.instagram.replace('@','') : '-'}</span></div>
+        <div class="detail-row"><span class="key">Nombre</span><span><strong>${escapeHtml(data.name)}</strong></span></div>
+        <div class="detail-row"><span class="key">Teléfono</span><span><a class="whatsapp-link" href="https://wa.me/${String(data.phone || '').replace(/\D/g,'')}" target="_blank">📱 ${escapeHtml(data.phone)}</a></span></div>
+        <div class="detail-row"><span class="key">Email</span><span>${escapeHtml(data.email || '-')}</span></div>
+        <div class="detail-row"><span class="key">Instagram</span><span>${data.instagram ? '@' + escapeHtml(data.instagram.replace('@','')) : '-'}</span></div>
       </div>
       <div>
         <div class="detail-row"><span class="key">Total citas</span><span><strong>${data.total_bookings}</strong></span></div>
@@ -1132,8 +1132,8 @@ async function openClientModal(id) {
         ${data.bookings.map(b => `
           <div class="detail-row">
             <div>
-              <div style="font-weight:600;font-size:0.88rem">${formatDateShort(b.date)} ${b.time} - ${b.service_name}</div>
-              <div style="font-size:0.78rem;color:var(--muted)">${b.professional_name || ''}</div>
+              <div style="font-weight:600;font-size:0.88rem">${formatDateShort(b.date)} ${b.time} - ${escapeHtml(b.service_name)}</div>
+              <div style="font-size:0.78rem;color:var(--muted)">${escapeHtml(b.professional_name || '')}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               ${b.total_price > 0 ? `<span style="color:var(--green);font-weight:700">${cur}${b.total_price.toLocaleString()}</span>` : ''}
@@ -1202,14 +1202,14 @@ async function loadServices() {
   const cur = settings.currency || '$';
   $('services-tbody').innerHTML = svcs.map(s => `
     <tr>
-      <td><strong>${s.name}</strong>${s.description ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:2px">${s.description.slice(0,60)}${s.description.length>60?'...':''}</div>` : ''}</td>
+      <td><strong>${escapeHtml(s.name)}</strong>${s.description ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:2px">${escapeHtml(s.description.slice(0,60))}${s.description.length>60?'...':''}</div>` : ''}</td>
       <td>${s.duration} min</td>
       <td>${s.price > 0 ? cur + s.price.toLocaleString() : '-'}</td>
       <td>${s.deposit > 0 ? cur + s.deposit.toLocaleString() : '-'}</td>
-      <td>${s.professionals.map(p => `<span class="chip">${p.name}</span>`).join(' ') || '-'}</td>
+      <td>${s.professionals.map(p => `<span class="chip">${escapeHtml(p.name)}</span>`).join(' ') || '-'}</td>
       <td>${s.active ? '<span class="badge badge-confirmed">Activo</span>' : '<span class="badge badge-cancelled">Inactivo</span>'}</td>
       <td style="text-align:center">
-        ${s.photo ? `<img src="${s.photo}" style="width:48px;height:36px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px">` : '<span style="font-size:0.72rem;color:var(--muted)">Sin foto</span><br>'}
+        ${s.photo ? `<img src="${escapeHtml(s.photo)}" style="width:48px;height:36px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 4px">` : '<span style="font-size:0.72rem;color:var(--muted)">Sin foto</span><br>'}
         <input type="file" id="svc-photo-input-${s.id}" accept="image/*" style="display:none" onchange="uploadServicePhoto(${s.id})">
         <button class="btn-icon" onclick="document.getElementById('svc-photo-input-${s.id}').click()" title="Subir foto">📷</button>
         ${s.photo ? `<button class="btn-icon" onclick="deleteServicePhoto(${s.id})" title="Quitar foto" style="color:var(--danger)">✕</button>` : ''}
@@ -1328,7 +1328,7 @@ async function loadProfessionals() {
   const profs = await api('/api/admin/professionals');
   $('profs-tbody').innerHTML = profs.map(p => `
     <tr>
-      <td><strong>${p.name}</strong></td>
+      <td><strong>${escapeHtml(p.name)}</strong></td>
       <td><div style="width:28px;height:28px;border-radius:50%;background:${p.color};display:inline-block"></div></td>
       <td>${p.active ? '<span class="badge badge-confirmed">Activo</span>' : '<span class="badge badge-cancelled">Inactivo</span>'}</td>
       <td>
@@ -1458,8 +1458,8 @@ async function loadReviews() {
     </tr></thead>
     <tbody>
       ${reviews.map(r => `<tr>
-        <td>${r.client_name}</td>
-        <td style="font-size:0.85rem;color:var(--muted)">${r.service_name || '—'}</td>
+        <td>${escapeHtml(r.client_name)}</td>
+        <td style="font-size:0.85rem;color:var(--muted)">${escapeHtml(r.service_name || '—')}</td>
         <td style="white-space:nowrap">${stars(r.rating || 0)}</td>
         <td style="font-size:0.85rem;max-width:240px">${r.comment ? escapeHtml(r.comment) : '<span style="color:var(--muted)">Sin comentario</span>'}</td>
         <td style="font-size:0.82rem;color:var(--muted);white-space:nowrap">${formatDateShort(r.created_at ? r.created_at.slice(0,10) : '')}</td>
@@ -1512,4 +1512,3 @@ checkAuth();
 </script>
 </body>
 </html>
-

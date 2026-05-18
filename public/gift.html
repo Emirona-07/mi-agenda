@@ -180,6 +180,19 @@
   let _mpActive = false;
   let _mpSurcharge = 5;
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function nl2br(value) {
+    return escapeHtml(value).replace(/\n/g, '<br>');
+  }
+
   async function init() {
     // ── Manejar retorno de MP ─────────────────────────────────────────────────
     const params = new URLSearchParams(window.location.search);
@@ -228,7 +241,7 @@
 
     if (_bankAccount) {
       const box = document.getElementById('transfer-box');
-      box.innerHTML = `<strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g,'<br>')}`;
+      box.innerHTML = `<strong>Datos para transferir:</strong><br>${nl2br(_bankAccount)}`;
       box.style.display = 'block';
     }
 

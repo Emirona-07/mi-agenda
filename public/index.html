@@ -1513,6 +1513,19 @@ const state = {
   utmSource: null,
 };
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function nl2br(value) {
+  return escapeHtml(value).replace(/\n/g, '<br>');
+}
+
 async function init() {
   state.utmSource = new URLSearchParams(window.location.search).get('ref')
     || new URLSearchParams(window.location.search).get('utm_source')
@@ -1580,8 +1593,8 @@ async function loadReviews() {
     grid.innerHTML = reviews.map(r => `
       <div class="review-card">
         <div class="review-stars">${stars(r.rating)}</div>
-        ${r.comment ? `<div class="review-comment">"${r.comment}"</div>` : ''}
-        <div class="review-meta">${r.client_name}${r.service_name ? ` · ${r.service_name}` : ''}</div>
+        ${r.comment ? `<div class="review-comment">"${escapeHtml(r.comment)}"</div>` : ''}
+        <div class="review-meta">${escapeHtml(r.client_name)}${r.service_name ? ` · ${escapeHtml(r.service_name)}` : ''}</div>
       </div>`).join('');
     section.dataset.hasReviews = '1';
     section.style.display = '';
@@ -1635,9 +1648,9 @@ function renderHeader() {
   if (state.clientUser) {
     const initials = (state.clientUser.name || 'U').charAt(0).toUpperCase();
     const avatarHtml = state.clientUser.picture
-      ? `<img class="account-avatar" src="${state.clientUser.picture}" alt="">`
+      ? `<img class="account-avatar" src="${escapeHtml(state.clientUser.picture)}" alt="">`
       : `<div class="account-avatar-placeholder">${initials}</div>`;
-    el.innerHTML = `<div class="account-user" onclick="showMyBookings()" title="Mis reservas">${avatarHtml}<span class="account-name">${state.clientUser.name || ''}</span></div>`;
+    el.innerHTML = `<div class="account-user" onclick="showMyBookings()" title="Mis reservas">${avatarHtml}<span class="account-name">${escapeHtml(state.clientUser.name || '')}</span></div>`;
   } else if (state.googleClientId) {
     el.innerHTML = `<button class="btn-account" onclick="showLoginModal()">Mi cuenta</button>`;
   } else {
@@ -1668,10 +1681,10 @@ async function showMyBookings() {
   const initials = (u.name || 'U').charAt(0).toUpperCase();
   document.getElementById('user-info-box').innerHTML = `
     <div class="user-info-box">
-      ${u.picture ? `<img src="${u.picture}" alt="">` : `<div class="uib-placeholder">${initials}</div>`}
+      ${u.picture ? `<img src="${escapeHtml(u.picture)}" alt="">` : `<div class="uib-placeholder">${initials}</div>`}
       <div>
-        <div class="uib-name">${u.name || ''}</div>
-        ${u.email ? `<div class="uib-email">${u.email}</div>` : ''}
+        <div class="uib-name">${escapeHtml(u.name || '')}</div>
+        ${u.email ? `<div class="uib-email">${escapeHtml(u.email)}</div>` : ''}
       </div>
     </div>`;
 
@@ -1730,15 +1743,15 @@ function bookingCardHtml(b, fmtDate, canCancel) {
   return `
     <div class="booking-card ${cardClass}" id="booking-card-${b.id}">
       <div class="booking-card-top">
-        <h3>${b.service_name}</h3>
+        <h3>${escapeHtml(b.service_name)}</h3>
         <span class="status-badge ${statusClass}">${statusLabel}</span>
       </div>
       <div class="booking-meta">
         📅 ${fmtDate(b.date)} a las ${b.time}<br>
-        ${b.professional_name ? `👩 ${b.professional_name}<br>` : ''}
+        ${b.professional_name ? `👩 ${escapeHtml(b.professional_name)}<br>` : ''}
         🔖 Reserva #${b.id}
       </div>
-      ${b.notes_admin ? `<div style="margin-top:8px;padding:8px 10px;background:var(--p-light);border-radius:6px;font-size:0.82rem;color:var(--p-dark)">📝 ${b.notes_admin}</div>` : ''}
+      ${b.notes_admin ? `<div style="margin-top:8px;padding:8px 10px;background:var(--p-light);border-radius:6px;font-size:0.82rem;color:var(--p-dark)">📝 ${escapeHtml(b.notes_admin)}</div>` : ''}
       ${cancelArea}
       ${photosBtn}
     </div>`;
@@ -1757,8 +1770,8 @@ async function loadBookingPhotos(id, btn) {
     if (!Array.isArray(photos) || !photos.length) { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px">Sin fotos todavía</div>'; return; }
     container.innerHTML = photos.map(p => `
       <div style="margin-bottom:10px">
-        <img src="${p.file_path}" style="max-width:100%;border-radius:6px;display:block" loading="lazy">
-        ${p.comment ? `<div style="font-size:0.82rem;color:var(--muted);margin-top:4px">${p.comment}</div>` : ''}
+        <img src="${escapeHtml(p.file_path)}" style="max-width:100%;border-radius:6px;display:block" loading="lazy">
+        ${p.comment ? `<div style="font-size:0.82rem;color:var(--muted);margin-top:4px">${escapeHtml(p.comment)}</div>` : ''}
       </div>
     `).join('');
   } catch { container.innerHTML = '<div style="font-size:0.82rem;color:var(--muted)">Error al cargar</div>'; }
@@ -1844,7 +1857,7 @@ function renderServices() {
             ${infoBtnHtml}
           </div>
           <div class="svc-info">
-            <div class="svc-name">${s.name}</div>
+            <div class="svc-name">${escapeHtml(s.name)}</div>
             ${s.price > 0 ? `<div class="svc-price">$${s.price.toLocaleString()}</div>` : ''}
             <div class="svc-meta">⏱ ${s.duration} min${s.deposit > 0 ? ` · Seña $${s.deposit.toLocaleString()}` : ''}</div>
           </div>
@@ -1925,7 +1938,7 @@ function setPayMethod(method) {
 
   const transferInfo = document.getElementById('transfer-info');
   if (method === 'transfer' && _bankAccount) {
-    transferInfo.innerHTML = `<strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g, '<br>')}`;
+    transferInfo.innerHTML = `<strong>Datos para transferir:</strong><br>${nl2br(_bankAccount)}`;
     transferInfo.style.display = '';
   } else {
     transferInfo.style.display = 'none';
@@ -2163,8 +2176,8 @@ function renderSummary() {
   const finalDisplay = gcApplied ? Math.max(0, displayPrice - _gcDiscount) : displayPrice;
 
   const rows = [
-    ['Servicio', s.selectedService.name],
-    s.selectedProfessional ? ['Profesional', s.selectedProfessional.name] : null,
+    ['Servicio', escapeHtml(s.selectedService.name)],
+    s.selectedProfessional ? ['Profesional', escapeHtml(s.selectedProfessional.name)] : null,
     ['Fecha', dateStr],
     ['Hora', s.selectedTime],
     displayPrice > 0 && gcApplied ? ['Precio original', `<s style="color:var(--muted)">$${displayPrice.toLocaleString()}</s>`] : (displayPrice > 0 ? ['Precio', `$${displayPrice.toLocaleString()}`] : null),
@@ -2263,16 +2276,16 @@ async function submitBooking() {
     const dateStr = `${parseInt(dy)} de ${months[parseInt(mo)-1]} de ${y}`;
     const payMethodLabel = data.payment_method === 'mp' ? 'Mercado Pago' : data.payment_method === 'transfer' ? 'Transferencia' : 'Efectivo';
     const transferNote = data.payment_method === 'transfer' && _bankAccount
-      ? `<div style="margin-top:12px;padding:12px 14px;background:#f0f7f3;border-radius:8px;border-left:3px solid var(--p);font-size:0.83rem;line-height:1.7"><strong>Datos para transferir:</strong><br>${_bankAccount.replace(/\n/g,'<br>')}</div>`
+      ? `<div style="margin-top:12px;padding:12px 14px;background:#f0f7f3;border-radius:8px;border-left:3px solid var(--p);font-size:0.83rem;line-height:1.7"><strong>Datos para transferir:</strong><br>${nl2br(_bankAccount)}</div>`
       : '';
     document.getElementById('confirm-summary').innerHTML = `
       <h3>Detalle</h3>
       <div class="summary-row"><span>Nº de reserva</span><span>#${data.booking_id}</span></div>
-      <div class="summary-row"><span>Servicio</span><span>${state.selectedService.name}</span></div>
-      ${state.selectedProfessional ? `<div class="summary-row"><span>Profesional</span><span>${state.selectedProfessional.name}</span></div>` : ''}
+      <div class="summary-row"><span>Servicio</span><span>${escapeHtml(state.selectedService.name)}</span></div>
+      ${state.selectedProfessional ? `<div class="summary-row"><span>Profesional</span><span>${escapeHtml(state.selectedProfessional.name)}</span></div>` : ''}
       <div class="summary-row"><span>Fecha</span><span>${dateStr}</span></div>
       <div class="summary-row"><span>Hora</span><span>${state.selectedTime}</span></div>
-      <div class="summary-row"><span>Nombre</span><span>${name}</span></div>
+      <div class="summary-row"><span>Nombre</span><span>${escapeHtml(name)}</span></div>
       ${data.price > 0 ? `<div class="summary-row"><span>Precio</span><span>$${data.price.toLocaleString()}</span></div>` : ''}
       ${data.deposit > 0 ? `<div class="summary-row"><span>Seña</span><span>$${data.deposit.toLocaleString()}</span></div>` : ''}
       <div class="summary-row"><span>Forma de pago</span><span>${payMethodLabel}</span></div>
