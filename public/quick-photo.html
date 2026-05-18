@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Quick Photo">
+  <title>Quick Photo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0faf4;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 20px;
+    }
+    .logo { font-size: 2.5rem; }
+    h1 { font-size: 1.3rem; color: #1a3d2b; font-weight: 700; text-align: center; }
+    p { font-size: 0.9rem; color: #5a7a6a; text-align: center; line-height: 1.5; }
+
+    .btn-photo {
+      width: 100%;
+      max-width: 320px;
+      padding: 18px;
+      background: #2d6a4f;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: 0.01em;
+    }
+    .btn-photo:active { opacity: 0.85; transform: scale(0.98); }
+    .btn-photo:disabled { background: #9ab5a9; cursor: not-allowed; transform: none; }
+
+    #status {
+      width: 100%;
+      max-width: 320px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-align: center;
+      display: none;
+    }
+    #status.ok  { background: #d4edda; color: #155724; display: block; }
+    #status.err { background: #f8d7da; color: #721c24; display: block; }
+    #status.loading { background: #fff3cd; color: #856404; display: block; }
+
+    #result-detail {
+      width: 100%; max-width: 320px;
+      font-size: 0.82rem; color: #5a7a6a;
+      text-align: center; display: none;
+    }
+
+    /* Hidden file input */
+    #file-input { display: none; }
+  </style>
+</head>
+<body>
+  <div class="logo">📸</div>
+  <h1>Quick Photo<br>Mi Piel</h1>
+  <p>Sacá la foto del resultado y se adjunta automáticamente a la cita en curso.</p>
+
+  <input type="file" id="file-input" accept="image/*" capture="camera">
+  <button class="btn-photo" id="btn" onclick="takePicture()">
+    <span>📷</span> Sacar foto
+  </button>
+
+  <div id="status"></div>
+  <div id="result-detail"></div>
+
+  <script>
+    // Token from URL query param
+    const token = new URLSearchParams(location.search).get('token') || '';
+
+    if (!token) {
+      document.getElementById('status').textContent = 'Token inválido. Descargá el link desde el admin.';
+      document.getElementById('status').className = 'err';
+      document.getElementById('btn').disabled = true;
+    }
+
+    function takePicture() {
+      document.getElementById('file-input').click();
+    }
+
+    document.getElementById('file-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const btn = document.getElementById('btn');
+      const status = document.getElementById('status');
+      const detail = document.getElementById('result-detail');
+
+      btn.disabled = true;
+      status.className = 'loading';
+      status.textContent = '⏳ Subiendo foto…';
+      detail.style.display = 'none';
+
+      try {
+        const form = new FormData();
+        form.append('photo', file);
+
+        const res = await fetch(`/api/quick-photo?token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          body: form,
+        });
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          status.className = 'ok';
+          status.textContent = '✅ Foto guardada';
+          detail.textContent = `${data.client} · ${data.service} ${data.time}`;
+          detail.style.display = 'block';
+        } else {
+          status.className = 'err';
+          status.textContent = '❌ ' + (data.error || 'Error al subir');
+        }
+      } catch (err) {
+        status.className = 'err';
+        status.textContent = '❌ Sin conexión';
+      }
+
+      btn.disabled = false;
+      // Reset input so same file can be re-selected
+      e.target.value = '';
+    });
+  </script>
+</body>
+</html>

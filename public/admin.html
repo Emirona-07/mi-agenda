@@ -622,18 +622,15 @@
         <p id="push-msg" style="font-size:0.82rem;color:var(--muted);margin-top:10px;display:none"></p>
       </div>
 
-      <!-- Quick Photo Shortcut -->
+      <!-- Quick Photo -->
       <div class="card mt-2">
-        <div class="card-header"><h3>📸 Quick Photo (Atajo de iOS)</h3></div>
+        <div class="card-header"><h3>📸 Quick Photo</h3></div>
         <p style="font-size:0.9rem;color:var(--muted);margin-bottom:16px">
-          Descargá el atajo ya configurado. Al abrirlo desde Safari en el iPhone de Maru,
-          se instala directamente en la app Atajos con la URL y el token listos.
+          Una página que Maru guarda en el inicio del iPhone. Al tocarla, saca la foto y se adjunta a la cita en curso automáticamente.
         </p>
-        <a href="/api/admin/shortcuts/quick-photo" class="btn btn-primary" style="display:inline-block;text-decoration:none">
-          ⬇️ Descargar atajo de iOS
-        </a>
-        <p style="font-size:0.8rem;color:var(--muted);margin-top:10px">
-          Abrí el link desde Safari en el iPhone → toca "Agregar atajo" → listo.
+        <button class="btn btn-primary" onclick="copyQuickPhotoLink()" id="qp-btn">Copiar link</button>
+        <p style="font-size:0.8rem;color:var(--muted);margin-top:10px" id="qp-msg">
+          Copiá el link y enviáselo a Maru por WhatsApp. Ella lo abre desde Safari y lo guarda en el inicio.
         </p>
       </div>
 
@@ -1620,6 +1617,22 @@ async function saveConfigSecurity() {
 
 function showMsg() { const m = $('cfg-msg'); m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 2000); }
 function copyUrl() { navigator.clipboard.writeText($('public-url').value); alert('¡Link copiado!'); }
+
+async function copyQuickPhotoLink() {
+  const btn = $('qp-btn');
+  const msg = $('qp-msg');
+  btn.disabled = true;
+  try {
+    const { url } = await api('/api/admin/quick-photo-link');
+    await navigator.clipboard.writeText(url);
+    msg.textContent = '✅ Link copiado. Enviáselo a Maru por WhatsApp para que lo abra desde Safari y lo guarde en el inicio.';
+    msg.style.color = 'var(--green)';
+  } catch(e) {
+    msg.textContent = '❌ No se pudo copiar: ' + e.message;
+    msg.style.color = 'var(--danger)';
+  }
+  btn.disabled = false;
+}
 
 // ─── RESEÑAS ──────────────────────────────────────────
 async function loadReviews() {

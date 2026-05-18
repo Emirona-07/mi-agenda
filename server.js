@@ -1065,6 +1065,13 @@ app.post('/api/quick-photo', upload.single('photo'), async (req, res) => {
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/review', (req, res) => res.sendFile(path.join(__dirname, 'public', 'review.html')));
 app.get('/gift', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gift.html')));
+// Quick Photo — link con token embebido (admin genera, Maru guarda en inicio)
+app.get('/api/admin/quick-photo-link', requireAuth, (req, res) => {
+  const token = getOrCreateQuickPhotoToken();
+  const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+  res.json({ url: `${publicUrl}/quick-photo?token=${token}` });
+});
+app.get('/quick-photo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'quick-photo.html')));
 
 // ─── GIFT CARDS (público) ────────────────────────────────────────────────────
 app.post('/api/gift-cards/check', (req, res) => {
