@@ -59,7 +59,18 @@
     .stat-card .sub { font-size: 0.8rem; color: var(--muted); }
 
     /* Tables */
-    .table-wrap { overflow-x: auto; border-radius: 14px; }
+    .table-wrap { overflow-x: auto; border-radius: 14px; -webkit-overflow-scrolling: touch; }
+    .table-wrap table { min-width: 760px; }
+    .reviews-table-wrap table { table-layout: fixed; min-width: 0; }
+    .reviews-table-wrap th:nth-child(1), .reviews-table-wrap td:nth-child(1) { width: 14%; }
+    .reviews-table-wrap th:nth-child(2), .reviews-table-wrap td:nth-child(2) { width: 18%; }
+    .reviews-table-wrap th:nth-child(3), .reviews-table-wrap td:nth-child(3) { width: 100px; }
+    .reviews-table-wrap th:nth-child(4), .reviews-table-wrap td:nth-child(4) { width: 28%; }
+    .reviews-table-wrap th:nth-child(5), .reviews-table-wrap td:nth-child(5) { width: 100px; }
+    .reviews-table-wrap th:nth-child(6), .reviews-table-wrap td:nth-child(6) { width: 110px; }
+    .reviews-table-wrap th:nth-child(7), .reviews-table-wrap td:nth-child(7) { width: 130px; }
+    .cell-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-wrap { overflow-wrap: anywhere; word-break: break-word; }
     table { width: 100%; border-collapse: collapse; background: white; }
     th { padding: 12px 14px; text-align: left; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); white-space: nowrap; }
     td { padding: 12px 14px; font-size: 0.88rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -117,6 +128,16 @@
     .booking-block:hover { background: #b7e4c7; }
     .booking-block .bb-time { font-weight: 700; color: var(--green); }
     .booking-block .bb-name { color: var(--text); }
+    .agenda-mobile-list { display: none; }
+    .agenda-day { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: white; }
+    .agenda-day + .agenda-day { margin-top: 10px; }
+    .agenda-day-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); color: var(--muted); font-weight: 800; font-size: 0.82rem; text-transform: uppercase; }
+    .agenda-day-head.today { background: var(--green-bg); color: var(--green); }
+    .agenda-event { display: grid; grid-template-columns: 56px 1fr; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--border); cursor: pointer; }
+    .agenda-event-time { font-weight: 800; color: var(--green); font-size: 0.86rem; }
+    .agenda-event-name { font-weight: 700; font-size: 0.9rem; }
+    .agenda-event-meta { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+    .agenda-empty-day { padding: 10px 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; }
 
     /* Schedule hours editor */
     .hours-grid { display: grid; gap: 10px; }
@@ -149,11 +170,36 @@
     .whatsapp-link:hover { text-decoration: underline; }
 
     @media (max-width: 768px) {
-      .sidebar { width: 100%; height: auto; position: relative; }
+      .sidebar { width: 100%; height: auto; max-height: none; position: sticky; top: 0; overflow: visible; }
+      .sidebar-logo { padding: 12px 16px 8px; }
+      .sidebar-logo h2 { font-size: 1rem; }
+      .sidebar-logo p { font-size: 0.7rem; }
+      .sidebar-nav { display: flex; overflow-x: auto; gap: 6px; padding: 8px 12px 10px; flex: none; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+      .sidebar-nav::-webkit-scrollbar { display: none; }
+      .nav-item { flex: 0 0 auto; width: auto; border-radius: 999px; padding: 8px 12px; gap: 6px; font-size: 0.82rem; white-space: nowrap; }
+      .nav-item .icon { width: auto; font-size: 1rem; }
+      .sidebar-footer { display: none; }
       .main { margin-left: 0; padding: 16px; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .grid-2 { grid-template-columns: 1fr; }
       .hour-row { grid-template-columns: 70px 1fr 1fr 70px; }
+      .card { padding: 16px; border-radius: 12px; }
+      .card-header { align-items: flex-start; gap: 10px; }
+      .week-nav, .filters { align-items: stretch; }
+      .agenda-week-table { display: none; }
+      .agenda-mobile-list { display: block; }
+      .reviews-table-wrap table, .reviews-table-wrap thead, .reviews-table-wrap tbody, .reviews-table-wrap tr, .reviews-table-wrap th, .reviews-table-wrap td { display: block; width: 100% !important; min-width: 0; }
+      .reviews-table-wrap thead { display: none; }
+      .reviews-table-wrap tr { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: white; }
+      .reviews-table-wrap td { border: none; padding: 5px 0; }
+      .reviews-table-wrap td::before { content: attr(data-label); display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+      .reviews-table-wrap td[data-label="Acciones"] { display: flex; gap: 8px; flex-wrap: wrap; }
+      .reviews-table-wrap td[data-label="Acciones"]::before { flex-basis: 100%; }
+    }
+    @media (max-width: 430px) {
+      .stats-grid { gap: 10px; }
+      .stat-card { padding: 14px; }
+      .stat-card .value { font-size: 1.55rem; }
     }
   </style>
 </head>
@@ -450,7 +496,7 @@
         <div class="card-header"><h3>⭐ Reseñas recibidas</h3>
           <span id="reviews-count" style="font-size:0.82rem;color:var(--muted)"></span>
         </div>
-        <div id="reviews-table-wrap">
+        <div id="reviews-table-wrap" class="reviews-table-wrap">
           <div class="loading-state" style="text-align:center;padding:24px;color:var(--muted)">Cargando...</div>
         </div>
       </div>
@@ -676,7 +722,7 @@ async function doLogout() {
 }
 async function checkAuth() {
   const { authenticated } = await api('/api/admin/check-auth');
-  if (authenticated) { $('login-screen').style.display = 'none'; $('app').style.display = 'block'; initApp(); }
+  if (authenticated) { $('login-screen').style.display = 'none'; $('app').style.display = 'block'; initApp(); setTimeout(initPush, 800); }
 }
 
 // ─── INIT ─────────────────────────────────────────────
@@ -820,21 +866,19 @@ async function loadMetrics({ year, month } = {}) {
   // Bar chart (last 12 months — always current, not filtered by selector)
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const maxRev = Math.max(...met.monthly.map(r => r.revenue), 1);
-  const barW = 100 / Math.max(met.monthly.length, 1);
   const bars = met.monthly.map((r, i) => {
     const h = Math.max((r.revenue / maxRev) * 100, 2);
     const mo = parseInt(r.month) - 1;
-    return `<g>
-      <rect x="${i * barW + 0.5}%" y="${100 - h}%" width="${barW - 1}%" height="${h}%"
-        fill="var(--green)" rx="3" opacity="0.85">
-        <title>${months[mo]} ${r.year} — ${cur}${r.revenue.toLocaleString()} (${r.bookings} citas)</title>
-      </rect>
-      <text x="${i * barW + barW/2}%" y="100%" dy="-2" text-anchor="middle"
-        font-size="9" fill="var(--muted)">${months[mo]}</text>
-    </g>`;
+    return `<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div title="${months[mo]} ${r.year} — ${cur}${r.revenue.toLocaleString()} (${r.bookings} citas)"
+        style="height:120px;width:100%;display:flex;align-items:flex-end">
+        <div style="width:100%;height:${h}%;min-height:4px;background:var(--green);border-radius:5px 5px 0 0;opacity:0.85"></div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);line-height:1;white-space:nowrap">${months[mo]}</div>
+    </div>`;
   }).join('');
   $('metrics-chart').innerHTML = met.monthly.length
-    ? `<svg viewBox="0 0 100 70" preserveAspectRatio="none" style="width:100%;height:130px;display:block;overflow:visible">${bars}</svg>`
+    ? `<div style="display:flex;align-items:flex-end;gap:6px;min-height:150px;padding:4px 2px 0">${bars}</div>`
     : '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem">Sin datos aún</div>';
 
   // KPIs
@@ -967,7 +1011,7 @@ async function loadAgenda() {
     return;
   }
 
-  let html = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px">`;
+  let html = `<div class="agenda-week-table" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px">`;
   html += `<tr><th style="padding:8px;font-size:0.78rem;color:var(--muted);text-align:left;width:55px;border-bottom:2px solid var(--border)">Hora</th>`;
   days.forEach((d, i) => {
     const ds = dateKey(d);
@@ -995,6 +1039,32 @@ async function loadAgenda() {
     html += '</tr>';
   });
   html += '</table></div>';
+  html += '<div class="agenda-mobile-list">';
+  days.forEach((d, i) => {
+    const ds = dateKey(d);
+    const dayBookings = bookings.filter(b => b.date === ds).sort((a, b) => a.time.localeCompare(b.time));
+    const isToday = ds === today;
+    html += `<section class="agenda-day">
+      <div class="agenda-day-head ${isToday ? 'today' : ''}">
+        <span>${dayNames[i]} ${d.getDate()}</span>
+        ${isToday ? '<span>Hoy</span>' : ''}
+      </div>`;
+    if (dayBookings.length) {
+      dayBookings.forEach(b => {
+        html += `<div class="agenda-event" onclick="openBookingModal(${b.id})">
+          <div class="agenda-event-time">${escapeHtml(b.time)}</div>
+          <div>
+            <div class="agenda-event-name">${escapeHtml(b.client_name)}</div>
+            <div class="agenda-event-meta">${escapeHtml(b.service_name)}${b.professional_name ? ' · ' + escapeHtml(b.professional_name) : ''}</div>
+          </div>
+        </div>`;
+      });
+    } else {
+      html += '<div class="agenda-empty-day">Sin citas</div>';
+    }
+    html += '</section>';
+  });
+  html += '</div>';
   $('week-grid-container').innerHTML = html;
 }
 
@@ -1560,13 +1630,13 @@ async function loadReviews() {
     </tr></thead>
     <tbody>
       ${reviews.map(r => `<tr>
-        <td>${escapeHtml(r.client_name)}</td>
-        <td style="font-size:0.85rem;color:var(--muted)">${escapeHtml(r.service_name || '—')}</td>
-        <td style="white-space:nowrap">${stars(r.rating || 0)}</td>
-        <td style="font-size:0.85rem;max-width:240px">${r.comment ? escapeHtml(r.comment) : '<span style="color:var(--muted)">Sin comentario</span>'}</td>
-        <td style="font-size:0.82rem;color:var(--muted);white-space:nowrap">${formatDateShort(r.created_at ? r.created_at.slice(0,10) : '')}</td>
-        <td>${r.approved ? '<span class="badge badge-confirmed">Publicada</span>' : '<span class="badge badge-pending">Pendiente</span>'}</td>
-        <td style="white-space:nowrap;display:flex;gap:6px">
+        <td data-label="Cliente" class="cell-truncate">${escapeHtml(r.client_name)}</td>
+        <td data-label="Servicio" class="cell-wrap" style="font-size:0.85rem;color:var(--muted)">${escapeHtml(r.service_name || '—')}</td>
+        <td data-label="Puntuación" style="white-space:nowrap">${stars(r.rating || 0)}</td>
+        <td data-label="Comentario" class="cell-wrap" style="font-size:0.85rem">${r.comment ? escapeHtml(r.comment) : '<span style="color:var(--muted)">Sin comentario</span>'}</td>
+        <td data-label="Fecha" style="font-size:0.82rem;color:var(--muted);white-space:nowrap">${formatDateShort(r.created_at ? r.created_at.slice(0,10) : '')}</td>
+        <td data-label="Estado">${r.approved ? '<span class="badge badge-confirmed">Publicada</span>' : '<span class="badge badge-pending">Pendiente</span>'}</td>
+        <td data-label="Acciones" style="white-space:nowrap;display:flex;gap:6px">
           ${!r.approved ? `<button class="btn btn-sm btn-primary" onclick="approveReview(${r.id})">✓ Publicar</button>` : ''}
           <button class="btn btn-sm btn-danger" onclick="deleteReview(${r.id})">🗑</button>
         </td>
@@ -1709,8 +1779,6 @@ function showPushMsg(text, isError) {
   setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 checkAuth();
-// Init push after auth check runs
-setTimeout(initPush, 800);
 </script>
 </body>
 </html>
