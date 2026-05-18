@@ -40,7 +40,7 @@
       gap: 8px;
       padding-bottom: 2px;
     }
-    header .logo { font-size: 1.3rem; line-height: 1; }
+    header .logo { display:flex; align-items:center; color: var(--p); }
     header h1 { font-size: 1rem; font-weight: 700; color: var(--text); }
 
     .card {
@@ -136,7 +136,7 @@
       transition: background .12s, border-color .12s;
     }
     .btn-manual:active { background: var(--p-light); border-color: var(--p); }
-    .btn-manual .icon { display: block; font-size: 1rem; margin-bottom: 3px; }
+    .btn-manual .icon { display: flex; align-items:center; justify-content:center; margin-bottom: 4px; color: var(--text-2); }
 
     /* Selector */
     select {
@@ -310,7 +310,7 @@
       text-align: center;
       border: 1px solid var(--border);
     }
-    .confirm-icon { font-size: 2rem; line-height: 1; }
+    .confirm-icon { display:flex; align-items:center; justify-content:center; color: var(--p); }
     .confirm-title {
       font-size: 1rem;
       font-weight: 700;
@@ -385,7 +385,7 @@
 <body>
 
   <header>
-    <span class="logo">⚡</span>
+    <span class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
     <h1>Turno · Mi Piel</h1>
   </header>
 
@@ -610,9 +610,9 @@
         chargeBtn = `
           <button class="btn-charge" onclick="startCharge(${b.id})">${label}</button>
           <div class="manual-pay">
-            <button class="btn-manual" onclick="markPaid(${b.id},'cash')"><span class="icon">💵</span>Efectivo</button>
-            <button class="btn-manual" onclick="markPaid(${b.id},'transfer')"><span class="icon">🏦</span>Transf.</button>
-            <button class="btn-manual" onclick="markPaid(${b.id},'qr')"><span class="icon">📲</span>QR físico</button>
+            <button class="btn-manual" onclick="markPaid(${b.id},'cash')"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span>Efectivo</button>
+            <button class="btn-manual" onclick="markPaid(${b.id},'transfer')"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>Transf.</button>
+            <button class="btn-manual" onclick="markPaid(${b.id},'qr')"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/></svg></span>QR físico</button>
           </div>`;
       }
 
@@ -763,9 +763,9 @@
     // ─── Cobro manual ────────────────────────────────────────────────────────
 
     const METHOD_INFO = {
-      cash:     { icon: '💵', label: 'Efectivo',      sub: 'Marcar esta cita como pagada en efectivo' },
-      transfer: { icon: '🏦', label: 'Transferencia', sub: 'Marcar esta cita como pagada por transferencia' },
-      qr:       { icon: '📲', label: 'QR físico',     sub: 'Marcar esta cita como pagada con QR de MP' },
+      cash:     { icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>', label: 'Efectivo',      sub: 'Marcar esta cita como pagada en efectivo' },
+      transfer: { icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>', label: 'Transferencia', sub: 'Marcar esta cita como pagada por transferencia' },
+      qr:       { icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/></svg>', label: 'QR físico',     sub: 'Marcar esta cita como pagada con QR de MP' },
     };
 
     function markPaid(bookingId, method) {
@@ -805,7 +805,7 @@
     let _confirmCallback = null;
 
     function showConfirm({ icon, title, sub, okLabel, onOk }) {
-      document.getElementById('confirm-icon').textContent  = icon;
+      document.getElementById('confirm-icon').innerHTML    = icon;
       document.getElementById('confirm-title').textContent = title;
       document.getElementById('confirm-sub').textContent   = sub;
       document.getElementById('confirm-ok').textContent    = okLabel || 'Confirmar';
