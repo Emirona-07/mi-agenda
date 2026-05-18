@@ -390,6 +390,63 @@
       .svc-desc-drag { display: none; }
     }
 
+    /* ── Botón home en header ───────────────────────────── */
+    .btn-home {
+      position: absolute;
+      top: 50%; left: 16px;
+      transform: translateY(-50%);
+      background: transparent;
+      border: 1px solid var(--border-dark);
+      border-radius: var(--r-pill);
+      padding: 7px 13px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--muted);
+      display: none;
+      align-items: center;
+      gap: 5px;
+      transition: border-color 0.15s, color 0.15s;
+      text-decoration: none;
+    }
+    .btn-home.show { display: flex; }
+    .btn-home:hover { border-color: var(--p); color: var(--p); }
+
+    /* ── Sticky CTA ─────────────────────────────────────── */
+    .sticky-cta {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.07);
+      padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      z-index: 150;
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    }
+    .sticky-cta.show { transform: translateY(0); }
+    .sticky-cta-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 14px;
+    }
+    .sticky-cta-info { min-width: 0; flex: 1; }
+    .sticky-cta-name {
+      font-size: 0.83rem; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sticky-cta-price { font-size: 0.75rem; color: var(--p); font-weight: 600; margin-top: 1px; }
+    .sticky-cta-btn {
+      background: var(--p); color: white; border: none;
+      border-radius: var(--r); padding: 13px 28px;
+      font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; white-space: nowrap; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .sticky-cta-btn:hover { background: var(--p-dark); }
+
     /* ── Sobre mí ───────────────────────────────────────── */
     .about-section {
       background: var(--white);
@@ -1156,6 +1213,7 @@
 <body>
 
 <header>
+  <button class="btn-home" id="btn-home" onclick="newBooking()">← Inicio</button>
   <h1 id="biz-name">Cargando...</h1>
   <p id="biz-desc"></p>
   <div class="header-account" id="header-account"></div>
@@ -1175,6 +1233,10 @@
           Bachiller en Cosmetología Médica — UdelaR
         </div>
         <div class="about-cred">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          MSc. Nutrigenómica y Nutrición Personalizada
+        </div>
+        <div class="about-cred">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           Miembro ACMU Uruguay
         </div>
@@ -1185,6 +1247,12 @@
           <!-- Los cursos se agregan acá -->
         </ul>
       </div>
+      <a href="https://www.instagram.com/mipiel.uy/" target="_blank" rel="noopener"
+        style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:0.75rem;font-weight:600;color:var(--muted);text-decoration:none;transition:color 0.15s"
+        onmouseover="this.style.color='var(--p)'" onmouseout="this.style.color='var(--muted)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        @mipiel.uy
+      </a>
     </div>
   </div>
 </section>
@@ -1669,7 +1737,7 @@ function renderServices() {
           ? `<div class="svc-info-btn" role="button" tabindex="0" onclick="showServiceDesc(${s.id}, event)" title="Ver descripción">i</div>`
           : '';
         return `
-        <button class="svc-card${sel ? ' selected' : ''}" onclick="selectService(${s.id})">
+        <button class="svc-card${sel ? ' selected' : ''}" id="svc-card-${s.id}" onclick="selectService(${s.id})">
           <div class="svc-photo-wrap">
             ${photoHtml}
             <div class="svc-check">${checkSvg}</div>
@@ -1735,7 +1803,27 @@ async function selectService(id) {
   state.selectedProfessional = null;
   state.selectedDate = null;
   state.selectedTime = null;
-  renderServices();
+
+  // Actualizar clases sin re-renderizar (evita el parpadeo de fotos)
+  document.querySelectorAll('.svc-card').forEach(el => {
+    const isSelected = el.id === `svc-card-${id}`;
+    el.classList.toggle('selected', isSelected);
+    const check = el.querySelector('.svc-check');
+    if (check) check.style.display = isSelected ? 'flex' : 'none';
+  });
+
+  // Sticky CTA
+  const svc = state.selectedService;
+  document.getElementById('sticky-cta-name').textContent = svc.name.replace(/\p{Emoji}/gu, '').trim();
+  document.getElementById('sticky-cta-price').textContent = svc.price > 0 ? `$${svc.price.toLocaleString()}` : '';
+  document.getElementById('sticky-cta').classList.add('show');
+
+  // Ocultar "Sobre mí" — aprovechar espacio
+  document.querySelector('.about-section').style.display = 'none';
+
+  // Mostrar botón home
+  document.getElementById('btn-home').classList.add('show');
+
   document.getElementById('btn-to-2').disabled = false;
 }
 
@@ -1744,6 +1832,10 @@ function goStep(step) {
   document.getElementById(`step-${step}`).classList.add('active');
   document.getElementById('progress-bar').style.display = '';
   updateProgress(step);
+  // Ocultar sticky CTA en todos los pasos excepto step 1
+  document.getElementById('sticky-cta').classList.toggle('show', step === 1 && !!state.selectedService);
+  // Botón home: visible en todos los pasos
+  document.getElementById('btn-home').classList.toggle('show', step > 1 || !!state.selectedService);
   if (step === 2) loadCalendar();
   if (step === 3) {
     // Mostrar selector de método de pago si MP está activo y el servicio tiene precio
@@ -2044,6 +2136,10 @@ function newBooking() {
   document.getElementById('pay-surcharge-note').style.display = 'none';
   ['f-name','f-phone','f-email','f-instagram','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('btn-to-2').disabled = true;
+  // Restaurar sección Sobre mí y ocultar sticky/home
+  document.querySelector('.about-section').style.display = '';
+  document.getElementById('sticky-cta').classList.remove('show');
+  document.getElementById('btn-home').classList.remove('show');
   goStep(1);
   renderServices();
 }
@@ -2054,6 +2150,17 @@ if ('serviceWorker' in navigator) {
 
 init();
 </script>
+
+<!-- Sticky CTA — aparece al seleccionar un servicio -->
+<div class="sticky-cta" id="sticky-cta">
+  <div class="sticky-cta-inner">
+    <div class="sticky-cta-info">
+      <div class="sticky-cta-name" id="sticky-cta-name"></div>
+      <div class="sticky-cta-price" id="sticky-cta-price"></div>
+    </div>
+    <button class="sticky-cta-btn" onclick="goStep(2)">Continuar →</button>
+  </div>
+</div>
 
 <!-- Service description bottom sheet -->
 <div class="svc-desc-overlay" id="svc-desc-overlay" onclick="closeServiceDesc()">
