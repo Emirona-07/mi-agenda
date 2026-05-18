@@ -390,6 +390,88 @@
       .svc-desc-drag { display: none; }
     }
 
+    /* ── Sobre mí ───────────────────────────────────────── */
+    .about-section {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 20px 24px;
+    }
+    .about-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .about-avatar {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      background: var(--p-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; font-weight: 700; color: var(--p);
+      overflow: hidden;
+    }
+    .about-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .about-content { flex: 1; min-width: 0; }
+    .about-name {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em;
+      margin-bottom: 1px;
+    }
+    .about-title {
+      font-size: 0.78rem; color: var(--p); font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .about-bio {
+      font-size: 0.83rem; color: #555; line-height: 1.6;
+      margin-bottom: 14px;
+      font-style: italic;
+    }
+    .about-creds {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .about-cred {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--p-light); border-radius: var(--r-pill);
+      padding: 5px 12px;
+      font-size: 0.73rem; font-weight: 600; color: var(--p);
+    }
+    .about-cred svg { flex-shrink: 0; }
+    .about-toggle {
+      background: none; border: none; cursor: pointer;
+      font-size: 0.73rem; color: var(--muted); font-family: inherit;
+      padding: 0; margin-top: 10px; display: block;
+      transition: color 0.15s;
+    }
+    .about-toggle:hover { color: var(--p); }
+    .about-extra {
+      margin-top: 12px;
+      display: none;
+    }
+    .about-extra.open { display: block; }
+    .about-courses {
+      list-style: none;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .about-courses li {
+      font-size: 0.8rem; color: #444; line-height: 1.4;
+      padding-left: 16px; position: relative;
+    }
+    .about-courses li::before {
+      content: '·';
+      position: absolute; left: 4px;
+      color: var(--p); font-weight: 700;
+    }
+    @media (max-width: 480px) {
+      .about-inner { gap: 16px; }
+      .about-avatar { width: 64px; height: 64px; font-size: 1.3rem; }
+      .about-name { font-size: 0.95rem; }
+      .about-bio { font-size: 0.8rem; }
+    }
+
     /* ── Payment method selector ────────────────────────── */
     .pay-method-wrap {
       margin-bottom: 16px;
@@ -1079,6 +1161,34 @@
   <div class="header-account" id="header-account"></div>
 </header>
 
+<!-- ── Sobre mí ─────────────────────────────────────────── -->
+<section class="about-section">
+  <div class="about-inner">
+    <div class="about-avatar">MR</div>
+    <div class="about-content">
+      <div class="about-name">Mariana Recoba</div>
+      <div class="about-title">Cosmetóloga Médica · Buceo, Montevideo</div>
+      <p class="about-bio">"Te ayudo a mejorar tu autoestima a través del cuidado de tu piel."</p>
+      <div class="about-creds">
+        <div class="about-cred">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          Bachiller en Cosmetología Médica — UdelaR
+        </div>
+        <div class="about-cred">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Miembro ACMU Uruguay
+        </div>
+      </div>
+      <button class="about-toggle" onclick="toggleAbout(this)">Ver formación ↓</button>
+      <div class="about-extra">
+        <ul class="about-courses" id="about-courses">
+          <!-- Los cursos se agregan acá -->
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <div class="container">
   <!-- Progress -->
   <div class="progress" id="progress-bar">
@@ -1573,6 +1683,12 @@ function renderServices() {
         </button>`;
       }).join('')}
     </div>`;
+}
+
+function toggleAbout(btn) {
+  const extra = btn.nextElementSibling;
+  const open = extra.classList.toggle('open');
+  btn.textContent = open ? 'Ver menos ↑' : 'Ver formación ↓';
 }
 
 function setCategory(cat) {
