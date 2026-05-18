@@ -1876,6 +1876,37 @@ function showPushMsg(text, isError) {
   setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 checkAuth();
+
+// ── Deep-link desde push notification ────────────────────────────────────────
+function _openBookingFromUrl(url) {
+  try {
+    const bookingId = new URL(url, location.origin).searchParams.get('booking');
+    if (bookingId) openBookingModal(parseInt(bookingId));
+  } catch (_) {}
+}
+
+// Caso 1: admin ya estaba abierto → SW manda postMessage
+navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', (e) => {
+  if (e.data?.type === 'open-booking') _openBookingFromUrl(e.data.url);
+});
+
+// Caso 2: admin se abrió/recargó desde la URL de la push → leer ?booking=
+(function() {
+  const bookingParam = new URLSearchParams(location.search).get('booking');
+  if (bookingParam) {
+    // Limpiar el parámetro de la URL sin recargar
+    history.replaceState({}, '', '/admin');
+    // Esperar a que el app esté inicializado antes de abrir el modal
+    const tryOpen = (attempts) => {
+      if (document.getElementById('app')?.style.display !== 'none') {
+        openBookingModal(parseInt(bookingParam));
+      } else if (attempts > 0) {
+        setTimeout(() => tryOpen(attempts - 1), 300);
+      }
+    };
+    setTimeout(() => tryOpen(10), 500);
+  }
+})();
 </script>
 </body>
 </html>

@@ -29,7 +29,12 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const c of list) {
-        if (c.url.includes('/admin') && 'focus' in c) return c.focus();
+        if (c.url.includes('/admin') && 'focus' in c) {
+          c.focus();
+          // Enviar el booking ID a la ventana ya abierta
+          c.postMessage({ type: 'open-booking', url });
+          return;
+        }
       }
       if (clients.openWindow) return clients.openWindow(url);
     })

@@ -424,7 +424,7 @@ app.post('/api/bookings', async (req, res) => {
       title: `Nueva reserva — ${service.name}`,
       body:  `${name} · ${fmtDate} ${time}`,
       tag:   `booking-${booking.id}`,
-      url:   '/admin',
+      url:   `/admin?booking=${booking.id}`,
     }).catch(() => {});
 
     if (sendWA) {
