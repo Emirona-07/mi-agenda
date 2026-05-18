@@ -455,7 +455,7 @@ app.post('/api/bookings', async (req, res) => {
       if (ownerEmail) {
         await emailSvc.sendOwnerNotification(ownerEmail, {
           bookingId: String(booking.id), serviceName: service.name,
-          clientName: name, phone, date: fmtDate, time,
+          clientName: name, phone, email, date: fmtDate, time,
           price: effectivePrice, deposit: effectiveDeposit,
         }, s);
       }

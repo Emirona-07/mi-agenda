@@ -121,7 +121,10 @@ function pagoConfirmadoHTML({ name, bizName, serviceName, date, time, amountPaid
 </div></body></html>`;
 }
 
-function nuevaReservaHTML({ bookingId, serviceName, clientName, phone, date, time }) {
+function nuevaReservaHTML({ bookingId, serviceName, clientName, phone, email, date, time }) {
+  const row = (label, value) => value
+    ? `<tr><td style="padding:5px 0;color:#777;font-size:.88rem;width:40%">${label}</td><td style="padding:5px 0;font-weight:600">${value}</td></tr>`
+    : '';
   return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
 <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
   <div style="background:#1a5c38;padding:24px;text-align:center">
@@ -130,12 +133,13 @@ function nuevaReservaHTML({ bookingId, serviceName, clientName, phone, date, tim
   <div style="padding:24px">
     <div style="background:#f5faf7;border-left:4px solid #1a5c38;border-radius:4px;padding:16px">
       <table style="width:100%;border-collapse:collapse">
-        <tr><td style="padding:5px 0;color:#777;font-size:.88rem;width:40%">Nº de reserva</td><td style="padding:5px 0;font-weight:600">#${bookingId}</td></tr>
-        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Servicio</td><td style="padding:5px 0;font-weight:600">${serviceName}</td></tr>
-        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Cliente</td><td style="padding:5px 0;font-weight:600">${clientName}</td></tr>
-        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Teléfono</td><td style="padding:5px 0;font-weight:600">${phone}</td></tr>
-        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Fecha</td><td style="padding:5px 0;font-weight:600">${date}</td></tr>
-        <tr><td style="padding:5px 0;color:#777;font-size:.88rem">Hora</td><td style="padding:5px 0;font-weight:600">${time}</td></tr>
+        ${row('Nº de reserva', `#${bookingId}`)}
+        ${row('Servicio', serviceName)}
+        ${row('Cliente', clientName)}
+        ${row('Teléfono', phone)}
+        ${row('Email', email)}
+        ${row('Fecha', date)}
+        ${row('Hora', time)}
       </table>
     </div>
   </div>
