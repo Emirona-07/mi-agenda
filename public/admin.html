@@ -1315,8 +1315,39 @@ async function openClientModal(id) {
             </div>
           </div>`).join('')}
       </div>` : '<p class="text-muted" style="text-align:center;padding:16px">Sin citas registradas</p>'}
+    <details style="margin-top:16px">
+      <summary style="font-size:0.8rem;color:var(--muted);cursor:pointer;user-select:none">🔀 Fusionar con otro cliente…</summary>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+        <p style="font-size:0.8rem;color:var(--muted)">Buscá el duplicado. Todas sus reservas pasarán a <strong>${escapeHtml(data.name)}</strong> y el otro se eliminará.</p>
+        <input id="merge-search" type="text" class="form-control" placeholder="Nombre del cliente a fusionar…" oninput="searchMergeCandidates(${data.id})">
+        <div id="merge-results"></div>
+      </div>
+    </details>
   `;
   openModal('modal-client');
+}
+
+let _mergeTargetId = null;
+async function searchMergeCandidates(targetId) {
+  _mergeTargetId = targetId;
+  const q = $('merge-search').value.trim();
+  if (q.length < 2) { $('merge-results').innerHTML = ''; return; }
+  const data = await api(`/api/admin/clients?search=${encodeURIComponent(q)}&limit=5`);
+  const clients = (data.clients || []).filter(c => c.id !== targetId);
+  if (!clients.length) { $('merge-results').innerHTML = '<p style="font-size:0.8rem;color:var(--muted)">Sin resultados</p>'; return; }
+  $('merge-results').innerHTML = clients.map(c => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f9f9f9;border-radius:8px;gap:8px">
+      <div style="font-size:0.85rem"><strong>${escapeHtml(c.name)}</strong><br><span style="color:var(--muted);font-size:0.78rem">${escapeHtml(c.phone||'')} ${c.email ? '· '+escapeHtml(c.email) : ''} · ${c.total_bookings} citas</span></div>
+      <button class="btn btn-sm btn-danger" onclick="doMergeClient(${targetId},${c.id},'${escapeHtml(c.name).replace(/'/g,"\\'")}')">Fusionar</button>
+    </div>`).join('');
+}
+
+async function doMergeClient(targetId, sourceId, sourceName) {
+  if (!confirm(`¿Fusionar "${sourceName}" en este cliente? Sus reservas pasarán acá y ese registro se eliminará.`)) return;
+  await api(`/api/admin/clients/${targetId}/merge/${sourceId}`, { method: 'POST' });
+  closeModal('modal-client');
+  showToast('Clientes fusionados ✅');
+  loadClients();
 }
 
 // ─── FACTURACIÓN ─────────────────────────────────────

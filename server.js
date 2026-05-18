@@ -329,7 +329,23 @@ app.post('/api/bookings', async (req, res) => {
   const service = db.getServiceById(parseInt(service_id));
   if (!service || !service.active) return res.status(404).json({ error: 'Servicio no disponible' });
 
-  const client = db.upsertClient({ name, phone, email, instagram });
+  // Si el cliente está logueado con Google, usar su registro existente (evita duplicados)
+  let client;
+  if (req.session.clientUser) {
+    client = db.getClientById(req.session.clientUser.id);
+    // Actualizar teléfono/email si no los tenía
+    if (client && (phone || email)) {
+      db.updateClient(client.id, {
+        name: client.name,
+        phone: phone || client.phone,
+        email: email || client.email,
+        instagram: instagram || client.instagram,
+        notes: client.notes,
+      });
+      client = db.getClientById(client.id);
+    }
+  }
+  if (!client) client = db.upsertClient({ name, phone, email, instagram });
   const professional = professional_id ? db.getProfessionalById(parseInt(professional_id)) : service.professionals[0] || null;
 
   // Precios: el recargo MP se aplica sobre el neto DESPUÉS del descuento de gift card
@@ -701,6 +717,17 @@ app.put('/api/admin/clients/:id', requireAuth, (req, res) => {
 });
 app.delete('/api/admin/clients/:id', requireAuth, (req, res) => {
   db.deleteClient(parseInt(req.params.id));
+  res.json({ success: true });
+});
+// Fusionar cliente: mueve todas las reservas de sourceId a targetId y elimina sourceId
+app.post('/api/admin/clients/:id/merge/:sourceId', requireAuth, (req, res) => {
+  const targetId = parseInt(req.params.id);
+  const sourceId = parseInt(req.params.sourceId);
+  if (targetId === sourceId) return res.status(400).json({ error: 'Mismo cliente' });
+  const target = db.getClientById(targetId);
+  const source = db.getClientById(sourceId);
+  if (!target || !source) return res.status(404).json({ error: 'Cliente no encontrado' });
+  db.mergeClients(targetId, sourceId);
   res.json({ success: true });
 });
 

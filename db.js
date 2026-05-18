@@ -571,6 +571,13 @@ function findOrCreateClientByGoogle({ google_id, email, name, picture }) {
   return db.prepare('SELECT * FROM clients WHERE id=?').get(r.lastInsertRowid);
 }
 
+function mergeClients(targetId, sourceId) {
+  // Reasigna todas las reservas del cliente origen al destino
+  db.prepare('UPDATE bookings SET client_id=? WHERE client_id=?').run(targetId, sourceId);
+  // Elimina el cliente origen (sin sus reservas, ya reasignadas)
+  db.prepare('DELETE FROM clients WHERE id=?').run(sourceId);
+}
+
 function cancelClientBooking(bookingId, clientId) {
   const b = db.prepare('SELECT * FROM bookings WHERE id=? AND client_id=?').get(bookingId, clientId);
   if (!b) return { error: 'no_encontrado' };
@@ -987,7 +994,7 @@ module.exports = {
   getActiveServices, getAllServices, getServiceById, createService, updateService, deleteService, updateServicePhoto,
   getBusinessHours, updateBusinessHours,
   getAvailableSlots, getAvailableDates, isSlotAvailable,
-  upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient,
+  upsertClient, getClients, getClientById, getClientBookings, updateClient, deleteClient, mergeClients,
   createBooking, createBookingAtomic, getBookings, getBookingById, updateBooking, cancelBooking,
   getDashboardStats, getRevenue,
   findOrCreateClientByGoogle, cancelClientBooking,
