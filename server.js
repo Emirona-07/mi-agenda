@@ -254,6 +254,30 @@ async function sendGiftCardEmails(gc, settings) {
   await Promise.allSettled(tasks);
 }
 
+async function createBookingMpPreference({ booking, serviceName, businessName, amount, payType, label }) {
+  if (!mpClient || !amount || amount <= 0) return null;
+  const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
+  const pref = new Preference(mpClient);
+  const r = await pref.create({ body: {
+    items: [{ id: `booking-${booking.id}-${payType}`, title: `${label} - ${serviceName}`,
+      description: `Reserva #${booking.id} · ${businessName}`, quantity: 1,
+      unit_price: amount, currency_id: 'UYU' }],
+    external_reference: `${booking.id}:${payType}`,
+    back_urls: {
+      success: `${publicUrl}/?payment=success&type=${payType}&booking=${booking.id}`,
+      failure: `${publicUrl}/?payment=failure&type=${payType}&booking=${booking.id}`,
+      pending: `${publicUrl}/?payment=pending&type=${payType}&booking=${booking.id}`,
+    },
+    auto_return: 'approved',
+    notification_url: `${publicUrl}/api/payments/webhook`,
+    statement_descriptor: businessName.slice(0, 22),
+    metadata: { booking_id: booking.id, pay_type: payType },
+  }});
+  const isTest = (process.env.MP_ACCESS_TOKEN || '').includes('-TEST-') ||
+                 process.env.MP_SANDBOX === 'true';
+  return isTest ? r.sandbox_init_point : r.init_point;
+}
+
 async function verifyGoogleToken(credential) {
   try {
     const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
@@ -317,6 +341,7 @@ app.post('/api/bookings', async (req, res) => {
   const email = sanitizeOptional(req.body.email, 160);
   const instagram = sanitizeOptional(req.body.instagram, 80);
   const notes = sanitizeOptional(req.body.notes, 1000);
+  const utm_source = sanitizeOptional(req.body.utm_source, 120);
   const { service_id, professional_id, date, time, payment_method, gift_card_code } = req.body;
 
   const s = db.getSettings();
@@ -351,6 +376,9 @@ app.post('/api/bookings', async (req, res) => {
 
   // Precios: el recargo MP se aplica sobre el neto DESPUÉS del descuento de gift card
   const payMethod = payment_method === 'mp' ? 'mp' : payment_method === 'transfer' ? 'transfer' : 'cash';
+  if (payMethod === 'transfer' && !s.bank_account) {
+    return res.status(400).json({ error: 'Transferencia no disponible en este momento.' });
+  }
   const mpSurchargePct = payMethod === 'mp' ? parseFloat(s.mp_surcharge || '10') / 100 : 0;
   const basePrice   = service.price   > 0 ? service.price   : 0;
   const baseDeposit = service.deposit > 0 ? service.deposit : 0;
@@ -364,6 +392,7 @@ app.post('/api/bookings', async (req, res) => {
         professional_id: professional ? professional.id : null,
         date, time, notes,
         deposit_paid: 0,
+        utm_source,
       },
       gift_card_code,
       effective_price: basePrice, // precio base sin recargo; el recargo se aplica al neto
@@ -399,34 +428,16 @@ app.post('/api/bookings', async (req, res) => {
   let mp_url_full = null;
 
   if (payMethod === 'mp' && mpClient && (effectiveDeposit > 0 || effectivePrice > 0)) {
-    const pref = new Preference(mpClient);
-    const publicUrl = process.env.PUBLIC_BASE_URL || 'https://mipiel.up.railway.app';
-
-    const makePref = async (amount, payType, label) => {
-      const r = await pref.create({ body: {
-        items: [{ id: `booking-${booking.id}-${payType}`, title: `${label} - ${service.name}`,
-          description: `Reserva #${booking.id} · ${bizName}`, quantity: 1,
-          unit_price: amount, currency_id: 'UYU' }],
-        external_reference: `${booking.id}:${payType}`,
-        back_urls: {
-          success: `${publicUrl}/?payment=success&type=${payType}&booking=${booking.id}`,
-          failure: `${publicUrl}/?payment=failure&type=${payType}&booking=${booking.id}`,
-          pending: `${publicUrl}/?payment=pending&type=${payType}&booking=${booking.id}`,
-        },
-        auto_return: 'approved',
-        notification_url: `${publicUrl}/api/payments/webhook`,
-        statement_descriptor: bizName.slice(0, 22),
-        metadata: { booking_id: booking.id, pay_type: payType },
-      }});
-      const isTest = (process.env.MP_ACCESS_TOKEN || '').includes('-TEST-') ||
-                     process.env.MP_SANDBOX === 'true';
-      return isTest ? r.sandbox_init_point : r.init_point;
-    };
-
     try {
       const tasks = [];
-      if (effectiveDeposit > 0) tasks.push(makePref(effectiveDeposit, 'deposit', 'Seña').then(u => { mp_url_deposit = u; }));
-      if (effectivePrice   > 0) tasks.push(makePref(effectivePrice,   'full',    'Total').then(u => { mp_url_full = u; }));
+      if (effectiveDeposit > 0) tasks.push(createBookingMpPreference({
+        booking, serviceName: service.name, businessName: bizName,
+        amount: effectiveDeposit, payType: 'deposit', label: 'Seña'
+      }).then(u => { mp_url_deposit = u; }));
+      if (effectivePrice > 0) tasks.push(createBookingMpPreference({
+        booking, serviceName: service.name, businessName: bizName,
+        amount: effectivePrice, payType: 'full', label: 'Total'
+      }).then(u => { mp_url_full = u; }));
       await Promise.all(tasks);
       if (mp_url_deposit || mp_url_full) {
         db.updateBookingPayment(booking.id, { mp_url_deposit, mp_url_full });
@@ -553,10 +564,29 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
         if (alreadyRecorded) return;
 
         db.updateBookingAdmin(bookingId, { payment_status: newPaymentStatus });
-        db.updateBookingPayment(bookingId, {
+        const paymentPatch = {
           deposit_paid: payData.transaction_amount,
           mp_payment_id: String(body.data.id),
-        });
+        };
+        if (payType === 'deposit') {
+          const remaining = Math.max(0, (current.total_price || 0) - (payData.transaction_amount || 0));
+          if (remaining > 0) {
+            const s = db.getSettings();
+            const balanceUrl = await createBookingMpPreference({
+              booking: current,
+              serviceName: current.service_name || 'Turno',
+              businessName: s.business_name || 'Mi Negocio',
+              amount: remaining,
+              payType: 'full',
+              label: 'Saldo',
+            }).catch(err => {
+              console.error('MP balance preference error:', err.message);
+              return null;
+            });
+            if (balanceUrl) paymentPatch.mp_url_full = balanceUrl;
+          }
+        }
+        db.updateBookingPayment(bookingId, paymentPatch);
         console.log(`MP pago aprobado: booking #${bookingId}, tipo=${payType}, $${payData.transaction_amount}`);
 
         // Email de pago confirmado al cliente
@@ -1267,6 +1297,9 @@ app.post('/api/gift-cards/purchase', async (req, res) => {
   if (!isValidEmail(purchaser_email)) return res.status(400).json({ error: 'Email inválido' });
   if (recipient_email && !isValidEmail(recipient_email)) return res.status(400).json({ error: 'Email del destinatario inválido' });
   const s = db.getSettings();
+  if (payment_method === 'transfer' && !s.bank_account) {
+    return res.status(400).json({ error: 'Transferencia no disponible en este momento.' });
+  }
   const mpSurchargePct = (payment_method === 'mp') ? parseFloat(s.mp_surcharge || '10') / 100 : 0;
   const mpDivisorGc = mpSurchargePct > 0 ? (1 - mpSurchargePct) : 1;
   const finalAmount = Math.round(parseInt(amount) / mpDivisorGc);
@@ -1299,6 +1332,18 @@ app.post('/api/gift-cards/purchase', async (req, res) => {
       console.error('MP gift card error:', mpErr.message);
       return res.status(502).json({ error: 'No pudimos iniciar el pago con Mercado Pago. Probá de nuevo o elegí transferencia.' });
     }
+  }
+
+  const ownerEmail = s.owner_email || '';
+  if (ownerEmail) {
+    emailSvc.sendGiftCardPurchaseNotification(ownerEmail, {
+      purchaserName: purchaser_name,
+      purchaserEmail: purchaser_email,
+      recipientName: recipient_name,
+      recipientEmail: recipient_email,
+      amount,
+      paymentMethod: payment_method,
+    }, s).catch(() => {});
   }
 
   res.json({ success: true, pending: true });

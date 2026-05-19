@@ -266,10 +266,13 @@
       const box = document.getElementById('transfer-box');
       box.innerHTML = `<strong>Datos para transferir:</strong><br>${nl2br(_bankAccount)}`;
       box.style.display = 'block';
+    } else {
+      document.getElementById('pm-transfer').style.display = 'none';
     }
 
     if (_mpActive) {
       document.getElementById('pm-mp').style.display = '';
+      if (!_bankAccount) setPayMethod('mp');
     }
 
     // ── Pre-cargar monto desde URL (?amount=X) ────────────────────────────────
@@ -289,6 +292,7 @@
   }
 
   function setPayMethod(m) {
+    if (m === 'transfer' && !_bankAccount) m = _mpActive ? 'mp' : 'transfer';
     _payMethod = m;
     document.getElementById('pm-transfer').classList.toggle('active', m === 'transfer');
     document.getElementById('pm-mp').classList.toggle('active', m === 'mp');

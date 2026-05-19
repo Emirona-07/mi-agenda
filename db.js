@@ -400,11 +400,11 @@ function deleteClient(id) {
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
-function createBooking({ client_id, service_id, professional_id, date, time, notes, total_price, deposit_paid, status }) {
+function createBooking({ client_id, service_id, professional_id, date, time, notes, total_price, deposit_paid, status, utm_source }) {
   const r = db.prepare(`
-    INSERT INTO bookings (client_id, service_id, professional_id, date, time, notes, total_price, deposit_paid, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(client_id, service_id, professional_id || null, date, time, notes, total_price, deposit_paid || 0, status || 'confirmed');
+    INSERT INTO bookings (client_id, service_id, professional_id, date, time, notes, total_price, deposit_paid, status, utm_source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(client_id, service_id, professional_id || null, date, time, notes, total_price, deposit_paid || 0, status || 'confirmed', utm_source || null);
   return db.prepare('SELECT * FROM bookings WHERE id=?').get(r.lastInsertRowid);
 }
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Mi Agenda</title>
+  <title>Admin - Mi Piel</title>
   <link rel="manifest" href="/manifest-admin.json">
   <meta name="theme-color" content="#1a7a56">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,8 +36,8 @@
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
 
     /* LOGIN */
-    #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background: #f9fafb; }
-    .login-box { background: white; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 360px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid var(--border); }
+    #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding: 20px; background: #f9fafb; overflow-x: hidden; }
+    .login-box { background: white; border-radius: 16px; padding: 40px 36px; width: min(100%, 360px); box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid var(--border); }
     .login-box h1 { font-size: 1.35rem; color: var(--text); margin-bottom: 4px; font-weight: 700; }
     .login-box p { color: var(--text-2); font-size: 0.875rem; margin-bottom: 28px; }
     .login-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 14px; display:none; }
@@ -210,6 +210,7 @@
       .nav-item .icon { width: 14px; height: 14px; }
       .sidebar-footer { display: none; }
       .main { margin-left: 0; padding: 14px 14px 32px; }
+      .login-box { padding: 32px 24px; }
       .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
       .grid-2 { grid-template-columns: 1fr; }
       .hour-row { grid-template-columns: 70px 1fr 1fr 70px; }
@@ -776,6 +777,7 @@ const api = (url, opts) => fetch(url, { headers: { 'Content-Type': 'application/
 let professionals = [], services = [], settings = {};
 let agendaWeekOffset = 0;
 let clientSearchTimeout = null;
+let pendingBookingParam = new URLSearchParams(location.search).get('booking');
 
 function dateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -789,7 +791,13 @@ async function doLogin() {
   const pass = $('login-pass').value;
   const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
   const data = await res.json();
-  if (data.success) { $('login-screen').style.display = 'none'; $('app').style.display = 'block'; initApp(); setTimeout(initPush, 800); }
+  if (data.success) {
+    $('login-screen').style.display = 'none';
+    $('app').style.display = 'block';
+    await initApp();
+    setTimeout(initPush, 800);
+    openPendingBookingParam();
+  }
   else { $('login-error').textContent = data.error; $('login-error').style.display = 'block'; }
 }
 async function doLogout() {
@@ -798,7 +806,13 @@ async function doLogout() {
 }
 async function checkAuth() {
   const { authenticated } = await api('/api/admin/check-auth');
-  if (authenticated) { $('login-screen').style.display = 'none'; $('app').style.display = 'block'; initApp(); setTimeout(initPush, 800); }
+  if (authenticated) {
+    $('login-screen').style.display = 'none';
+    $('app').style.display = 'block';
+    await initApp();
+    setTimeout(initPush, 800);
+    openPendingBookingParam();
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────
@@ -809,6 +823,7 @@ async function initApp() {
     api('/api/admin/services')
   ]);
   $('nav-biz-name').textContent = settings.business_name || 'Mi Agenda';
+  document.title = `Admin - ${settings.business_name || 'Mi Piel'}`;
   populateProfSelects();
   loadDashboard();
   initRevenueFilters();
@@ -1938,6 +1953,14 @@ function _openBookingFromUrl(url) {
   } catch (_) {}
 }
 
+function openPendingBookingParam() {
+  if (!pendingBookingParam) return;
+  const bookingId = parseInt(pendingBookingParam, 10);
+  pendingBookingParam = null;
+  history.replaceState({}, '', '/admin');
+  if (bookingId) openBookingModal(bookingId);
+}
+
 // Caso 1: admin ya estaba abierto → SW manda postMessage
 navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', (e) => {
   if (e.data?.type === 'open-booking') _openBookingFromUrl(e.data.url);
@@ -1945,19 +1968,8 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', (
 
 // Caso 2: admin se abrió/recargó desde la URL de la push → leer ?booking=
 (function() {
-  const bookingParam = new URLSearchParams(location.search).get('booking');
-  if (bookingParam) {
-    // Limpiar el parámetro de la URL sin recargar
-    history.replaceState({}, '', '/admin');
-    // Esperar a que el app esté inicializado antes de abrir el modal
-    const tryOpen = (attempts) => {
-      if (document.getElementById('app')?.style.display !== 'none') {
-        openBookingModal(parseInt(bookingParam));
-      } else if (attempts > 0) {
-        setTimeout(() => tryOpen(attempts - 1), 300);
-      }
-    };
-    setTimeout(() => tryOpen(10), 500);
+  if (pendingBookingParam && document.getElementById('app')?.style.display !== 'none') {
+    setTimeout(openPendingBookingParam, 500);
   }
 })();
 </script>

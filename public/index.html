@@ -538,6 +538,9 @@
       background: var(--p-light); border-radius: var(--r-pill);
       padding: 5px 12px;
       font-size: 0.73rem; font-weight: 600; color: var(--p);
+      max-width: 100%;
+      min-width: 0;
+      white-space: normal;
     }
     .about-cred svg { flex-shrink: 0; }
     .about-toggle {
@@ -1361,7 +1364,7 @@
 <div id="photo-lightbox">
   <button class="lb-close" onclick="closeLightbox()">✕</button>
   <button class="lb-nav lb-prev" onclick="lbNav(-1)">‹</button>
-  <img id="lb-img" src="" alt="" onclick="lbToggleZoom(event)">
+  <img id="lb-img" alt="" onclick="lbToggleZoom(event)">
   <button class="lb-nav lb-next" onclick="lbNav(1)">›</button>
   <div class="lb-comment" id="lb-comment" style="display:none"></div>
   <div class="lb-counter" id="lb-counter"></div>
@@ -1767,6 +1770,7 @@ async function init() {
   _mpSurcharge = biz.mp_surcharge || 0;
   _mpActive    = !!biz.mp_active;
   _bankAccount = biz.bank_account || '';
+  configurePaymentMethods();
 
   // Configurar campos de contacto según canal de notificaciones
   configureContactFields(biz.notification_channel || 'email');
@@ -2171,6 +2175,7 @@ let _paymentMethod = 'cash';   // 'cash' | 'mp'
 let _mpSurcharge   = 0;        // % como número (ej. 5)
 let _mpActive      = false;    // true si MP_ACCESS_TOKEN está configurado
 let _bankAccount   = '';       // datos de cuenta bancaria para transferencia
+let _transferActive = false;   // true si hay datos bancarios configurados
 let _gcCode        = null;     // código de gift card validado
 let _gcDiscount    = 0;        // monto de descuento de gift card
 
@@ -2299,6 +2304,7 @@ async function applyGiftCard() {
 }
 
 function setPayMethod(method) {
+  if (method === 'transfer' && !_transferActive) method = 'cash';
   _paymentMethod = method;
   document.getElementById('pm-cash').classList.toggle('active', method === 'cash');
   document.getElementById('pm-transfer').classList.toggle('active', method === 'transfer');
@@ -2319,7 +2325,19 @@ function setPayMethod(method) {
   } else {
     note.style.display = 'none';
   }
-  renderSummary();
+  if (state.selectedService && state.selectedDate && state.selectedTime) renderSummary();
+}
+
+function configurePaymentMethods() {
+  _transferActive = !!_bankAccount.trim();
+  const transferBtn = document.getElementById('pm-transfer');
+  if (transferBtn) transferBtn.style.display = _transferActive ? '' : 'none';
+  const mpBtn = document.getElementById('pm-mp');
+  if (mpBtn) mpBtn.style.display = _mpActive ? '' : 'none';
+  const row = document.querySelector('#pay-method-wrap .pay-method-row');
+  if (row) row.style.gridTemplateColumns = `repeat(${1 + (_transferActive ? 1 : 0) + (_mpActive ? 1 : 0)}, 1fr)`;
+  if (_paymentMethod === 'transfer' && !_transferActive) _paymentMethod = 'cash';
+  setPayMethod(_paymentMethod);
 }
 
 function updateStickyCta(step) {
@@ -2421,13 +2439,15 @@ function goGiftCard(presetAmount) {
     else { _gcAmt = presetAmount; document.getElementById('gc-custom-amt').value = presetAmount; }
   }
 
-  // Mostrar MP si está activo
+  // Mostrar métodos disponibles
   const mpBtn = document.getElementById('gc-pm-mp');
   if (mpBtn) mpBtn.style.display = _mpActive ? '' : 'none';
+  const transferBtn = document.getElementById('gc-pm-transfer');
+  if (transferBtn) transferBtn.style.display = _transferActive ? '' : 'none';
   document.getElementById('gc-mp-pct').textContent = _mpSurcharge;
 
-  // Arrancar en transferencia
-  gcSetPayMethod('transfer');
+  // Arrancar en transferencia si está configurada; si no, Mercado Pago
+  gcSetPayMethod(_transferActive ? 'transfer' : 'mp');
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2472,6 +2492,7 @@ function gcUpdateMpTotal() {
 }
 
 function gcSetPayMethod(m) {
+  if (m === 'transfer' && !_transferActive) m = _mpActive ? 'mp' : 'transfer';
   _gcPayMethod = m;
   const transfer = document.getElementById('gc-pm-transfer');
   const mp       = document.getElementById('gc-pm-mp');
@@ -2480,6 +2501,7 @@ function gcSetPayMethod(m) {
   const btn      = document.getElementById('gc-submit-btn');
   const note     = document.getElementById('gc-submit-note');
 
+  transfer.style.display = _transferActive ? '' : 'none';
   transfer.style.border  = m === 'transfer' ? '2px solid var(--p)' : '2px solid var(--border-dark)';
   transfer.style.background = m === 'transfer' ? 'var(--p-light)' : 'white';
   transfer.style.color   = m === 'transfer' ? 'var(--p)' : 'var(--muted)';
@@ -2913,6 +2935,7 @@ function newBooking() {
   state.calYear = null; state.calMonth = null;
   _activeCat = 'Todos';
   _paymentMethod = 'cash'; _gcCode = null; _gcDiscount = 0;
+  configurePaymentMethods();
   // Resetear botones del selector
   document.getElementById('pm-cash').classList.add('active');
   document.getElementById('pm-transfer').classList.remove('active');

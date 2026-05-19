@@ -519,7 +519,7 @@
           : b.date === tomorrow ? 'Mañana'
           : d.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' });
         return `<option value="${b.id}" ${b.id === selectedId ? 'selected' : ''}>
-          ${dayLabel} ${b.time} — ${b.client_name}
+          ${esc(dayLabel)} ${esc(b.time)} — ${esc(b.client_name)}
         </option>`;
       }).join('');
     }

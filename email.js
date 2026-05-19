@@ -146,6 +146,33 @@ function nuevaReservaHTML({ bookingId, serviceName, clientName, phone, email, da
 </div></body></html>`;
 }
 
+function giftCardPurchaseHTML({ bizName, purchaserName, purchaserEmail, recipientName, recipientEmail, amount, paymentMethod }) {
+  const row = (label, value) => value
+    ? `<tr><td style="padding:5px 0;color:#777;font-size:.88rem;width:40%">${label}</td><td style="padding:5px 0;font-weight:600">${value}</td></tr>`
+    : '';
+  const methodLabel = paymentMethod === 'mp' ? 'Mercado Pago' : 'Transferencia';
+  return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
+<div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
+  <div style="background:#2d6a4f;padding:24px;text-align:center">
+    <h1 style="color:#fff;margin:0;font-size:22px">🎁 Nueva gift card pendiente</h1>
+  </div>
+  <div style="padding:24px">
+    <p style="margin:0 0 16px;color:#555">Hay una nueva compra de gift card esperando confirmación en <strong>${bizName}</strong>.</p>
+    <div style="background:#f5faf7;border-left:4px solid #2d6a4f;border-radius:4px;padding:16px">
+      <table style="width:100%;border-collapse:collapse">
+        ${row('Monto', fmtPeso(amount))}
+        ${row('Forma de pago', methodLabel)}
+        ${row('Comprador', purchaserName)}
+        ${row('Email comprador', purchaserEmail)}
+        ${row('Para', recipientName)}
+        ${row('Email destinatario', recipientEmail)}
+      </table>
+    </div>
+    <p style="font-size:.85rem;color:#999;margin:16px 0 0">Cuando confirmes el pago, activala desde el panel admin para enviar el código.</p>
+  </div>
+</div></body></html>`;
+}
+
 function reminderHTML({ name, bizName, serviceName, profName, date, time, bookingId }) {
   return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
 <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
@@ -275,6 +302,16 @@ async function sendOwnerNotification(toEmail, data, settings) {
     to: toEmail,
     subject: `📅 Nueva reserva #${data.bookingId} — ${data.clientName}`,
     html: nuevaReservaHTML(data),
+  }, settings);
+}
+
+async function sendGiftCardPurchaseNotification(toEmail, data, settings) {
+  const bizName = settings?.business_name || 'Mi Negocio';
+  console.log(`[email] Enviando aviso de gift card pendiente a ${toEmail}`);
+  return sendMail({
+    to: toEmail,
+    subject: `🎁 Nueva gift card pendiente — ${bizName}`,
+    html: giftCardPurchaseHTML({ ...data, bizName }),
   }, settings);
 }
 
@@ -453,6 +490,7 @@ module.exports = {
   sendConfirmation,
   sendPaymentConfirmation,
   sendOwnerNotification,
+  sendGiftCardPurchaseNotification,
   sendReminder,
   sendWeeklySummary,
   sendReviewRequest,
