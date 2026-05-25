@@ -214,7 +214,7 @@ function weeklySummaryHTML({ bizName, bookings, weekLabel }) {
     <p style="color:#a8d5be;margin:6px 0 0;font-size:.9rem">${bizName}</p>
   </div>
   <div style="padding:24px">
-    <p style="color:#555;margin:0 0 16px">Estas son las reservas de la semana pasada:</p>
+    <p style="color:#555;margin:0 0 16px">Estas son las reservas para esta semana:</p>
     <table style="width:100%;border-collapse:collapse;font-size:.88rem">
       <thead>
         <tr style="background:#f5faf7">
@@ -340,8 +340,13 @@ async function sendReminder(booking, settings) {
 async function sendWeeklySummary(bookings, toEmail, settings) {
   if (!toEmail) return { ok: false, reason: 'sin_email_dueño' };
   const bizName = settings?.business_name || 'Mi Negocio';
-  const now = new Date();
-  const weekLabel = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+  const start = new Date();
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  const weekLabel = sameMonth
+    ? `${start.getDate()} al ${end.getDate()} de ${end.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}`
+    : `${start.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} al ${end.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
   console.log(`[email] Enviando resumen semanal a ${toEmail}`);
   return sendMail({
     to: toEmail,
